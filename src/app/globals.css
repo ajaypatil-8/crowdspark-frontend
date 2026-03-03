@@ -225,3 +225,151 @@ body {
 ::-webkit-scrollbar       { width: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--accent-dim); border-radius: 2px; }
+
+/* ── navbar ── */
+.navbar {
+  position:   fixed;
+  top: 0; left: 0; right: 0;
+  z-index:    100;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+.navbar.scrolled {
+  background: var(--card-bg);
+  box-shadow: 0 1px 0 var(--card-border);
+}
+.nav-link {
+  color:       var(--text-muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size:   14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition:  color 0.18s;
+}
+.nav-link:hover { color: var(--text); }
+
+/* ── hero text gradient ── */
+.hero-gradient {
+  background:    linear-gradient(135deg, var(--text) 0%, var(--accent) 60%, var(--text) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmerText 4s linear infinite;
+}
+@keyframes shimmerText {
+  0%   { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+/* ── ticker / marquee ── */
+.marquee-track {
+  display:   flex;
+  gap:       48px;
+  animation: marquee 22s linear infinite;
+  will-change: transform;
+}
+.marquee-track:hover { animation-play-state: paused; }
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* ── count-up number ── */
+.stat-num {
+  font-family:    'Syne', sans-serif;
+  font-weight:    800;
+  font-size:      52px;
+  line-height:    1;
+  color:          var(--accent);
+  letter-spacing: -0.02em;
+}
+
+/* ── feature card ── */
+.feature-card {
+  background:   var(--card-bg);
+  border:       1px solid var(--card-border);
+  border-radius:16px;
+  padding:      28px;
+  transition:   transform 0.22s, box-shadow 0.22s, border-color 0.22s;
+  cursor:       default;
+}
+.feature-card:hover {
+  transform:    translateY(-4px);
+  box-shadow:   0 12px 36px rgba(0,0,0,0.35);
+  border-color: var(--accent);
+}
+
+/* ── project card ── */
+.project-card {
+  background:   var(--card-bg);
+  border:       1px solid var(--card-border);
+  border-radius:16px;
+  overflow:     hidden;
+  transition:   transform 0.22s, box-shadow 0.22s;
+}
+.project-card:hover {
+  transform:  translateY(-5px);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+}
+
+/* ── progress bar fill ── */
+.progress-fill {
+  height:       100%;
+  border-radius:inherit;
+  background:   linear-gradient(90deg, var(--accent), var(--accent-h));
+  transition:   width 1.2s cubic-bezier(0.16,1,0.3,1);
+}
+
+/* ── step connector ── */
+.step-line {
+  position:   absolute;
+  top:        20px;
+  left:       calc(50% + 24px);
+  right:      calc(-50% + 24px);
+  height:     1px;
+  background: var(--border);
+}
+.step-line::after {
+  content:    '';
+  position:   absolute;
+  left: 0; top: 0;
+  height:     100%;
+  width:      0;
+  background: var(--accent);
+  transition: width 1s 0.5s ease;
+}
+.step-line.active::after { width: 100%; }
+
+/* ── section fade-in (IntersectionObserver) ── */
+.reveal {
+  opacity:   0;
+  transform: translateY(28px);
+  transition:opacity 0.65s ease, transform 0.65s ease;
+}
+.reveal.visible {
+  opacity:   1;
+  transform: translateY(0);
+}
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+
+/* ── glow pulse (CTA section) ── */
+@keyframes glowPulse {
+  0%,100% { box-shadow: 0 0 20px var(--accent-glow); }
+  50%      { box-shadow: 0 0 50px var(--accent-glow), 0 0 80px var(--accent-glow); }
+}
+.glow-pulse { animation: glowPulse 3s ease-in-out infinite; }
+
+/* ── horizontal scroll snap for mobile ── */
+.scroll-x {
+  display:            flex;
+  gap:                16px;
+  overflow-x:         auto;
+  scroll-snap-type:   x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width:    none;
+}
+.scroll-x::-webkit-scrollbar { display: none; }
+.scroll-x > * { scroll-snap-align: start; }

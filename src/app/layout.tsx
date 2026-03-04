@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import LenisProvider from "@/providers/Lenisprovider";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/footer";
 
@@ -14,11 +15,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" data-theme="dark" suppressHydrationWarning>
       <body>
         <ThemeProvider>
-          <Navbar />
-          <main style={{ paddingTop: 68 }}>
-            {children}
-          </main>
-          <Footer />
+          <LenisProvider>
+            <Navbar />
+            <main style={{ paddingTop: 68 }}>
+              {children}
+            </main>
+            <Footer />
+          </LenisProvider>
         </ThemeProvider>
       </body>
     </html>

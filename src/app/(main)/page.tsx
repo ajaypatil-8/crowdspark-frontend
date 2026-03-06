@@ -5,8 +5,6 @@ import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useCursor } from "@/hooks/usecursor";
-import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -38,261 +36,6 @@ const PROJECTS = [
 
 /* ══════════════════════════════════════════════════════════════
    PHOENIX CANVAS — sits in right half of hero
-══════════════════════════════════════════════════════════════ */
-function PhoenixCanvas() {
-  const mountRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = mountRef.current;
-    if (!el) return;
-
-    /* ── wait one frame so the DOM has laid out and el has real dimensions ── */
-    let rafSetup: number;
-    let cleanup: (() => void) | undefined;
-
-    rafSetup = requestAnimationFrame(() => {
-      const W = el.clientWidth  || window.innerWidth  * 0.5;
-      const H = el.clientHeight || window.innerHeight;
-
-      /* ── renderer ── */
-      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-      renderer.setSize(W, H);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.outputColorSpace    = THREE.SRGBColorSpace;
-      renderer.toneMapping         = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.4;
-      el.appendChild(renderer.domElement);
-
-      /* ── scene & camera ── */
-      const scene  = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(45, W / H, 0.01, 1000);
-      camera.position.set(0, 0, 6);
-      camera.lookAt(0, 0, 0);
-
-      /* ── lights ── */
-      scene.add(new THREE.AmbientLight(0xffffff, 5.0));
-
-      const key = new THREE.DirectionalLight(0xffffff, 6.0);
-      key.position.set(2, 4, 5);
-      scene.add(key);
-
-      const fill = new THREE.DirectionalLight(0x88eeff, 3.0);
-      fill.position.set(-4, 1, 3);
-      scene.add(fill);
-
-      const back = new THREE.DirectionalLight(0xffffff, 2.0);
-      back.position.set(0, 2, -5);
-      scene.add(back);
-
-      const teal   = new THREE.PointLight(0x00f5d4, 10, 30);
-      teal.position.set(-2, 2, 4);
-      scene.add(teal);
-
-      const purple = new THREE.PointLight(0x7b2fff, 7, 25);
-      purple.position.set(3, -1, -2);
-      scene.add(purple);
-
-      const ember  = new THREE.PointLight(0xff6020, 5, 15);
-      ember.position.set(0, -4, 2);
-      scene.add(ember);
-
-      /* ── particles ── */
-      const PC  = 220;
-      const pos = new Float32Array(PC * 3);
-      for (let i = 0; i < PC; i++) {
-        pos[i*3]   = (Math.random()-0.5)*14;
-        pos[i*3+1] = (Math.random()-0.5)*14;
-        pos[i*3+2] = (Math.random()-0.5)*8;
-      }
-      const pGeo = new THREE.BufferGeometry();
-      pGeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-      const particles = new THREE.Points(pGeo, new THREE.PointsMaterial({
-        color:0x00f5d4, size:0.06, transparent:true, opacity:0.55,
-        sizeAttenuation:true, blending:THREE.AdditiveBlending, depthWrite:false,
-      }));
-      scene.add(particles);
-
-      /* ── orbit rings ── */
-      const makeRing = (r:number,tube:number,col:number,op:number) => {
-        const m = new THREE.Mesh(
-          new THREE.TorusGeometry(r,tube,16,128),
-          new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:op,
-            blending:THREE.AdditiveBlending,depthWrite:false})
-        );
-        scene.add(m); return m;
-      };
-      const ring1 = makeRing(2.0, 0.014, 0x00f5d4, 0.55);
-      const ring2 = makeRing(2.8, 0.009, 0x7b2fff, 0.40);
-      const ring3 = makeRing(3.5, 0.006, 0x00f5d4, 0.22);
-      ring1.rotation.x = Math.PI/2;
-      ring2.rotation.x = Math.PI/2.3; ring2.rotation.z = 0.4;
-      ring3.rotation.x = Math.PI/1.8; ring3.rotation.z = -0.3;
-
-      /* ── spinning placeholder while GLB loads ── */
-      const placeholder = new THREE.Mesh(
-        new THREE.IcosahedronGeometry(1.2, 2),
-        new THREE.MeshStandardMaterial({
-          color:0x00f5d4, emissive:new THREE.Color(0x00f5d4),
-          emissiveIntensity:0.9, wireframe:true, side:THREE.DoubleSide,
-        })
-      );
-      scene.add(placeholder);
-
-      /* ── load GLB ── */
-      let model: THREE.Object3D | null = null;
-      let modelBaseScale = 1;
-
-      console.log("[Phoenix] Loading /phoenix.glb …");
-      const loader = new GLTFLoader();
-      loader.load("/phoenix.glb",
-        (gltf) => {
-          scene.remove(placeholder);
-          model = gltf.scene;
-
-          /*
-           * MODEL IS A SKINNED MESH ~911×316×963 local units (exported in cm).
-           * We compute bounds from raw geometry (not bones) then scale to fit.
-           */
-          let mnX= 1e9,mnY= 1e9,mnZ= 1e9;
-          let mxX=-1e9,mxY=-1e9,mxZ=-1e9;
-
-          model.updateMatrixWorld(true);
-          model.traverse((child) => {
-            const mesh = child as THREE.Mesh;
-            if (!(mesh as THREE.Mesh).isMesh) return;
-            mesh.geometry.computeBoundingBox();
-            const box = mesh.geometry.boundingBox!.clone().applyMatrix4(mesh.matrixWorld);
-            mnX=Math.min(mnX,box.min.x); mnY=Math.min(mnY,box.min.y); mnZ=Math.min(mnZ,box.min.z);
-            mxX=Math.max(mxX,box.max.x); mxY=Math.max(mxY,box.max.y); mxZ=Math.max(mxZ,box.max.z);
-          });
-
-          const sX=mxX-mnX, sY=mxY-mnY, sZ=mxZ-mnZ;
-          const maxDim = Math.max(sX, sY, sZ);
-          /* scale model so its largest dimension = 3.5 scene units */
-          modelBaseScale = maxDim > 0 ? 3.5 / maxDim : 1;
-
-          const cx=(mnX+mxX)/2, cy=(mnY+mxY)/2, cz=(mnZ+mxZ)/2;
-          model.scale.setScalar(modelBaseScale);
-          model.position.set(-cx*modelBaseScale, -cy*modelBaseScale, -cz*modelBaseScale);
-
-          console.log(`[Phoenix] bounds=${sX.toFixed(0)}×${sY.toFixed(0)}×${sZ.toFixed(0)} → scale=${modelBaseScale.toFixed(5)} → renders as ${(maxDim*modelBaseScale).toFixed(2)} units`);
-
-          /* Fix materials: both are alphaMode=BLEND (transparent feathers).
-           * Force visible: transparent=false, DoubleSide, add emissive glow. */
-          model.traverse((child) => {
-            const mesh = child as THREE.Mesh;
-            if (!mesh.isMesh) return;
-            const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-            mats.forEach((mat) => {
-              const m = mat as THREE.MeshStandardMaterial;
-              m.transparent   = false;
-              m.opacity       = 1;
-              m.alphaTest     = 0;
-              m.side          = THREE.DoubleSide;
-              m.depthWrite    = true;
-              if (m.emissive)        { m.emissive.set(0x00b89c); m.emissiveIntensity = 0.2; }
-              if ("roughness" in m)    m.roughness  = 0.45;
-              if ("metalness" in m)    m.metalness  = 0.25;
-              m.needsUpdate   = true;
-            });
-          });
-
-          scene.add(model);
-          console.log("[Phoenix] Model added. Anims:", gltf.animations.length);
-        },
-        (prog) => console.log(`[Phoenix] Loading ${Math.round(prog.loaded/prog.total*100)}%`),
-        (err)  => console.error("[Phoenix] Error:", err)
-      );
-
-      /* ── input ── */
-      let mx=0, my=0, scrollY=0;
-      const onMouse  = (e:MouseEvent) => {
-        mx = (e.clientX/window.innerWidth -0.5)*2;
-        my = (e.clientY/window.innerHeight-0.5)*2;
-      };
-      const onScroll = () => { scrollY = window.scrollY; };
-      const onResize = () => {
-        const w=el.clientWidth, h=el.clientHeight;
-        if (!w||!h) return;
-        camera.aspect=w/h; camera.updateProjectionMatrix();
-        renderer.setSize(w,h);
-      };
-      window.addEventListener("mousemove", onMouse,  {passive:true});
-      window.addEventListener("scroll",    onScroll, {passive:true});
-      window.addEventListener("resize",    onResize);
-
-      /* ── render loop ── */
-      let rafId=0, prevT=performance.now(), elapsed=0;
-      let tgtRX=0, tgtRY=0;
-
-      const tick = () => {
-        rafId = requestAnimationFrame(tick);
-        const now=performance.now(), dt=Math.min((now-prevT)/1000,0.05);
-        prevT=now; elapsed+=dt;
-        const t=elapsed;
-
-        /* placeholder spin */
-        placeholder.rotation.y += 0.018;
-        placeholder.rotation.x += 0.007;
-
-        /* mouse rotation */
-        tgtRY = mx * 0.5;
-        tgtRX = my * 0.22;
-
-        if (model) {
-          model.rotation.y += (tgtRY - model.rotation.y) * 0.06;
-          model.rotation.x += (tgtRX - model.rotation.x) * 0.06;
-          /* float */
-          model.position.y += (Math.sin(t*0.8)*0.15 - model.position.y) * 0.04;
-          /* scroll fade */
-          const sp = Math.min(scrollY/(window.innerHeight*0.8), 1);
-          model.scale.setScalar(modelBaseScale * (1-sp*0.6));
-          renderer.domElement.style.opacity = String(Math.max(0, 1-sp*1.5));
-        }
-
-        /* pulse lights */
-        teal.intensity   = 9   + Math.sin(t*1.6)*4;
-        purple.intensity = 6   + Math.cos(t*1.1)*2.5;
-        ember.intensity  = 4.5 + Math.sin(t*2.0)*2;
-
-        /* spin rings */
-        ring1.rotation.z+=0.005; ring2.rotation.z-=0.003;
-        ring3.rotation.z+=0.002; ring1.rotation.y+=0.002;
-
-        /* drift particles */
-        particles.rotation.y+=0.0008;
-        particles.rotation.x = Math.sin(t*0.2)*0.07;
-
-        renderer.render(scene, camera);
-      };
-      tick();
-
-      cleanup = () => {
-        cancelAnimationFrame(rafId);
-        window.removeEventListener("mousemove", onMouse);
-        window.removeEventListener("scroll",    onScroll);
-        window.removeEventListener("resize",    onResize);
-        renderer.dispose();
-        if (el.contains(renderer.domElement)) el.removeChild(renderer.domElement);
-      };
-    });
-
-    return () => {
-      cancelAnimationFrame(rafSetup);
-      cleanup?.();
-    };
-  }, []);
-
-  return (
-    <div ref={mountRef} style={{ position:"absolute", inset:0 }} />
-  );
-}
-
-
-
-
-/* ══════════════════════════════════════════════════════════════
-   HOME PAGE
 ══════════════════════════════════════════════════════════════ */
 export default function HomePage() {
   const { cursorRef, followerRef } = useCursor();
@@ -521,32 +264,53 @@ export default function HomePage() {
 
         {/* ── RIGHT: 3D canvas ──────────────────────────────────── */}
         <div style={{
-          flex:     "0 0 50%",
-          position: "relative",
-          zIndex:   2,
-          height:   "100vh",      /* explicit height so position:absolute child fills it */
-          minHeight:"100vh",
-          alignSelf:"stretch",
+          flex:       "0 0 52%",
+          position:   "relative",
+          zIndex:     2,
+          height:     "100vh",
+          overflow:   "hidden",
+          display:    "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}>
-          {/* subtle radial bg behind the model so it's always visible */}
+          {/* decorative floating orbs */}
           <div style={{
-            position:   "absolute",
-            inset:      0,
-            background: "radial-gradient(ellipse 70% 60% at 55% 50%, rgba(0,200,160,0.08) 0%, transparent 75%)",
+            position: "absolute", inset: 0,
+            background: "radial-gradient(ellipse 65% 55% at 55% 50%, rgba(0,200,160,0.12) 0%, transparent 70%)",
             pointerEvents: "none",
-            zIndex:     0,
           }} />
-
-          <PhoenixCanvas />
-
-          {/* left edge fade into text column */}
           <div style={{
-            position:      "absolute",
-            top: 0, bottom: 0, left: 0,
-            width:         100,
-            background:    "linear-gradient(to right, var(--bg), transparent)",
-            pointerEvents: "none",
-            zIndex:        3,
+            position: "absolute",
+            width: 320, height: 320,
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(0,200,160,0.18) 0%, transparent 70%)",
+            filter: "blur(40px)",
+            animation: "orbFloat 6s ease-in-out infinite",
+          }} />
+          <div style={{
+            position: "absolute",
+            width: 200, height: 200,
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(123,47,255,0.15) 0%, transparent 70%)",
+            filter: "blur(30px)",
+            top: "30%", right: "20%",
+            animation: "orbFloat 8s ease-in-out infinite reverse",
+          }} />
+          <div style={{
+            position: "absolute",
+            width: 140, height: 140,
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(0,200,160,0.12) 0%, transparent 70%)",
+            filter: "blur(20px)",
+            bottom: "25%", left: "25%",
+            animation: "orbFloat 5s ease-in-out infinite 2s",
+          }} />
+          {/* left edge fade */}
+          <div style={{
+            position: "absolute",
+            top: 0, bottom: 0, left: 0, width: 120,
+            background: "linear-gradient(to right, var(--bg), transparent)",
+            pointerEvents: "none", zIndex: 3,
           }} />
         </div>
 

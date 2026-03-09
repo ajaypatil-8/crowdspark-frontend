@@ -1,17 +1,16 @@
-// src/app/layout.tsx — ROOT layout (global providers only, NO Navbar/Footer)
 import type { Metadata } from "next";
-import "./globals.css";
+import "@/app/globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import LenisProvider from "@/providers/Lenisprovider";
 
 export const metadata: Metadata = {
-  title: "CrowdSpark — Where bold ideas find their spark",
-  description: "India's most trusted crowdfunding platform for creators and backers.",
+  title: "CrowdSpark — Ignite Ideas Together",
+  description: "The modern crowdfunding platform for creators and innovators.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
       <body>
         <ThemeProvider>
           <LenisProvider>

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 
 type Theme = "dark" | "light";
 
@@ -21,25 +21,27 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Read saved preference
-    const saved = localStorage.getItem("cs_theme") as Theme | null;
-    const preferred = saved || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-    setTheme(preferred);
-    document.documentElement.setAttribute("data-theme", preferred);
+    try {
+      const saved = localStorage.getItem("cs_theme") as Theme | null;
+      const preferred = saved || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      setTheme(preferred);
+      document.documentElement.setAttribute("data-theme", preferred);
+    } catch {
+      document.documentElement.setAttribute("data-theme", "dark");
+    }
     setMounted(true);
   }, []);
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     const next: Theme = theme === "dark" ? "light" : "dark";
     setTheme(next);
-    localStorage.setItem("cs_theme", next);
+    try { localStorage.setItem("cs_theme", next); } catch {}
     document.documentElement.setAttribute("data-theme", next);
-  };
+  }, [theme]);
 
-  // Prevent flash: hide until mounted
   if (!mounted) {
     return (
-      <div style={{ visibility: "hidden", minHeight: "100vh", background: "#050508" }}>
+      <div style={{ visibility: "hidden", minHeight: "100vh" }}>
         {children}
       </div>
     );

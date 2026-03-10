@@ -12,19 +12,14 @@ export default function ThemeToggle() {
       whileHover={{ scale: 1.08 }}
       whileTap={{ scale: 0.92 }}
       title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       style={{
-        width: 42,
-        height: 42,
-        borderRadius: 12,
+        width: 42, height: 42, borderRadius: 12,
         border: "1px solid var(--border)",
-        background: "var(--glass-bg)",
+        background: "var(--bg-ghost)",
         cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-        position: "relative",
-        overflow: "hidden",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        flexShrink: 0, position: "relative", overflow: "hidden",
         transition: "border-color 0.2s, background 0.2s",
       }}
     >
@@ -38,7 +33,6 @@ export default function ThemeToggle() {
             transition={{ duration: 0.25, ease: "easeInOut" }}
             style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
           >
-            {/* Moon icon */}
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
               stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
@@ -53,7 +47,6 @@ export default function ThemeToggle() {
             transition={{ duration: 0.25, ease: "easeInOut" }}
             style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
           >
-            {/* Sun icon */}
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
               stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="5" />

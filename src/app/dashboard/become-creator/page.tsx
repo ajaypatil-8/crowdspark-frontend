@@ -154,10 +154,10 @@ function Input({
    DOC CARD WITH FILE VALIDATION
 ════════════════════════════════════════════════════════════ */
 function DocCard({
-  label, sublabel, file, url, onFile, uploading, error
+  label, sublabel, file, url, onFile, uploading, error, onError
 }: {
   label: string; sublabel: string; file: File | null; url: string;
-  onFile: (f: File) => void; uploading: boolean; error?: string;
+  onFile: (f: File) => void; uploading: boolean; error?: string; onError?: (msg: string) => void;
 }) {
   const { isDark } = useTheme();
   const ref = useRef<HTMLInputElement>(null);
@@ -165,13 +165,14 @@ function DocCard({
 
   const handleFile = (f: File) => {
     const maxSize = 5 * 1024 * 1024;
+    const report = onError ?? alert;
     if (f.size > maxSize) {
-      alert("File must be less than 5MB");
+      report("File must be less than 5MB");
       return;
     }
     const validTypes = ["image/jpeg", "image/png", "application/pdf"];
     if (!validTypes.includes(f.type)) {
-      alert("Only JPG, PNG, or PDF files allowed");
+      report("Only JPG, PNG, or PDF files allowed");
       return;
     }
     onFile(f);
@@ -191,7 +192,7 @@ function DocCard({
       }}
     >
       <input ref={ref} type="file" accept="image/*,application/pdf" style={{ display: "none" }}
-        onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }} />
+        onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); e.target.value = ""; }} />
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <motion.div
           animate={uploading ? { scale: [1, 1.1, 1] } : {}}
@@ -252,7 +253,7 @@ function DocCard({
 ════════════════════════════════════════════════════════════ */
 function OtpBoxes({ value, onChange, error }: { value: string; onChange: (v: string) => void; error?: string }) {
   const { isDark } = useTheme();
-  const refs = Array.from({ length: 6 }, () => useRef<HTMLInputElement>(null));
+  const inputRefs = useRef<(HTMLInputElement | null)[]>(Array(6).fill(null));
   const digits = Array.from({ length: 6 }, (_, i) => value[i] ?? "");
 
   const handle = (i: number, v: string) => {
@@ -260,7 +261,7 @@ function OtpBoxes({ value, onChange, error }: { value: string; onChange: (v: str
     const arr = value.split("");
     arr[i] = v;
     onChange(arr.join("").slice(0, 6));
-    if (v && i < 5) refs[i + 1]?.current?.focus();
+    if (v && i < 5) inputRefs.current[i + 1]?.focus();
   };
 
   return (
@@ -269,13 +270,13 @@ function OtpBoxes({ value, onChange, error }: { value: string; onChange: (v: str
         {digits.map((d, i) => (
           <motion.input
             key={i}
-            ref={refs[i]}
+            ref={el => { inputRefs.current[i] = el; }}
             type="tel"
             inputMode="numeric"
             maxLength={1}
             value={d}
             onChange={e => handle(i, e.target.value)}
-            onKeyDown={e => e.key === "Backspace" && !value[i] && i > 0 && refs[i - 1]?.current?.focus()}
+            onKeyDown={e => e.key === "Backspace" && !value[i] && i > 0 && inputRefs.current[i - 1]?.focus()}
             whileFocus={{ scale: 1.1 }}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -636,7 +637,7 @@ function TermsStep({ onAgree }: { onAgree: () => void }) {
             fontFamily: "DM Sans, sans-serif", fontSize: 13.5, color: "var(--text)",
             margin: 0, lineHeight: 1.6
           }}>
-            I have read and agree to CrowdSpark's <span style={{ color: "var(--accent)", fontWeight: 600 }}>Terms & Conditions</span>, <span style={{ color: "var(--accent)", fontWeight: 600 }}>Creator Guidelines</span>, and <span style={{ color: "var(--accent)", fontWeight: 600 }}>Privacy Policy</span>. I confirm I am 18+ years of age and a resident of India.
+            I have read and agree to CrowdSpark&apos;s <span style={{ color: "var(--accent)", fontWeight: 600 }}>Terms &amp; Conditions</span>, <span style={{ color: "var(--accent)", fontWeight: 600 }}>Creator Guidelines</span>, and <span style={{ color: "var(--accent)", fontWeight: 600 }}>Privacy Policy</span>. I confirm I am 18+ years of age and a resident of India.
           </p>
         </div>
       </motion.div>
@@ -654,7 +655,7 @@ function TermsStep({ onAgree }: { onAgree: () => void }) {
 /* ════════════════════════════════════════════════════════════
    OTP STEP
 ════════════════════════════════════════════════════════════ */
-function OtpStep({ onVerified, onBack }: { onVerified: () => void; onBack: () => void }) {
+function OtpStep({ onVerified, onBack }: { onVerified: () => Promise<void>; onBack: () => void }) {
   const { user } = useProfile();
   const [otp, setOtp] = useState("");
   const [sending, setSending] = useState(false);
@@ -663,11 +664,17 @@ function OtpStep({ onVerified, onBack }: { onVerified: () => void; onBack: () =>
   const [cooldown, setCooldown] = useState(0);
   const [otpError, setOtpError] = useState("");
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" | "info" } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const show = (msg: string, type: "success" | "error" | "info" = "success") => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast({ msg, type });
-    setTimeout(() => setToast(null), 3500);
+    toastTimerRef.current = setTimeout(() => setToast(null), 3500);
   };
+
+  useEffect(() => {
+    return () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current); };
+  }, []);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -699,7 +706,7 @@ function OtpStep({ onVerified, onBack }: { onVerified: () => void; onBack: () =>
     try {
       await creatorApi.verifyOtp(otp);
       show("Verified! Proceeding to KYC…", "success");
-      setTimeout(onVerified, 800);
+      await onVerified();
     } catch (e: any) {
       setOtpError(e.message ?? "Invalid OTP. Try again.");
     } finally {
@@ -733,7 +740,7 @@ function OtpStep({ onVerified, onBack }: { onVerified: () => void; onBack: () =>
         <p style={{
           fontFamily: "DM Sans, sans-serif", fontSize: 14, color: "var(--text-muted)",
           margin: 0, lineHeight: 1.7
-        }}>We'll send a 6-digit OTP to <strong style={{ color: "var(--text)" }}>{user?.email}</strong></p>
+        }}>We&apos;ll send a 6-digit OTP to <strong style={{ color: "var(--text)" }}>{user?.email}</strong></p>
       </div>
 
       {!sent ? (
@@ -798,13 +805,20 @@ function OtpStep({ onVerified, onBack }: { onVerified: () => void; onBack: () =>
 /* ════════════════════════════════════════════════════════════
    KYC STEP
 ══════��═════════════════════════════════════════════════════ */
-function KycStep({ onSubmitted, onBack }: { onSubmitted: (d: KycStatusResponse) => void; onBack: () => void }) {
+function KycStep({ onSubmitted, onBack }: { onSubmitted: (d: KycStatusResponse) => Promise<void>; onBack: () => void }) {
   const { isDark } = useTheme();
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" | "info" } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const show = (msg: string, type: "success" | "error" | "info" = "success") => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast({ msg, type });
-    setTimeout(() => setToast(null), 4000);
+    toastTimerRef.current = setTimeout(() => setToast(null), 4000);
   };
+
+  useEffect(() => {
+    return () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current); };
+  }, []);
 
   const [tab, setTab] = useState<"docs" | "identity" | "bank">("docs");
   const [panUrl, setPanUrl] = useState("");
@@ -907,7 +921,7 @@ function KycStep({ onSubmitted, onBack }: { onSubmitted: (d: KycStatusResponse) 
         bankIfscCode: ifsc, bankName, bankBranchName: branch, upiId
       };
       const data = await creatorApi.submitKyc(payload);
-      onSubmitted(data);
+      await onSubmitted(data);
     } catch (e: any) {
       show(e.message ?? "Submission failed. Try again.", "error");
     } finally {
@@ -1000,9 +1014,9 @@ function KycStep({ onSubmitted, onBack }: { onSubmitted: (d: KycStatusResponse) 
                 margin: 0, lineHeight: 1.6
               }}>Upload clear photos or scans. Accepted formats: JPG, PNG, PDF. Max 5MB each. Make sure all text is clearly readable.</p>
             </div>
-            <DocCard label="PAN Card" sublabel="Front side — must be clearly visible" file={panFile} url={panUrl} uploading={uploadingDoc === "pan"} onFile={f => uploadDoc(f, "pan")} />
-            <DocCard label="Aadhaar Front" sublabel="Front side with name & photo" file={afFile} url={afUrl} uploading={uploadingDoc === "af"} onFile={f => uploadDoc(f, "af")} />
-            <DocCard label="Aadhaar Back" sublabel="Back side with address" file={abFile} url={abUrl} uploading={uploadingDoc === "ab"} onFile={f => uploadDoc(f, "ab")} />
+            <DocCard label="PAN Card" sublabel="Front side — must be clearly visible" file={panFile} url={panUrl} uploading={uploadingDoc === "pan"} onFile={f => uploadDoc(f, "pan")} onError={msg => show(msg, "error")} />
+            <DocCard label="Aadhaar Front" sublabel="Front side with name & photo" file={afFile} url={afUrl} uploading={uploadingDoc === "af"} onFile={f => uploadDoc(f, "af")} onError={msg => show(msg, "error")} />
+            <DocCard label="Aadhaar Back" sublabel="Back side with address" file={abFile} url={abUrl} uploading={uploadingDoc === "ab"} onFile={f => uploadDoc(f, "ab")} onError={msg => show(msg, "error")} />
             <div style={{ marginTop: 8 }}>
               <FireBtn label="Next: Identity Details →" onClick={() => setTab("identity")} disabled={!docsOk} />
             </div>
@@ -1206,7 +1220,7 @@ function DoneStep({ kycData }: { kycData: KycStatusResponse | null }) {
 /* ════════════════════════════════════════════════════════════
    ALREADY CREATOR STATE
 ════════════════════════════════════════════════════════════ */
-function AlreadyCreator({ kycStatus }: { kycStatus: KycStatus }) {
+function AlreadyCreator({ kycStatus, rejectionReason }: { kycStatus: KycStatus; rejectionReason?: string }) {
   const router = useRouter();
   const configs: Record<string, { icon: string; color: string; title: string; msg: string }> = {
     APPROVED: {
@@ -1217,9 +1231,11 @@ function AlreadyCreator({ kycStatus }: { kycStatus: KycStatus }) {
       icon: "🕐", color: "#a78bfa", title: "KYC Under Review",
       msg: "Our team is reviewing your documents. Usually 24–48 hours. You'll get an email when done."
     },
-    PENDING_SUBMISSION: {
-      icon: "📄", color: "#f59e0b", title: "Continue KYC Submission",
-      msg: "Your OTP is verified. You can now upload your KYC documents to complete the process."
+    REJECTED: {
+      icon: "❌", color: "#ef4444", title: "KYC Rejected",
+      msg: rejectionReason
+        ? `Your KYC was rejected: ${rejectionReason}. Please update your details and resubmit.`
+        : "Your KYC was rejected. Please check your details and resubmit."
     },
   };
   const cfg = configs[kycStatus] ?? configs.APPROVED;
@@ -1262,7 +1278,12 @@ function AlreadyCreator({ kycStatus }: { kycStatus: KycStatus }) {
         style={{ display: "flex", gap: 10, justifyContent: "center" }}
       >
         <FireBtn label="Go to Dashboard →" onClick={() => router.push("/dashboard")} />
-        <FireBtn label="Settings" onClick={() => router.push("/dashboard/settings")} variant="outline" />
+        {kycStatus === "REJECTED" && (
+          <FireBtn label="Resubmit KYC →" onClick={() => router.push("/dashboard/become-creator?resubmit=1")} variant="outline" />
+        )}
+        {kycStatus !== "REJECTED" && (
+          <FireBtn label="Settings" onClick={() => router.push("/dashboard/settings")} variant="outline" />
+        )}
       </motion.div>
     </motion.div>
   );
@@ -1277,15 +1298,30 @@ export default function BecomeCreatorPage() {
   const [mounted, setMounted] = useState(false);
   const [step, setStep] = useState(0);
   const [kycResult, setKycResult] = useState<KycStatusResponse | null>(null);
+  const [rejectionReason, setRejectionReason] = useState<string | undefined>(undefined);
 
-  // ✅ HYDRATION FIX: Direct mount without setTimeout
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const kycStatus = (user?.kycStatus ?? "NOT_SUBMITTED") as KycStatus;
   const isCreator = user?.roles?.includes("CREATOR");
-  const alreadyInProgress = isCreator || kycStatus === "APPROVED" || kycStatus === "PENDING_APPROVAL";
+
+  // Fetch rejection reason when status is REJECTED (user still has CREATOR role).
+  useEffect(() => {
+    if (kycStatus === "REJECTED" && isCreator) {
+      creatorApi.kycStatus()
+        .then(d => setRejectionReason(d.rejectionReason ?? undefined))
+        .catch(() => {});
+    }
+  }, [kycStatus, isCreator]);
+
+  // Show special terminal/review state for APPROVED, PENDING_APPROVAL, and REJECTED.
+  const showSpecialState = kycStatus === "APPROVED" || kycStatus === "PENDING_APPROVAL" || kycStatus === "REJECTED";
+
+  // When status is PENDING_SUBMISSION (OTP already verified, CREATOR role granted),
+  // skip straight to the KYC form step; otherwise use the wizard step state.
+  const effectiveStep = (kycStatus === "PENDING_SUBMISSION" && isCreator && step < 2) ? 2 : step;
 
   // ✅ Loading state with skeleton
   if (loading) return (
@@ -1405,15 +1441,15 @@ export default function BecomeCreatorPage() {
           </div>
 
           <div style={{ padding: "32px 36px" }} className="creator-pad">
-            {alreadyInProgress
-              ? <AlreadyCreator kycStatus={kycStatus} />
-              : step < 3
+            {showSpecialState
+              ? <AlreadyCreator kycStatus={kycStatus} rejectionReason={rejectionReason} />
+              : effectiveStep < 3
                 ? <>
-                  <StepBar current={step} />
+                  <StepBar current={effectiveStep} />
                   <AnimatePresence mode="wait">
-                    {step === 0 && <TermsStep key="terms" onAgree={() => setStep(1)} />}
-                    {step === 1 && <OtpStep key="otp" onVerified={async () => { await refetch(); setStep(2); }} onBack={() => setStep(0)} />}
-                    {step === 2 && <KycStep key="kyc" onSubmitted={async (d) => { setKycResult(d); await refetch(); setStep(3); }} onBack={() => setStep(1)} />}
+                    {effectiveStep === 0 && <TermsStep key="terms" onAgree={() => setStep(1)} />}
+                    {effectiveStep === 1 && <OtpStep key="otp" onVerified={async () => { await refetch(); setStep(2); }} onBack={() => setStep(0)} />}
+                    {effectiveStep === 2 && <KycStep key="kyc" onSubmitted={async (d) => { setKycResult(d); await refetch(); setStep(3); }} onBack={() => setStep(1)} />}
                   </AnimatePresence>
                 </>
                 : <DoneStep kycData={kycResult} />

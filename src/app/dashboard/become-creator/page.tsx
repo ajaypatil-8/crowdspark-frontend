@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useId } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -20,6 +20,7 @@ function Toast({ msg, type, onClose }: { msg: string; type: "success" | "error" 
 
   return (
     <motion.div
+      role="alert"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
@@ -36,7 +37,7 @@ function Toast({ msg, type, onClose }: { msg: string; type: "success" | "error" 
         display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, flexShrink: 0
       }}>{colors.icon}</span>
       <span style={{ flex: 1 }}>{msg}</span>
-      <button onClick={onClose} style={{
+      <button aria-label="Dismiss notification" onClick={onClose} style={{
         background: "none", border: "none", cursor: "pointer", color: colors.text,
         padding: 0, fontSize: 18, opacity: 0.6, lineHeight: 1
       }}>×</button>
@@ -105,15 +106,17 @@ function Input({
   type?: string; maxLength?: number; hint?: string; disabled?: boolean; error?: string;
 }) {
   const { isDark } = useTheme();
+  const inputId = useId();
   const hasError = !!error;
 
   return (
     <div>
-      <label style={{
+      <label htmlFor={inputId} style={{
         display: "block", fontFamily: "DM Sans, sans-serif", fontWeight: 600, fontSize: 11.5,
         color: "var(--text-muted)", marginBottom: 6, letterSpacing: "0.06em", textTransform: "uppercase"
       }}>{label}</label>
       <motion.input
+        id={inputId}
         type={type} value={value} maxLength={maxLength} disabled={disabled} placeholder={placeholder}
         onChange={e => onChange?.(e.target.value)}
         whileFocus={{ scale: 1.01 }}
@@ -154,10 +157,11 @@ function Input({
    DOC CARD WITH FILE VALIDATION
 ════════════════════════════════════════════════════════════ */
 function DocCard({
-  label, sublabel, file, url, onFile, uploading, error
+  label, sublabel, file, url, onFile, uploading, error, onError
 }: {
   label: string; sublabel: string; file: File | null; url: string;
   onFile: (f: File) => void; uploading: boolean; error?: string;
+  onError?: (msg: string) => void;
 }) {
   const { isDark } = useTheme();
   const ref = useRef<HTMLInputElement>(null);
@@ -166,12 +170,14 @@ function DocCard({
   const handleFile = (f: File) => {
     const maxSize = 5 * 1024 * 1024;
     if (f.size > maxSize) {
-      alert("File must be less than 5MB");
+      if (onError) onError("File must be less than 5MB");
+      else alert("File must be less than 5MB");
       return;
     }
     const validTypes = ["image/jpeg", "image/png", "application/pdf"];
     if (!validTypes.includes(f.type)) {
-      alert("Only JPG, PNG, or PDF files allowed");
+      if (onError) onError("Only JPG, PNG, or PDF files allowed");
+      else alert("Only JPG, PNG, or PDF files allowed");
       return;
     }
     onFile(f);
@@ -183,6 +189,10 @@ function DocCard({
       animate={{ opacity: 1, y: 0 }}
       whileHover={!has && !uploading ? { scale: 1.02 } : {}}
       onClick={() => ref.current?.click()}
+      role="button"
+      tabIndex={0}
+      aria-label={`Upload ${label}`}
+      onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); ref.current?.click(); } }}
       style={{
         padding: "14px", borderRadius: 14, cursor: uploading ? "wait" : "pointer",
         background: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)",
@@ -191,7 +201,7 @@ function DocCard({
       }}
     >
       <input ref={ref} type="file" accept="image/*,application/pdf" style={{ display: "none" }}
-        onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }} />
+        onChange={e => { if (e.target.files?.[0]) { handleFile(e.target.files[0]); e.target.value = ""; } }} />
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <motion.div
           animate={uploading ? { scale: [1, 1.1, 1] } : {}}
@@ -252,7 +262,7 @@ function DocCard({
 ════════════════════════════════════════════════════════════ */
 function OtpBoxes({ value, onChange, error }: { value: string; onChange: (v: string) => void; error?: string }) {
   const { isDark } = useTheme();
-  const refs = Array.from({ length: 6 }, () => useRef<HTMLInputElement>(null));
+  const refs = useRef<(HTMLInputElement | null)[]>([null, null, null, null, null, null]);
   const digits = Array.from({ length: 6 }, (_, i) => value[i] ?? "");
 
   const handle = (i: number, v: string) => {
@@ -260,7 +270,7 @@ function OtpBoxes({ value, onChange, error }: { value: string; onChange: (v: str
     const arr = value.split("");
     arr[i] = v;
     onChange(arr.join("").slice(0, 6));
-    if (v && i < 5) refs[i + 1]?.current?.focus();
+    if (v && i < 5) refs.current[i + 1]?.focus();
   };
 
   return (
@@ -269,13 +279,13 @@ function OtpBoxes({ value, onChange, error }: { value: string; onChange: (v: str
         {digits.map((d, i) => (
           <motion.input
             key={i}
-            ref={refs[i]}
+            ref={el => { refs.current[i] = el; }}
             type="tel"
             inputMode="numeric"
             maxLength={1}
             value={d}
             onChange={e => handle(i, e.target.value)}
-            onKeyDown={e => e.key === "Backspace" && !value[i] && i > 0 && refs[i - 1]?.current?.focus()}
+            onKeyDown={e => e.key === "Backspace" && !value[i] && i > 0 && refs.current[i - 1]?.focus()}
             whileFocus={{ scale: 1.1 }}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -664,10 +674,21 @@ function OtpStep({ onVerified, onBack }: { onVerified: () => void; onBack: () =>
   const [otpError, setOtpError] = useState("");
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" | "info" } | null>(null);
 
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const verifyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const show = (msg: string, type: "success" | "error" | "info" = "success") => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast({ msg, type });
-    setTimeout(() => setToast(null), 3500);
+    toastTimerRef.current = setTimeout(() => setToast(null), 3500);
   };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      if (verifyTimerRef.current) clearTimeout(verifyTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -699,7 +720,7 @@ function OtpStep({ onVerified, onBack }: { onVerified: () => void; onBack: () =>
     try {
       await creatorApi.verifyOtp(otp);
       show("Verified! Proceeding to KYC…", "success");
-      setTimeout(onVerified, 800);
+      verifyTimerRef.current = setTimeout(onVerified, 800);
     } catch (e: any) {
       setOtpError(e.message ?? "Invalid OTP. Try again.");
     } finally {
@@ -801,10 +822,18 @@ function OtpStep({ onVerified, onBack }: { onVerified: () => void; onBack: () =>
 function KycStep({ onSubmitted, onBack }: { onSubmitted: (d: KycStatusResponse) => void; onBack: () => void }) {
   const { isDark } = useTheme();
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" | "info" } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const show = (msg: string, type: "success" | "error" | "info" = "success") => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast({ msg, type });
-    setTimeout(() => setToast(null), 4000);
+    toastTimerRef.current = setTimeout(() => setToast(null), 4000);
   };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   const [tab, setTab] = useState<"docs" | "identity" | "bank">("docs");
   const [panUrl, setPanUrl] = useState("");
@@ -816,7 +845,7 @@ function KycStep({ onSubmitted, onBack }: { onSubmitted: (d: KycStatusResponse) 
   const [abUrl, setAbUrl] = useState("");
   const [abPid, setAbPid] = useState("");
   const [abFile, setAbFile] = useState<File | null>(null);
-  const [uploadingDoc, setUD] = useState<"pan" | "af" | "ab" | null>(null);
+  const [uploadingDoc, setUploadingDoc] = useState<"pan" | "af" | "ab" | null>(null);
 
   const [panNumber, setPanNumber] = useState("");
   const [aadhaarNum, setAadhaarNum] = useState("");
@@ -830,7 +859,7 @@ function KycStep({ onSubmitted, onBack }: { onSubmitted: (d: KycStatusResponse) 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const uploadDoc = async (file: File, type: "pan" | "af" | "ab") => {
-    setUD(type);
+    setUploadingDoc(type);
     try {
       const r = await creatorApi.uploadKycDoc(file);
       if (type === "pan") {
@@ -852,7 +881,7 @@ function KycStep({ onSubmitted, onBack }: { onSubmitted: (d: KycStatusResponse) 
     } catch (e: any) {
       show(e.message ?? "Upload failed", "error");
     } finally {
-      setUD(null);
+      setUploadingDoc(null);
     }
   };
 
@@ -1000,9 +1029,9 @@ function KycStep({ onSubmitted, onBack }: { onSubmitted: (d: KycStatusResponse) 
                 margin: 0, lineHeight: 1.6
               }}>Upload clear photos or scans. Accepted formats: JPG, PNG, PDF. Max 5MB each. Make sure all text is clearly readable.</p>
             </div>
-            <DocCard label="PAN Card" sublabel="Front side — must be clearly visible" file={panFile} url={panUrl} uploading={uploadingDoc === "pan"} onFile={f => uploadDoc(f, "pan")} />
-            <DocCard label="Aadhaar Front" sublabel="Front side with name & photo" file={afFile} url={afUrl} uploading={uploadingDoc === "af"} onFile={f => uploadDoc(f, "af")} />
-            <DocCard label="Aadhaar Back" sublabel="Back side with address" file={abFile} url={abUrl} uploading={uploadingDoc === "ab"} onFile={f => uploadDoc(f, "ab")} />
+            <DocCard label="PAN Card" sublabel="Front side — must be clearly visible" file={panFile} url={panUrl} uploading={uploadingDoc === "pan"} onFile={f => uploadDoc(f, "pan")} onError={msg => show(msg, "error")} />
+            <DocCard label="Aadhaar Front" sublabel="Front side with name & photo" file={afFile} url={afUrl} uploading={uploadingDoc === "af"} onFile={f => uploadDoc(f, "af")} onError={msg => show(msg, "error")} />
+            <DocCard label="Aadhaar Back" sublabel="Back side with address" file={abFile} url={abUrl} uploading={uploadingDoc === "ab"} onFile={f => uploadDoc(f, "ab")} onError={msg => show(msg, "error")} />
             <div style={{ marginTop: 8 }}>
               <FireBtn label="Next: Identity Details →" onClick={() => setTab("identity")} disabled={!docsOk} />
             </div>

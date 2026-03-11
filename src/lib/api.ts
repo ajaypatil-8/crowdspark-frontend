@@ -1,4 +1,6 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/crowdspark";
+const BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:8080/crowdspark";
 
 export interface RegisterRequest {
   username: string;
@@ -8,14 +10,10 @@ export interface RegisterRequest {
   password: string;
 }
 
+// email field, not identifier
 export interface LoginRequest {
-  identifier: string;
+  identifier : string;
   password: string;
-}
-
-export interface LoginResponse {
-  accessToken: string;
-  refreshToken: string;
 }
 
 export interface UserResponse {
@@ -138,13 +136,65 @@ export type KycStatus =
 
 export type UserProfile = UserResponse;
 
-/* ─────────────────────────────────────────────────────────────
-   BASE REQUEST
-   No Authorization header — tokens live in HttpOnly cookies.
-   credentials: "include" sends them automatically on every call.
-───────────────────────────────────────────────────────────── */
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
+// handles JSON + plain text from Spring
+async function parseResponse<T>(
+  res: Response
+): Promise<T> {
+  if (res.status === 204) return {} as T;
+
+  const ct = res.headers.get("content-type") ?? "";
+  const text = await res.text();
+
+  if (!text) return {} as T;
+
+  if (ct.includes("application/json")) {
+    return JSON.parse(text) as T;
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return text as unknown as T;
+  }
+}
+
+async function parseError(
+  res: Response
+): Promise<ApiError> {
+  try {
+    const text = await res.text();
+    if (!text) {
+      return {
+        message: `Request failed (${res.status})`,
+        status: res.status,
+      };
+    }
+    try {
+      const json = JSON.parse(text);
+      return {
+        message:
+          json.message ||
+          json.error ||
+          "Something went wrong.",
+        status: res.status,
+        errors: json.errors,
+      };
+    } catch {
+      return { message: text, status: res.status };
+    }
+  } catch {
+    return {
+      message: "Network error. Please try again.",
+      status: res.status,
+    };
+  }
+}
+
+async function request<T>(
+  path: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
     ...options,
     credentials: "include",
     headers: {
@@ -154,52 +204,55 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
 
   if (res.status === 401) {
-    if (typeof window !== "undefined") window.location.href = "/login";
-    throw { message: "Session expired. Please log in again.", status: 401 } as ApiError;
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
+    throw {
+      message: "Session expired. Please log in again.",
+      status: 401,
+    } as ApiError;
   }
 
-  if (!res.ok) {
-    let errorData: ApiError;
-    try { errorData = await res.json(); }
-    catch { errorData = { message: "Something went wrong. Please try again.", status: res.status }; }
-    throw errorData;
-  }
-
-  if (res.status === 204) return {} as T;
-  return res.json();
+  if (!res.ok) throw await parseError(res);
+  return parseResponse<T>(res);
 }
 
-async function requestForm<T>(path: string, formData: FormData, method = "PUT"): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
+// for file uploads (no Content-Type header)
+async function requestForm<T>(
+  path: string,
+  formData: FormData,
+  method = "PUT"
+): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
     method,
     credentials: "include",
     body: formData,
   });
 
   if (res.status === 401) {
-    if (typeof window !== "undefined") window.location.href = "/login";
-    throw { message: "Session expired.", status: 401 } as ApiError;
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
+    throw {
+      message: "Session expired.",
+      status: 401,
+    } as ApiError;
   }
 
-  if (!res.ok) {
-    let errorData: ApiError;
-    try { errorData = await res.json(); }
-    catch { errorData = { message: "Upload failed. Please try again.", status: res.status }; }
-    throw errorData;
-  }
-  return res.json();
+  if (!res.ok) throw await parseError(res);
+  return parseResponse<T>(res);
 }
 
-/* ─────────────────────────────────────────────────────────────
-   AUTH API
-───────────────────────────────────────────────────────────── */
 export const authApi = {
-  register: (data: RegisterRequest): Promise<UserResponse> =>
+  register: (
+    data: RegisterRequest
+  ): Promise<UserResponse> =>
     request<UserResponse>("/auth/register", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
+  // backend sets HttpOnly cookies on success
   login: (data: LoginRequest): Promise<void> =>
     request<void>("/auth/login", {
       method: "POST",
@@ -209,18 +262,21 @@ export const authApi = {
   logout: (): Promise<void> =>
     request<void>("/auth/logout", { method: "POST" }),
 
+  // loads all user data into ProfileCtx
   me: (): Promise<UserResponse> =>
     request<UserResponse>("/auth/me"),
 
   sendVerificationEmail: (): Promise<string> =>
-    request<string>("/auth/send-verification-email", { method: "POST" }),
+    request<string>(
+      "/auth/send-verification-email",
+      { method: "POST" }
+    ),
 };
 
-/* ─────────────────────────────────────────────────────────────
-   PROFILE API
-───────────────────────────────────────────────────────────── */
 export const profileApi = {
-  update: (data: UpdateProfileRequest): Promise<UserResponse> =>
+  update: (
+    data: UpdateProfileRequest
+  ): Promise<UserResponse> =>
     request<UserResponse>("/auth/me/profile", {
       method: "PUT",
       body: JSON.stringify(data),
@@ -229,22 +285,27 @@ export const profileApi = {
   uploadAvatar: (file: File): Promise<UserResponse> => {
     const fd = new FormData();
     fd.append("file", file);
-    return requestForm<UserResponse>("/auth/me/profile-image", fd);
+    return requestForm<UserResponse>(
+      "/auth/me/profile-image",
+      fd
+    );
   },
 
   uploadBanner: (file: File): Promise<UserResponse> => {
     const fd = new FormData();
     fd.append("file", file);
-    return requestForm<UserResponse>("/auth/me/banner-image", fd);
+    return requestForm<UserResponse>(
+      "/auth/me/banner-image",
+      fd
+    );
   },
 };
 
-/* ─────────────────────────────────────────────────────────────
-   CREATOR / KYC API
-───────────────────────────────────────────────────────────── */
 export const creatorApi = {
   sendOtp: (): Promise<string> =>
-    request<string>("/api/creator/send-otp", { method: "POST" }),
+    request<string>("/api/creator/send-otp", {
+      method: "POST",
+    }),
 
   verifyOtp: (otp: string): Promise<string> =>
     request<string>("/api/creator/verify-otp", {
@@ -252,18 +313,31 @@ export const creatorApi = {
       body: JSON.stringify({ otp }),
     }),
 
-  uploadKycDoc: (file: File): Promise<CloudinaryUploadResult> => {
+  uploadKycDoc: (
+    file: File
+  ): Promise<CloudinaryUploadResult> => {
     const fd = new FormData();
     fd.append("file", file);
-    return requestForm<CloudinaryUploadResult>("/api/creator/upload-kyc-doc", fd, "POST");
+    return requestForm<CloudinaryUploadResult>(
+      "/api/creator/upload-kyc-doc",
+      fd,
+      "POST"
+    );
   },
 
-  submitKyc: (data: KycSubmitRequest): Promise<KycStatusResponse> =>
-    request<KycStatusResponse>("/api/creator/submit-kyc", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
+  submitKyc: (
+    data: KycSubmitRequest
+  ): Promise<KycStatusResponse> =>
+    request<KycStatusResponse>(
+      "/api/creator/submit-kyc",
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    ),
 
   kycStatus: (): Promise<KycStatusResponse> =>
-    request<KycStatusResponse>("/api/creator/kyc-status"),
+    request<KycStatusResponse>(
+      "/api/creator/kyc-status"
+    ),
 };

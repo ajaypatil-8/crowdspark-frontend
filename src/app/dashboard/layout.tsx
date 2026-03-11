@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+} from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -9,46 +14,80 @@ import { authApi, type UserProfile } from "@/lib/api";
 import { calcCompletion, getBadge } from "@/lib/profile";
 import { ProfileCtx } from "@/hooks/useProfileContext";
 
-/* ── re-exports for child pages ─────────────────────────────── */
 export { useProfile } from "@/hooks/useProfileContext";
-export { calcCompletion, getBadge, COMPLETION_FIELDS } from "@/lib/profile";
+export {
+  calcCompletion,
+  getBadge,
+  COMPLETION_FIELDS,
+} from "@/lib/profile";
 export type { UserProfile } from "@/lib/api";
 
-/* ══════════════════════════════════════════════════════════════
-   NAV CONFIG
-══════════════════════════════════════════════════════════════ */
 const NAV = [
-  { href: "/dashboard",          label: "Overview",        icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
-  { href: "/dashboard/profile",  label: "My Profile",      icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
-  { href: "/dashboard/backed",   label: "Backed Projects", icon: "M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" },
-  { href: "/dashboard/saved",    label: "Saved",           icon: "M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" },
-  { href: "/dashboard/settings", label: "Settings",        icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" },
+  {
+    href: "/dashboard",
+    label: "Overview",
+    icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
+  },
+  {
+    href: "/dashboard/profile",
+    label: "My Profile",
+    icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
+  },
+  {
+    href: "/dashboard/backed",
+    label: "Backed Projects",
+    icon: "M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z",
+  },
+  {
+    href: "/dashboard/saved",
+    label: "Saved",
+    icon: "M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z",
+  },
+  {
+    href: "/dashboard/settings",
+    label: "Settings",
+    icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z",
+  },
 ] as const;
 
-/* ══════════════════════════════════════════════════════════════
-   COMPLETION RING
-══════════════════════════════════════════════════════════════ */
-function CompletionRing({ pct, size = 44 }: { pct: number; size?: number }) {
+function CompletionRing({
+  pct,
+  size = 44,
+}: {
+  pct: number;
+  size?: number;
+}) {
   const { isDark } = useTheme();
   const r = (size - 6) / 2;
   const circ = 2 * Math.PI * r;
   const badge = getBadge(pct);
-  const trackColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
+  const track = isDark
+    ? "rgba(255,255,255,0.08)"
+    : "rgba(0,0,0,0.08)";
 
   return (
     <div
-      style={{ position: "relative", width: size, height: size, flexShrink: 0 }}
+      style={{
+        position: "relative",
+        width: size,
+        height: size,
+        flexShrink: 0,
+      }}
       role="img"
       aria-label={`Profile ${pct}% complete`}
     >
-      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+      <svg
+        width={size}
+        height={size}
+        style={{ transform: "rotate(-90deg)" }}
+      >
         <circle
           cx={size / 2}
           cy={size / 2}
           r={r}
           fill="none"
           strokeWidth={3}
-          stroke={trackColor}
+          stroke={track}
         />
         <circle
           cx={size / 2}
@@ -83,16 +122,23 @@ function CompletionRing({ pct, size = 44 }: { pct: number; size?: number }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════
-   USER CARD SKELETON
-══════════════════════════════════════════════════════════════ */
 function UserCardSkeleton() {
   const { isDark } = useTheme();
-  const bg = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
-  const bgLight = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)";
+  const bg = isDark
+    ? "rgba(255,255,255,0.08)"
+    : "rgba(0,0,0,0.08)";
+  const bgLight = isDark
+    ? "rgba(255,255,255,0.05)"
+    : "rgba(0,0,0,0.05)";
 
   return (
-    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+    <div
+      style={{
+        display: "flex",
+        gap: 10,
+        alignItems: "center",
+      }}
+    >
       <div
         className="dash-skeleton"
         style={{
@@ -128,9 +174,6 @@ function UserCardSkeleton() {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════
-   SIDEBAR — extracted as a stable top-level component
-══════════════════════════════════════════════════════════════ */
 function Sidebar({
   user,
   loading,
@@ -153,13 +196,15 @@ function Sidebar({
   const { isDark } = useTheme();
   const badge = getBadge(pct);
 
-  const isNavActive = (href: string) =>
+  const isActive = (href: string) =>
     pathname === href ||
-    (href !== "/dashboard" && pathname.startsWith(href + "/")) ||
+    (href !== "/dashboard" &&
+      pathname.startsWith(href + "/")) ||
     (href !== "/dashboard" && pathname === href);
 
-  const isCreatorActive =
-    pathname === "/creator" || pathname.startsWith("/creator/");
+  const creatorActive =
+    pathname === "/creator" ||
+    pathname.startsWith("/creator/");
 
   return (
     <aside
@@ -167,7 +212,6 @@ function Sidebar({
       role="complementary"
       aria-label="Dashboard sidebar"
     >
-      {/* fire top line */}
       <div
         aria-hidden="true"
         style={{
@@ -178,7 +222,6 @@ function Sidebar({
         }}
       />
 
-      {/* logo */}
       <div style={{ padding: "20px 20px 0" }}>
         <Link
           href="/"
@@ -190,12 +233,12 @@ function Sidebar({
           }}
         >
           <div
-            aria-hidden="true"
             style={{
               width: 30,
               height: 30,
               borderRadius: 8,
-              background: "linear-gradient(135deg, var(--accent), #ff8800)",
+              background:
+                "linear-gradient(135deg, var(--accent), #ff8800)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -220,12 +263,14 @@ function Sidebar({
               letterSpacing: "-0.02em",
             }}
           >
-            Crowd<span style={{ color: "var(--accent)" }}>Spark</span>
+            Crowd
+            <span style={{ color: "var(--accent)" }}>
+              Spark
+            </span>
           </span>
         </Link>
       </div>
 
-      {/* user card */}
       <div className="dash-user-card">
         <div
           aria-hidden="true"
@@ -256,7 +301,6 @@ function Sidebar({
             </p>
             <button
               onClick={onRetry}
-              className="dash-retry-btn"
               style={{
                 padding: "4px 12px",
                 borderRadius: 8,
@@ -372,7 +416,9 @@ function Sidebar({
               </span>
               <span
                 className={
-                  isCreator ? "dash-role-badge creator" : "dash-role-badge"
+                  isCreator
+                    ? "dash-role-badge creator"
+                    : "dash-role-badge"
                 }
               >
                 {isCreator ? "Creator" : "Backer"}
@@ -382,13 +428,12 @@ function Sidebar({
         )}
       </div>
 
-      {/* nav */}
       <nav
         aria-label="Dashboard navigation"
         style={{ flex: 1, padding: "0 8px" }}
       >
         {NAV.map(item => {
-          const active = isNavActive(item.href);
+          const active = isActive(item.href);
           return (
             <Link
               key={item.href}
@@ -417,7 +462,6 @@ function Sidebar({
           );
         })}
 
-        {/* become creator CTA */}
         {!isCreator && !loading && (
           <div className="dash-creator-cta">
             <p
@@ -442,18 +486,22 @@ function Sidebar({
             >
               Launch campaigns and raise funds.
             </p>
-            <Link href="/dashboard/settings" className="dash-creator-cta-btn">
+            <Link
+              href="/dashboard/settings"
+              className="dash-creator-cta-btn"
+            >
               Apply now →
             </Link>
           </div>
         )}
 
-        {/* creator dashboard link */}
         {isCreator && !loading && (
           <Link
             href="/creator"
-            aria-current={isCreatorActive ? "page" : undefined}
-            className={`dash-nav-link dash-creator-link ${isCreatorActive ? "active" : ""}`}
+            aria-current={creatorActive ? "page" : undefined}
+            className={`dash-nav-link dash-creator-link ${
+              creatorActive ? "active" : ""
+            }`}
           >
             <svg
               width="17"
@@ -476,7 +524,6 @@ function Sidebar({
         )}
       </nav>
 
-      {/* logout */}
       <div className="dash-logout-section">
         <button onClick={onLogout} className="dash-logout-btn">
           <svg
@@ -501,25 +548,21 @@ function Sidebar({
   );
 }
 
-/* ══════════════════════════════════════════════════════════════
-   LAYOUT
-══════════════════════════════════════════════════════════════ */
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
+  const router   = useRouter();
   const pathname = usePathname();
   const { isDark } = useTheme();
 
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [user, setUser]         = useState<UserProfile | null>(null);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
-  /* ── fetch user ── */
   const fetchUser = useCallback(async () => {
     setError(null);
     setLoading(true);
@@ -532,55 +575,49 @@ export default function DashboardLayout({
         router.push("/login");
         return;
       }
-      setError("Failed to load your profile. Please try again.");
+      setError("Failed to load profile. Try again.");
     } finally {
       setLoading(false);
     }
   }, [router]);
 
-  useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
+  useEffect(() => { fetchUser(); }, [fetchUser]);
 
-  /* ── close mobile sidebar on route change ── */
+  // close sidebar on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 
-  /* ── close mobile sidebar on Escape key ── */
+  // close on Escape
   useEffect(() => {
     if (!mobileOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setMobileOpen(false);
-      }
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
     };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
   }, [mobileOpen]);
 
-  /* ── focus management for mobile sidebar ── */
+  // focus first element when opened
   useEffect(() => {
     if (mobileOpen && sidebarRef.current) {
-      const firstLink = sidebarRef.current.querySelector("a, button");
-      (firstLink as HTMLElement)?.focus();
+      const el = sidebarRef.current.querySelector(
+        "a, button"
+      ) as HTMLElement | null;
+      el?.focus();
     }
   }, [mobileOpen]);
 
-  /* ── logout ── */
   const handleLogout = async () => {
     try {
       await authApi.logout();
     } catch {
-      // Even if server logout fails, clear the local session
+      // ignore — clear session anyway
     }
     router.push("/login");
   };
 
-  /* ── derived state ── */
-  const pct = user ? calcCompletion(user) : 0;
+  const pct       = user ? calcCompletion(user) : 0;
   const isCreator = user?.roles?.includes("CREATOR") ?? false;
 
   const sidebarProps = {
@@ -595,7 +632,9 @@ export default function DashboardLayout({
   };
 
   return (
-    <ProfileCtx.Provider value={{ user, loading, error, refetch: fetchUser }}>
+    <ProfileCtx.Provider
+      value={{ user, loading, error, refetch: fetchUser }}
+    >
       <div
         style={{
           display: "flex",
@@ -603,16 +642,18 @@ export default function DashboardLayout({
           background: "var(--bg)",
         }}
       >
-        {/* desktop sidebar */}
         <div className="dash-sidebar-desktop">
           <Sidebar {...sidebarProps} />
         </div>
 
-        {/* mobile hamburger */}
         <button
           className="dash-hamburger"
           onClick={() => setMobileOpen(v => !v)}
-          aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-label={
+            mobileOpen
+              ? "Close navigation menu"
+              : "Open navigation menu"
+          }
           aria-expanded={mobileOpen}
           aria-controls="mobile-sidebar"
         >
@@ -640,7 +681,6 @@ export default function DashboardLayout({
           </svg>
         </button>
 
-        {/* mobile sidebar overlay */}
         {mobileOpen && (
           <>
             <div
@@ -675,18 +715,15 @@ export default function DashboardLayout({
         </main>
       </div>
 
-      {/* ═══════════════════ SCOPED STYLES ═══════════════════ */}
       <style>{`
-        /* ── skeleton animation ─────────────────────── */
         @keyframes dashPulse {
           0%, 100% { opacity: 0.6; }
-          50%      { opacity: 1; }
+          50%       { opacity: 1; }
         }
         .dash-skeleton {
           animation: dashPulse 2s ease-in-out infinite;
         }
 
-        /* ── sidebar ───────────────────────────────── */
         .dash-sidebar {
           width: 248px;
           flex-shrink: 0;
@@ -695,26 +732,44 @@ export default function DashboardLayout({
           top: 0;
           display: flex;
           flex-direction: column;
-          background: ${isDark ? "rgba(8,8,14,0.96)" : "rgba(255,255,255,0.96)"};
+          background: ${
+            isDark
+              ? "rgba(8,8,14,0.96)"
+              : "rgba(255,255,255,0.96)"
+          };
           backdrop-filter: blur(24px);
-          border-right: 1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"};
-          box-shadow: ${isDark ? "4px 0 24px rgba(0,0,0,0.3)" : "4px 0 24px rgba(0,0,0,0.06)"};
+          border-right: 1px solid ${
+            isDark
+              ? "rgba(255,255,255,0.06)"
+              : "rgba(0,0,0,0.06)"
+          };
+          box-shadow: ${
+            isDark
+              ? "4px 0 24px rgba(0,0,0,0.3)"
+              : "4px 0 24px rgba(0,0,0,0.06)"
+          };
           overflow-y: auto;
           z-index: 40;
         }
 
-        /* ── user card ─────────────────────────────── */
         .dash-user-card {
           margin: 16px 12px;
           padding: 14px;
           border-radius: 16px;
-          background: ${isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)"};
-          border: 1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.06)"};
+          background: ${
+            isDark
+              ? "rgba(255,255,255,0.04)"
+              : "rgba(0,0,0,0.03)"
+          };
+          border: 1px solid ${
+            isDark
+              ? "rgba(255,255,255,0.07)"
+              : "rgba(0,0,0,0.06)"
+          };
           position: relative;
           overflow: hidden;
         }
 
-        /* ── role badge ────────────────────────────── */
         .dash-role-badge {
           font-size: 10px;
           font-family: "DM Sans", sans-serif;
@@ -731,7 +786,6 @@ export default function DashboardLayout({
           border: 1px solid rgba(167,139,250,0.3);
         }
 
-        /* ── nav links ─────────────────────────────── */
         .dash-nav-link {
           display: flex;
           align-items: center;
@@ -749,11 +803,19 @@ export default function DashboardLayout({
           border-left: 2px solid transparent;
         }
         .dash-nav-link:hover {
-          background: ${isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)"};
+          background: ${
+            isDark
+              ? "rgba(255,255,255,0.04)"
+              : "rgba(0,0,0,0.03)"
+          };
           color: var(--text);
         }
         .dash-nav-link.active {
-          background: ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.05)"};
+          background: ${
+            isDark
+              ? "rgba(255,255,255,0.07)"
+              : "rgba(0,0,0,0.05)"
+          };
           color: var(--accent);
           font-weight: 600;
           border-left-color: var(--accent);
@@ -762,7 +824,6 @@ export default function DashboardLayout({
           color: var(--accent);
         }
 
-        /* ── creator dashboard link ────────────────── */
         .dash-creator-link {
           margin-top: 8px;
           border: 1px solid rgba(167,139,250,0.2);
@@ -774,12 +835,15 @@ export default function DashboardLayout({
           border-left-color: #a78bfa;
         }
 
-        /* ── creator CTA card ──────────────────────── */
         .dash-creator-cta {
           margin: 10px 4px;
           padding: 12px;
           border-radius: 14px;
-          background: linear-gradient(135deg, rgba(255,107,0,0.1), rgba(167,139,250,0.07));
+          background: linear-gradient(
+            135deg,
+            rgba(255,107,0,0.1),
+            rgba(167,139,250,0.07)
+          );
           border: 1px solid rgba(255,107,0,0.2);
         }
         .dash-creator-cta-btn {
@@ -801,10 +865,13 @@ export default function DashboardLayout({
           transform: translateY(-1px);
         }
 
-        /* ── logout ────────────────────────────────── */
         .dash-logout-section {
           padding: 12px 8px 20px;
-          border-top: 1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"};
+          border-top: 1px solid ${
+            isDark
+              ? "rgba(255,255,255,0.05)"
+              : "rgba(0,0,0,0.05)"
+          };
         }
         .dash-logout-btn {
           width: 100%;
@@ -827,7 +894,6 @@ export default function DashboardLayout({
           color: #ef4444;
         }
 
-        /* ── hamburger ─────────────────────────────── */
         .dash-hamburger {
           position: fixed;
           top: 16px;
@@ -836,9 +902,17 @@ export default function DashboardLayout({
           width: 40px;
           height: 40px;
           border-radius: 12px;
-          background: ${isDark ? "rgba(8,8,14,0.9)" : "rgba(255,255,255,0.9)"};
+          background: ${
+            isDark
+              ? "rgba(8,8,14,0.9)"
+              : "rgba(255,255,255,0.9)"
+          };
           backdrop-filter: blur(12px);
-          border: 1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"};
+          border: 1px solid ${
+            isDark
+              ? "rgba(255,255,255,0.08)"
+              : "rgba(0,0,0,0.08)"
+          };
           display: none;
           align-items: center;
           justify-content: center;
@@ -847,7 +921,6 @@ export default function DashboardLayout({
           box-shadow: 0 0 0 1px rgba(255,100,0,0.15);
         }
 
-        /* ── overlay ───────────────────────────────── */
         .dash-overlay {
           position: fixed;
           inset: 0;
@@ -855,7 +928,6 @@ export default function DashboardLayout({
           z-index: 49;
         }
 
-        /* ── responsive ────────────────────────────── */
         @media (max-width: 768px) {
           .dash-sidebar-desktop { display: none !important; }
           .dash-hamburger       { display: flex !important; }

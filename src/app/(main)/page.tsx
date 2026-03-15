@@ -1,48 +1,41 @@
 "use client";
-
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useCursor } from "@/hooks/usecursor";
+import { useTheme } from "@/contexts/ThemeContext";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/* ══════════════════════════════════════════════════════════════
-   DATA
-══════════════════════════════════════════════════════════════ */
-const FUNDED_COUNT = "12,400+";
-
 const STATS = [
-  { num: FUNDED_COUNT, label: "Projects funded" },
-  { num: "₹98M",      label: "Raised total" },
-  { num: "3,40,000+",  label: "Active backers" },
-  { num: "94%",        label: "Success rate" },
+  { num:"12,400+", label:"Projects funded" },
+  { num:"₹98M",    label:"Total raised" },
+  { num:"3.4L+",   label:"Active backers" },
+  { num:"94%",     label:"Success rate" },
 ];
 
 const FEATURES = [
-  { icon: "⚡", title: "Lightning fast setup",  desc: "Launch your campaign in under 5 minutes. No paperwork, no gatekeepers." },
-  { icon: "🔒", title: "Secure & transparent",  desc: "Funds held in escrow, released on milestones. Full audit trail for every ₹." },
-  { icon: "🌍", title: "Built for India",        desc: "UPI, NetBanking, wallet support. GST-compliant invoicing out of the box." },
-  { icon: "📊", title: "Real-time analytics",   desc: "Live dashboards tracking backers, conversions, and traffic in one place." },
-  { icon: "🤝", title: "Community first",        desc: "A network of verified backers who actively discover campaigns daily." },
-  { icon: "🎯", title: "Smart matching",         desc: "AI surfaces your project to people who genuinely care about your category." },
+  { icon:"⚡", title:"Lightning fast setup",  desc:"Launch your campaign in under 5 minutes. No paperwork, no gatekeepers." },
+  { icon:"🔒", title:"Secure & transparent",  desc:"Funds held in escrow, released on milestones. Full audit trail for every ₹." },
+  { icon:"🌍", title:"Built for India",        desc:"UPI, NetBanking, wallet support. GST-compliant invoicing out of the box." },
+  { icon:"📊", title:"Real-time analytics",   desc:"Live dashboards tracking backers, conversions, and traffic in one place." },
+  { icon:"🤝", title:"Community first",        desc:"A network of verified backers who actively discover campaigns daily." },
+  { icon:"🎯", title:"Smart matching",         desc:"AI surfaces your project to people who genuinely care about your category." },
 ];
 
 const PROJECTS = [
-  { title: "AgroSense IoT",     cat: "AgriTech",       raised: "₹18.4L", pct: 92,  days: 4,  backers: 1240, clr: "#00f5d4" },
-  { title: "Svara Music App",   cat: "Music & Art",    raised: "₹9.2L",  pct: 92,  days: 11, backers: 873,  clr: "#a78bfa" },
-  { title: "CleanSip Purifier", cat: "CleanTech",      raised: "₹24.8L", pct: 99,  days: 2,  backers: 3102, clr: "#34d399" },
-  { title: "Rethread Fashion",  cat: "Sustainability", raised: "₹6.1L",  pct: 51,  days: 19, backers: 540,  clr: "#f59e0b" },
+  { title:"AgroSense IoT",     cat:"AgriTech",       raised:"₹18.4L", pct:92,  days:4,  backers:1240, clr:"#00f5d4" },
+  { title:"Svara Music App",   cat:"Music & Art",    raised:"₹9.2L",  pct:74,  days:11, backers:873,  clr:"#a78bfa" },
+  { title:"CleanSip Purifier", cat:"CleanTech",      raised:"₹24.8L", pct:99,  days:2,  backers:3102, clr:"#34d399" },
+  { title:"Rethread Fashion",  cat:"Sustainability", raised:"₹6.1L",  pct:51,  days:19, backers:540,  clr:"#f59e0b" },
 ];
 
-const AVATAR_COLORS = ["#00c9a7", "#a78bfa", "#f59e0b", "#34d399", "#f87171"];
+const AVATAR_COLORS = ["#00c9a7","#a78bfa","#f59e0b","#34d399","#f87171"];
 
-/* ══════════════════════════════════════════════════════════════
-   COMPONENT
-══════════════════════════════════════════════════════════════ */
 export default function HomePage() {
   const { cursorRef, followerRef } = useCursor();
+  const { isDark } = useTheme();
 
   const badgeRef  = useRef<HTMLDivElement>(null);
   const h1Ref     = useRef<HTMLHeadingElement>(null);
@@ -56,763 +49,185 @@ export default function HomePage() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      /* hero entrance */
       gsap.fromTo(
         [badgeRef.current, h1Ref.current, subRef.current, ctaRef.current],
-        { y: 50, opacity: 0 },
-        { y: 0, opacity: 1, duration: 1, stagger: 0.12, ease: "power3.out", delay: 0.4 }
+        { y: 48, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.9, stagger: 0.11, ease: "power3.out", delay: 0.3 }
       );
-
-      /* scroll hint pulse */
-      gsap.fromTo(hintRef.current,
-        { opacity: 0, y: 8 },
-        {
-          opacity: 0.5, y: 0, duration: 0.9, delay: 2.2, ease: "power2.out",
-          yoyo: true, repeat: -1, repeatDelay: 0.8,
-        }
+      gsap.fromTo(hintRef.current, { opacity:0, y:8 },
+        { opacity:0.45, y:0, duration:0.9, delay:2, ease:"power2.out", yoyo:true, repeat:-1, repeatDelay:0.9 }
       );
-
-      /* stats reveal */
-      gsap.fromTo(
-        statsRef.current?.querySelectorAll(".stat-item") ?? [],
-        { y: 36, opacity: 0 },
-        {
-          y: 0, opacity: 1, duration: 0.65, stagger: 0.1, ease: "power2.out",
-          /* note: camelCase `scrollTrigger` is the GSAP 3 shorthand property,
-             distinct from the `ScrollTrigger` plugin class */
-          scrollTrigger: { trigger: statsRef.current, start: "top 82%" },
-        }
+      gsap.fromTo(statsRef.current?.querySelectorAll(".stat-item") ?? [],
+        { y:32, opacity:0 },
+        { y:0, opacity:1, duration:0.6, stagger:0.09, ease:"power2.out", scrollTrigger:{ trigger:statsRef.current, start:"top 82%" } }
       );
-
-      /* features reveal */
-      gsap.fromTo(
-        featRef.current?.querySelectorAll(".feat-card") ?? [],
-        { y: 55, opacity: 0, scale: 0.96 },
-        {
-          y: 0, opacity: 1, scale: 1, duration: 0.65, stagger: 0.08, ease: "back.out(1.3)",
-          scrollTrigger: { trigger: featRef.current, start: "top 76%" },
-        }
+      gsap.fromTo(featRef.current?.querySelectorAll(".feat-card") ?? [],
+        { y:50, opacity:0, scale:0.96 },
+        { y:0, opacity:1, scale:1, duration:0.6, stagger:0.07, ease:"back.out(1.3)", scrollTrigger:{ trigger:featRef.current, start:"top 76%" } }
       );
-
-      /* projects reveal */
-      gsap.fromTo(
-        projRef.current?.querySelectorAll(".proj-card") ?? [],
-        { y: 55, opacity: 0 },
-        {
-          y: 0, opacity: 1, duration: 0.65, stagger: 0.1, ease: "power2.out",
-          scrollTrigger: { trigger: projRef.current, start: "top 78%" },
-        }
+      gsap.fromTo(projRef.current?.querySelectorAll(".proj-card") ?? [],
+        { y:50, opacity:0 },
+        { y:0, opacity:1, duration:0.6, stagger:0.09, ease:"power2.out", scrollTrigger:{ trigger:projRef.current, start:"top 78%" } }
       );
-
-      /* progress bar fill on scroll */
       projRef.current?.querySelectorAll<HTMLElement>(".prog-fill").forEach(bar => {
         const pct = Number(bar.dataset.pct) || 0;
-        ScrollTrigger.create({
-          trigger: bar,
-          start: "top 88%",
-          once: true,
-          onEnter: () => gsap.to(bar, {
-            width: `${Math.min(pct, 100)}%`,
-            duration: 1.4,
-            ease: "power2.out",
-          }),
-        });
+        ScrollTrigger.create({ trigger:bar, start:"top 88%", once:true,
+          onEnter:() => gsap.to(bar, { width:`${Math.min(pct,100)}%`, duration:1.3, ease:"power2.out" }) });
       });
-
-      /* CTA banner */
-      gsap.fromTo(ctaBanRef.current,
-        { scale: 0.92, opacity: 0 },
-        {
-          scale: 1, opacity: 1, duration: 0.8, ease: "back.out(1.5)",
-          scrollTrigger: { trigger: ctaBanRef.current, start: "top 84%" },
-        }
+      gsap.fromTo(ctaBanRef.current, { scale:0.92, opacity:0 },
+        { scale:1, opacity:1, duration:0.75, ease:"back.out(1.5)", scrollTrigger:{ trigger:ctaBanRef.current, start:"top 84%" } }
       );
-
-      /* section headings */
       gsap.utils.toArray<HTMLElement>(".sec-head").forEach(el =>
-        gsap.fromTo(el,
-          { x: -28, opacity: 0 },
-          {
-            x: 0, opacity: 1, duration: 0.65, ease: "power2.out",
-            scrollTrigger: { trigger: el, start: "top 87%" },
-          }
-        )
+        gsap.fromTo(el, { x:-24, opacity:0 }, { x:0, opacity:1, duration:0.6, ease:"power2.out", scrollTrigger:{ trigger:el, start:"top 87%" } })
       );
     });
-
     return () => ctx.revert();
   }, []);
 
+  const pageBg   = isDark ? "#080808" : "#fafaf9";
+  const cardBg   = isDark ? "#0f0f0f" : "#ffffff";
+  const cardBdr  = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
+  const secBg    = isDark ? "#0c0c0c" : "#f5f5f3";
+  const textMuted = isDark ? "rgba(255,255,255,0.42)" : "rgba(0,0,0,0.44)";
+
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)", overflowX: "hidden" }}>
+    <div style={{ minHeight:"100vh", background:pageBg, overflowX:"hidden" }}>
+      <div ref={cursorRef} className="cursor" aria-hidden="true"/>
+      <div ref={followerRef} className="cursor-follower" aria-hidden="true"/>
+      <div className="dot-grid" aria-hidden="true"/>
+      <div className="orb orb-1" aria-hidden="true"/>
+      <div className="orb orb-2" aria-hidden="true"/>
 
-      {/* decorative — hidden from assistive tech */}
-      <div ref={cursorRef} className="cursor" aria-hidden="true" />
-      <div ref={followerRef} className="cursor-follower" aria-hidden="true" />
-      <div className="dot-grid" aria-hidden="true" />
-      <div className="orb orb-1" aria-hidden="true" />
-      <div className="orb orb-2" aria-hidden="true" />
-
-      {/* ═══════════════════ HERO ═══════════════════ */}
-      <section
-        className="hp-hero"
-        aria-label="Hero"
-        style={{
-          position: "relative",
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "stretch",
-          overflow: "hidden",
-        }}
-      >
-        {/* ── LEFT: text ── */}
-        <div
-          className="hp-hero-left"
-          style={{
-            flex: "0 0 50%",
-            display: "flex",
-            alignItems: "center",
-            padding: "120px 0 80px 48px",
-            position: "relative",
-            zIndex: 2,
-          }}
-        >
-          <div style={{ maxWidth: 540 }}>
-            {/* badge */}
-            <div
-              ref={badgeRef}
-              className="hp-animated-el"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "6px 16px",
-                borderRadius: 999,
-                border: "1px solid var(--card-border)",
-                background: "var(--accent-dim)",
-                marginBottom: 28,
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 10,
-                  fontFamily: "Syne, sans-serif",
-                  fontWeight: 700,
-                  color: "var(--accent)",
-                  letterSpacing: "0.2em",
-                  textTransform: "uppercase",
-                }}
-              >
+      <section style={{ position:"relative", minHeight:"100vh", display:"flex", alignItems:"stretch", overflow:"hidden" }} aria-label="Hero">
+        <div style={{ flex:"0 0 52%", display:"flex", alignItems:"center", padding:"120px 0 80px 56px", position:"relative", zIndex:2 }}>
+          <div style={{ maxWidth:520 }}>
+            <div ref={badgeRef} style={{ opacity:0, display:"inline-flex", alignItems:"center", gap:8, padding:"5px 14px 5px 5px", borderRadius:999, border:`1px solid ${cardBdr}`, background:isDark?"rgba(255,107,0,0.07)":"rgba(255,107,0,0.05)", marginBottom:28 }}>
+              <span style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"3px 8px", borderRadius:999, background:"rgba(255,107,0,0.15)", fontSize:10, fontFamily:"Syne, sans-serif", fontWeight:800, color:"#ff8800", letterSpacing:"0.15em", textTransform:"uppercase" }}>
+                <span style={{ width:5, height:5, borderRadius:"50%", background:"#ff8800", animation:"hbpulse 1.4s ease-in-out infinite" }}/>
                 Live now
               </span>
-              <span
-                style={{
-                  width: 1,
-                  height: 12,
-                  background: "var(--card-border)",
-                }}
-                aria-hidden="true"
-              />
-              <span
-                style={{
-                  fontSize: 13,
-                  color: "var(--text-sub)",
-                  fontFamily: "DM Sans, sans-serif",
-                }}
-              >
-                {FUNDED_COUNT} campaigns funded
-              </span>
+              <span style={{ fontSize:13, color:textMuted, fontFamily:"DM Sans, sans-serif" }}>12,400+ campaigns funded</span>
             </div>
 
-            {/* heading */}
-            <h1
-              ref={h1Ref}
-              className="hp-animated-el"
-              style={{
-                fontFamily: "Syne, sans-serif",
-                fontWeight: 800,
-                fontSize: "clamp(40px, 4.5vw, 72px)",
-                lineHeight: 1.06,
-                letterSpacing: "-0.03em",
-                color: "var(--text)",
-                marginBottom: 24,
-              }}
-            >
+            <h1 ref={h1Ref} style={{ opacity:0, fontFamily:"Syne, sans-serif", fontWeight:800, fontSize:"clamp(38px,4.5vw,68px)", lineHeight:1.06, letterSpacing:"-0.03em", color:isDark?"#ffffff":"#0a0a0a", marginBottom:22 }}>
               Where{" "}
-              <span className="hero-gradient">bold ideas</span>
-              <br />
-              find their{" "}
-              <span
-                style={{
-                  color: "var(--accent)",
-                  textShadow: "0 0 40px rgba(0,245,212,0.4)",
-                }}
-              >
-                spark.
-              </span>
+              <span style={{ background:"linear-gradient(135deg,#ff6b00,#ffcc00)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>bold ideas</span>
+              <br/>find their{" "}
+              <span style={{ color:isDark?"#00d4b8":"#009e8c", textShadow:`0 0 40px ${isDark?"rgba(0,245,212,0.35)":"rgba(0,200,160,0.2)"}` }}>spark.</span>
             </h1>
 
-            {/* subtitle */}
-            <p
-              ref={subRef}
-              className="hp-animated-el"
-              style={{
-                fontSize: "clamp(15px, 1.6vw, 18px)",
-                color: "var(--text-muted)",
-                fontFamily: "DM Sans, sans-serif",
-                lineHeight: 1.75,
-                maxWidth: 420,
-                marginBottom: 40,
-              }}
-            >
-              India&#39;s most trusted crowdfunding platform — built for
-              creators, innovators, and everyone who believes in them.
+            <p ref={subRef} style={{ opacity:0, fontSize:"clamp(14px,1.5vw,17px)", color:textMuted, fontFamily:"DM Sans, sans-serif", lineHeight:1.8, maxWidth:400, marginBottom:38 }}>
+              India's most trusted crowdfunding platform — built for creators, innovators, and everyone who believes in them.
             </p>
 
-            {/* CTAs */}
-            <div
-              ref={ctaRef}
-              className="hp-animated-el"
-              style={{
-                display: "flex",
-                gap: 14,
-                flexWrap: "wrap",
-                marginBottom: 56,
-              }}
-            >
-              <Link href="/register" className="hp-btn-primary">
-                Start your campaign
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  aria-hidden="true"
-                >
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
+            <div ref={ctaRef} style={{ opacity:0, display:"flex", gap:12, flexWrap:"wrap", marginBottom:52 }}>
+              <Link href="/register" style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"13px 28px", borderRadius:12, background:"linear-gradient(135deg,#ff6b00,#ffcc00)", color:"#fff", fontFamily:"Syne, sans-serif", fontWeight:700, fontSize:14.5, textDecoration:"none", boxShadow:"0 4px 24px rgba(255,100,0,0.35)", position:"relative", overflow:"hidden", transition:"transform 0.18s,box-shadow 0.18s" }}>
+                <span style={{ position:"absolute", inset:0, background:"linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.22) 50%,transparent 70%)", animation:"hbshimmer 2.4s ease-in-out infinite" }}/>
+                <span style={{ position:"relative" }}>Start your campaign</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ position:"relative" }}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
               </Link>
-              <Link href="/explore" className="hp-btn-ghost">
+              <Link href="/explore" style={{ display:"inline-flex", alignItems:"center", gap:7, padding:"13px 24px", borderRadius:12, background:"none", border:`1px solid ${cardBdr}`, color:isDark?"rgba(255,255,255,0.7)":"rgba(0,0,0,0.6)", fontFamily:"DM Sans, sans-serif", fontWeight:600, fontSize:14.5, textDecoration:"none", transition:"border-color 0.15s,color 0.15s" }}>
                 Explore projects
               </Link>
             </div>
 
-            {/* social proof */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div
-                style={{ display: "flex" }}
-                role="presentation"
-                aria-hidden="true"
-              >
-                {AVATAR_COLORS.map((c, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: "50%",
-                      background: c,
-                      border: "2px solid var(--bg)",
-                      marginLeft: i > 0 ? -10 : 0,
-                      zIndex: 5 - i,
-                      position: "relative",
-                    }}
-                  />
+            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+              <div style={{ display:"flex" }} aria-hidden="true">
+                {AVATAR_COLORS.map((c,i) => (
+                  <div key={i} style={{ width:30, height:30, borderRadius:"50%", background:c, border:`2px solid ${pageBg}`, marginLeft:i>0?-9:0, zIndex:5-i, position:"relative" }}/>
                 ))}
               </div>
-              <p
-                style={{
-                  fontSize: 13,
-                  color: "var(--text-muted)",
-                  fontFamily: "DM Sans, sans-serif",
-                }}
-              >
-                <strong style={{ color: "var(--text)" }}>3,40,000+</strong>{" "}
-                backers already here
+              <p style={{ fontSize:13, color:textMuted, fontFamily:"DM Sans, sans-serif" }}>
+                <strong style={{ color:isDark?"#fff":"#0a0a0a" }}>3,40,000+</strong> backers already here
               </p>
             </div>
           </div>
         </div>
 
-        {/* ── RIGHT: decorative canvas ── */}
-        <div
-          className="hp-hero-right"
-          aria-hidden="true"
-          style={{
-            flex: "0 0 52%",
-            position: "relative",
-            zIndex: 2,
-            height: "100vh",
-            overflow: "hidden",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {/* ambient gradient */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background:
-                "radial-gradient(ellipse 65% 55% at 55% 50%, rgba(0,200,160,0.12) 0%, transparent 70%)",
-              pointerEvents: "none",
-            }}
-          />
-
-          {/* floating orbs */}
-          <div className="hp-orb hp-orb-lg" />
-          <div className="hp-orb hp-orb-md" />
-          <div className="hp-orb hp-orb-sm" />
-
-          {/* left edge fade into text column */}
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              bottom: 0,
-              left: 0,
-              width: 120,
-              background: "linear-gradient(to right, var(--bg), transparent)",
-              pointerEvents: "none",
-              zIndex: 3,
-            }}
-          />
+        <div style={{ flex:"0 0 48%", position:"relative", zIndex:2, height:"100vh", display:"flex", alignItems:"center", justifyContent:"center" }} aria-hidden="true">
+          <div style={{ position:"absolute", inset:0, background:`radial-gradient(ellipse 65% 55% at 55% 50%, ${isDark?"rgba(0,200,160,0.1)":"rgba(0,200,160,0.07)"} 0%, transparent 70%)`, pointerEvents:"none" }}/>
+          <div className="hp-orb hp-orb-lg"/>
+          <div className="hp-orb hp-orb-md"/>
+          <div className="hp-orb hp-orb-sm"/>
+          <div style={{ position:"absolute", top:0, bottom:0, left:0, width:100, background:`linear-gradient(to right, ${pageBg}, transparent)`, pointerEvents:"none", zIndex:3 }}/>
         </div>
 
-        {/* bottom fade into stats section */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 160,
-            background:
-              "linear-gradient(to top, var(--bg) 0%, transparent 100%)",
-            zIndex: 4,
-            pointerEvents: "none",
-          }}
-        />
-
-        {/* scroll hint */}
-        <div
-          ref={hintRef}
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            bottom: 32,
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 5,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 6,
-            opacity: 0,
-            pointerEvents: "none",
-          }}
-        >
-          <span
-            style={{
-              fontSize: 10,
-              color: "var(--text-muted)",
-              fontFamily: "DM Sans, sans-serif",
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-            }}
-          >
-            Scroll
-          </span>
+        <div aria-hidden="true" style={{ position:"absolute", bottom:0, left:0, right:0, height:140, background:`linear-gradient(to top, ${pageBg} 0%, transparent 100%)`, zIndex:4, pointerEvents:"none" }}/>
+        <div ref={hintRef} aria-hidden="true" style={{ position:"absolute", bottom:28, left:"50%", transform:"translateX(-50%)", zIndex:5, display:"flex", flexDirection:"column", alignItems:"center", gap:5, opacity:0, pointerEvents:"none" }}>
+          <span style={{ fontSize:9.5, color:textMuted, fontFamily:"DM Sans, sans-serif", letterSpacing:"0.18em", textTransform:"uppercase" }}>Scroll</span>
           <svg width="18" height="26" viewBox="0 0 18 26" fill="none">
-            <rect
-              x="1"
-              y="1"
-              width="16"
-              height="24"
-              rx="8"
-              stroke="var(--border)"
-              strokeWidth="1.5"
-            />
-            <rect
-              x="7.5"
-              y="5"
-              width="3"
-              height="6"
-              rx="1.5"
-              fill="var(--accent)"
-            />
+            <rect x="1" y="1" width="16" height="24" rx="8" stroke={isDark?"rgba(255,255,255,0.2)":"rgba(0,0,0,0.15)"} strokeWidth="1.5"/>
+            <rect x="7.5" y="5" width="3" height="6" rx="1.5" fill="#ff8800"/>
           </svg>
         </div>
       </section>
 
-      {/* ═══════════════════ STATS ═══════════════════ */}
-      <section
-        ref={statsRef}
-        className="hp-section"
-        aria-label="Platform statistics"
-        style={{
-          padding: "72px 48px",
-          borderTop: "1px solid var(--border)",
-          borderBottom: "1px solid var(--border)",
-          background: "var(--card-bg)",
-          position: "relative",
-          zIndex: 1,
-        }}
-      >
-        <div
-          className="hp-stats-grid"
-          style={{
-            maxWidth: 1100,
-            margin: "0 auto",
-            display: "grid",
-            gridTemplateColumns: "repeat(4,1fr)",
-            gap: 24,
-          }}
-        >
+      <section ref={statsRef} style={{ padding:"60px 48px", borderTop:`1px solid ${cardBdr}`, borderBottom:`1px solid ${cardBdr}`, background:secBg, position:"relative", zIndex:1 }} aria-label="Stats">
+        <div style={{ maxWidth:1100, margin:"0 auto", display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:20 }} className="hp-stats-grid">
           {STATS.map(s => (
-            <div
-              key={s.label}
-              className="stat-item hp-animated-el"
-              style={{ textAlign: "center" }}
-            >
-              <div className="stat-num">{s.num}</div>
-              <p
-                style={{
-                  fontSize: 14,
-                  color: "var(--text-muted)",
-                  fontFamily: "DM Sans, sans-serif",
-                  marginTop: 6,
-                }}
-              >
-                {s.label}
-              </p>
+            <div key={s.label} className="stat-item" style={{ textAlign:"center", opacity:0 }}>
+              <div style={{ fontFamily:"Syne, sans-serif", fontWeight:800, fontSize:"clamp(26px,3vw,40px)", color:isDark?"#fff":"#0a0a0a", letterSpacing:"-0.02em", lineHeight:1 }}>{s.num}</div>
+              <p style={{ fontSize:13.5, color:textMuted, fontFamily:"DM Sans, sans-serif", marginTop:7, margin:"7px 0 0" }}>{s.label}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ═══════════════════ FEATURES ═══════════════════ */}
-      <section
-        ref={featRef}
-        className="hp-section"
-        aria-label="Features"
-        style={{
-          padding: "96px 48px",
-          position: "relative",
-          zIndex: 1,
-        }}
-      >
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div className="sec-head" style={{ marginBottom: 52 }}>
-            <p
-              style={{
-                fontFamily: "DM Sans, sans-serif",
-                fontWeight: 600,
-                fontSize: 11,
-                letterSpacing: "0.26em",
-                textTransform: "uppercase",
-                color: "var(--accent)",
-                marginBottom: 12,
-              }}
-            >
-              Why CrowdSpark
-            </p>
-            <h2
-              style={{
-                fontFamily: "Syne, sans-serif",
-                fontWeight: 800,
-                fontSize: "clamp(32px,4vw,48px)",
-                color: "var(--text)",
-                letterSpacing: "-0.02em",
-                lineHeight: 1.1,
-              }}
-            >
-              Everything you need
-              <br />
-              to launch and grow
+      <section ref={featRef} style={{ padding:"88px 48px", position:"relative", zIndex:1 }} aria-label="Features">
+        <div style={{ maxWidth:1100, margin:"0 auto" }}>
+          <div className="sec-head" style={{ marginBottom:48, opacity:0 }}>
+            <p style={{ fontFamily:"DM Sans, sans-serif", fontWeight:700, fontSize:11, letterSpacing:"0.24em", textTransform:"uppercase", color:"#ff8800", marginBottom:10, margin:"0 0 10px" }}>Why CrowdSpark</p>
+            <h2 style={{ fontFamily:"Syne, sans-serif", fontWeight:800, fontSize:"clamp(28px,4vw,46px)", color:isDark?"#fff":"#0a0a0a", letterSpacing:"-0.02em", lineHeight:1.1, margin:0 }}>
+              Everything you need<br/>to launch and grow
             </h2>
           </div>
-
-          <div
-            className="hp-features-grid"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3,1fr)",
-              gap: 18,
-            }}
-          >
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }} className="hp-feat-grid">
             {FEATURES.map(f => (
-              <div
-                key={f.title}
-                className="feat-card hp-feature-card hp-animated-el"
-              >
-                <div
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 12,
-                    background: "var(--accent-dim)",
-                    border: "1px solid var(--card-border)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 22,
-                    marginBottom: 18,
-                  }}
-                  aria-hidden="true"
-                >
-                  {f.icon}
-                </div>
-                <h3
-                  style={{
-                    fontFamily: "Syne, sans-serif",
-                    fontWeight: 700,
-                    fontSize: 17,
-                    color: "var(--text)",
-                    marginBottom: 10,
-                  }}
-                >
-                  {f.title}
-                </h3>
-                <p
-                  style={{
-                    fontSize: 14,
-                    color: "var(--text-muted)",
-                    fontFamily: "DM Sans, sans-serif",
-                    lineHeight: 1.7,
-                  }}
-                >
-                  {f.desc}
-                </p>
+              <div key={f.title} className="feat-card" style={{ opacity:0, padding:26, borderRadius:18, background:cardBg, border:`1px solid ${cardBdr}`, cursor:"default", transition:"transform 0.22s,border-color 0.22s,box-shadow 0.22s" }}
+                onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.transform="translateY(-4px)";(e.currentTarget as HTMLElement).style.borderColor="rgba(255,107,0,0.4)";(e.currentTarget as HTMLElement).style.boxShadow=isDark?"0 12px 36px rgba(0,0,0,0.3)":"0 12px 36px rgba(0,0,0,0.08)"}}
+                onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.transform="translateY(0)";(e.currentTarget as HTMLElement).style.borderColor=cardBdr;(e.currentTarget as HTMLElement).style.boxShadow="none"}}>
+                <div style={{ width:44, height:44, borderRadius:12, background:isDark?"rgba(255,107,0,0.08)":"rgba(255,107,0,0.06)", border:"1px solid rgba(255,107,0,0.15)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, marginBottom:16 }} aria-hidden="true">{f.icon}</div>
+                <h3 style={{ fontFamily:"Syne, sans-serif", fontWeight:700, fontSize:16, color:isDark?"#fff":"#0a0a0a", marginBottom:8, margin:"0 0 8px" }}>{f.title}</h3>
+                <p style={{ fontSize:13.5, color:textMuted, fontFamily:"DM Sans, sans-serif", lineHeight:1.72, margin:0 }}>{f.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ═══════════════════ PROJECTS ════���══════════════ */}
-      <section
-        ref={projRef}
-        aria-label="Trending campaigns"
-        style={{
-          padding: "80px 48px",
-          background: "var(--card-bg)",
-          borderTop: "1px solid var(--border)",
-          position: "relative",
-          zIndex: 1,
-        }}
-      >
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-end",
-              justifyContent: "space-between",
-              marginBottom: 44,
-              flexWrap: "wrap",
-              gap: 16,
-            }}
-          >
-            <div className="sec-head">
-              <p
-                style={{
-                  fontFamily: "DM Sans, sans-serif",
-                  fontWeight: 600,
-                  fontSize: 11,
-                  letterSpacing: "0.26em",
-                  textTransform: "uppercase",
-                  color: "var(--accent)",
-                  marginBottom: 12,
-                }}
-              >
-                Trending now
-              </p>
-              <h2
-                style={{
-                  fontFamily: "Syne, sans-serif",
-                  fontWeight: 800,
-                  fontSize: "clamp(28px,3.5vw,42px)",
-                  color: "var(--text)",
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                Campaigns to back today
-              </h2>
+      <section ref={projRef} style={{ padding:"72px 48px", background:secBg, borderTop:`1px solid ${cardBdr}`, position:"relative", zIndex:1 }} aria-label="Trending campaigns">
+        <div style={{ maxWidth:1100, margin:"0 auto" }}>
+          <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginBottom:40, flexWrap:"wrap", gap:14 }}>
+            <div className="sec-head" style={{ opacity:0 }}>
+              <p style={{ fontFamily:"DM Sans, sans-serif", fontWeight:700, fontSize:11, letterSpacing:"0.24em", textTransform:"uppercase", color:"#ff8800", margin:"0 0 10px" }}>Trending now</p>
+              <h2 style={{ fontFamily:"Syne, sans-serif", fontWeight:800, fontSize:"clamp(24px,3.5vw,40px)", color:isDark?"#fff":"#0a0a0a", letterSpacing:"-0.02em", margin:0 }}>Campaigns to back today</h2>
             </div>
-            <Link href="/explore" className="hp-btn-ghost hp-btn-sm">
+            <Link href="/explore" style={{ display:"inline-flex", alignItems:"center", gap:7, padding:"10px 20px", borderRadius:10, background:"none", border:`1px solid ${cardBdr}`, color:isDark?"rgba(255,255,255,0.6)":"rgba(0,0,0,0.5)", fontFamily:"DM Sans, sans-serif", fontWeight:600, fontSize:13.5, textDecoration:"none", transition:"border-color 0.15s,color 0.15s" }}>
               View all
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                aria-hidden="true"
-              >
-                <path d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </Link>
           </div>
-
-          <div
-            className="hp-projects-grid"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(4,1fr)",
-              gap: 18,
-            }}
-          >
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16 }} className="hp-proj-grid">
             {PROJECTS.map(p => (
-              <article
-                key={p.title}
-                className="proj-card hp-project-card hp-animated-el"
-              >
-                {/* thumbnail area */}
-                <div
-                  style={{
-                    height: 148,
-                    background: `linear-gradient(135deg,${p.clr}20,${p.clr}06)`,
-                    borderBottom: "1px solid var(--border)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    position: "relative",
-                  }}
-                >
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      fontFamily: "Syne, sans-serif",
-                      fontWeight: 800,
-                      fontSize: 20,
-                      color: p.clr,
-                      opacity: 0.4,
-                      textAlign: "center",
-                      padding: "0 12px",
-                    }}
-                  >
-                    {p.title}
-                  </span>
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 10,
-                      left: 10,
-                      padding: "4px 10px",
-                      borderRadius: 999,
-                      background: `${p.clr}22`,
-                      border: `1px solid ${p.clr}44`,
-                      fontSize: 11,
-                      color: p.clr,
-                      fontFamily: "DM Sans, sans-serif",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {p.cat}
-                  </div>
+              <article key={p.title} className="proj-card" style={{ opacity:0, borderRadius:18, overflow:"hidden", background:cardBg, border:`1px solid ${cardBdr}`, cursor:"pointer", transition:"transform 0.22s,box-shadow 0.22s" }}
+                onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.transform="translateY(-5px)";(e.currentTarget as HTMLElement).style.boxShadow=isDark?"0 16px 40px rgba(0,0,0,0.4)":"0 16px 40px rgba(0,0,0,0.1)"}}
+                onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.transform="translateY(0)";(e.currentTarget as HTMLElement).style.boxShadow="none"}}>
+                <div style={{ height:140, background:`linear-gradient(135deg,${p.clr}18,${p.clr}06)`, borderBottom:`1px solid ${cardBdr}`, display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }}>
+                  <span style={{ fontFamily:"Syne, sans-serif", fontWeight:800, fontSize:18, color:p.clr, opacity:0.35, textAlign:"center", padding:"0 14px" }}>{p.title}</span>
+                  <div style={{ position:"absolute", top:10, left:10, padding:"4px 10px", borderRadius:999, background:`${p.clr}1a`, border:`1px solid ${p.clr}33`, fontSize:11, color:p.clr, fontFamily:"DM Sans, sans-serif", fontWeight:600 }}>{p.cat}</div>
                 </div>
-
-                {/* card body */}
-                <div style={{ padding: "18px 18px 20px" }}>
-                  <h3
-                    style={{
-                      fontFamily: "Syne, sans-serif",
-                      fontWeight: 700,
-                      fontSize: 14,
-                      color: "var(--text)",
-                      marginBottom: 12,
-                    }}
-                  >
-                    {p.title}
-                  </h3>
-
-                  {/* progress bar */}
-                  <div
-                    role="progressbar"
-                    aria-valuenow={p.pct}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label={`${p.title} funding progress`}
-                    style={{
-                      height: 5,
-                      borderRadius: 3,
-                      background: "var(--border)",
-                      marginBottom: 8,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div
-                      className="prog-fill"
-                      data-pct={p.pct}
-                      style={{
-                        height: "100%",
-                        borderRadius: 3,
-                        background: `linear-gradient(90deg,${p.clr},${p.clr}99)`,
-                        width: "0%",
-                        transition: "width 0.3s ease",
-                      }}
-                    />
+                <div style={{ padding:"16px 16px 18px" }}>
+                  <h3 style={{ fontFamily:"Syne, sans-serif", fontWeight:700, fontSize:13.5, color:isDark?"#fff":"#0a0a0a", marginBottom:12, margin:"0 0 12px" }}>{p.title}</h3>
+                  <div role="progressbar" aria-valuenow={p.pct} aria-valuemin={0} aria-valuemax={100} style={{ height:4, borderRadius:2, background:isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)", marginBottom:9, overflow:"hidden" }}>
+                    <div className="prog-fill" data-pct={p.pct} style={{ height:"100%", borderRadius:2, background:`linear-gradient(90deg,${p.clr},${p.clr}88)`, width:"0%", transition:"width 0.3s ease" }}/>
                   </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: 8,
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontFamily: "Syne, sans-serif",
-                        fontWeight: 700,
-                        fontSize: 13,
-                        color: "var(--text)",
-                      }}
-                    >
-                      {p.raised}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 12,
-                        fontFamily: "DM Sans, sans-serif",
-                        fontWeight: 600,
-                        color: p.clr,
-                      }}
-                    >
-                      {p.pct}%
-                    </span>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:7 }}>
+                    <span style={{ fontFamily:"Syne, sans-serif", fontWeight:700, fontSize:13, color:isDark?"#fff":"#0a0a0a" }}>{p.raised}</span>
+                    <span style={{ fontSize:12, fontFamily:"DM Sans, sans-serif", fontWeight:700, color:p.clr }}>{p.pct}%</span>
                   </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 12,
-                        color: "var(--text-muted)",
-                        fontFamily: "DM Sans, sans-serif",
-                      }}
-                    >
-                      {p.backers.toLocaleString("en-IN")} backers
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 12,
-                        color: "var(--text-muted)",
-                        fontFamily: "DM Sans, sans-serif",
-                      }}
-                    >
-                      {p.days}d left
-                    </span>
+                  <div style={{ display:"flex", justifyContent:"space-between" }}>
+                    <span style={{ fontSize:11.5, color:textMuted, fontFamily:"DM Sans, sans-serif" }}>{p.backers.toLocaleString("en-IN")} backers</span>
+                    <span style={{ fontSize:11.5, color:textMuted, fontFamily:"DM Sans, sans-serif" }}>{p.days}d left</span>
                   </div>
                 </div>
               </article>
@@ -821,117 +236,26 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ═══════════════════ BOTTOM CTA ═══════════════════ */}
-      <section
-        className="hp-section"
-        aria-label="Call to action"
-        style={{
-          padding: "80px 48px 120px",
-          position: "relative",
-          zIndex: 1,
-        }}
-      >
-        <div
-          ref={ctaBanRef}
-          className="hp-animated-el"
-          style={{ maxWidth: 820, margin: "0 auto" }}
-        >
-          <div className="glow-pulse hp-cta-banner">
-            {/* radial glow */}
-            <div
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%,-50%)",
-                width: 500,
-                height: 500,
-                borderRadius: "50%",
-                background:
-                  "radial-gradient(circle,var(--orb1) 0%,transparent 70%)",
-                pointerEvents: "none",
-              }}
-            />
-
-            <p
-              style={{
-                fontFamily: "DM Sans, sans-serif",
-                fontWeight: 600,
-                fontSize: 11,
-                letterSpacing: "0.26em",
-                textTransform: "uppercase",
-                color: "var(--accent)",
-                marginBottom: 18,
-                position: "relative",
-              }}
-            >
-              Ready to launch?
-            </p>
-
-            <h2
-              style={{
-                fontFamily: "Syne, sans-serif",
-                fontWeight: 800,
-                fontSize: "clamp(30px,4vw,54px)",
-                color: "var(--text)",
-                letterSpacing: "-0.02em",
-                lineHeight: 1.1,
-                marginBottom: 18,
-                position: "relative",
-              }}
-            >
-              Your idea deserves
-              <br />
-              <span
-                style={{
-                  color: "var(--accent)",
-                  textShadow: "0 0 40px rgba(0,200,160,0.4)",
-                }}
-              >
-                a real shot.
-              </span>
+      <section style={{ padding:"72px 48px 110px", position:"relative", zIndex:1 }} aria-label="CTA">
+        <div ref={ctaBanRef} style={{ maxWidth:800, margin:"0 auto", opacity:0 }}>
+          <div style={{ borderRadius:28, padding:"72px 52px", textAlign:"center", background:cardBg, border:`1px solid ${cardBdr}`, position:"relative", overflow:"hidden", boxShadow:isDark?"none":"0 4px 40px rgba(0,0,0,0.06)" }}>
+            <div aria-hidden="true" style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:480, height:480, borderRadius:"50%", background:`radial-gradient(circle,${isDark?"rgba(0,200,160,0.08)":"rgba(0,200,160,0.05)"} 0%,transparent 70%)`, pointerEvents:"none" }}/>
+            <div aria-hidden="true" style={{ position:"absolute", top:-60, right:-60, width:200, height:200, borderRadius:"50%", background:"rgba(255,107,0,0.06)", filter:"blur(60px)", pointerEvents:"none" }}/>
+            <p style={{ fontFamily:"DM Sans, sans-serif", fontWeight:700, fontSize:11, letterSpacing:"0.24em", textTransform:"uppercase", color:"#ff8800", marginBottom:16, position:"relative" }}>Ready to launch?</p>
+            <h2 style={{ fontFamily:"Syne, sans-serif", fontWeight:800, fontSize:"clamp(28px,4vw,50px)", color:isDark?"#fff":"#0a0a0a", letterSpacing:"-0.02em", lineHeight:1.1, marginBottom:16, position:"relative" }}>
+              Your idea deserves<br/>
+              <span style={{ color:isDark?"#00d4b8":"#009e8c", textShadow:`0 0 40px ${isDark?"rgba(0,245,212,0.35)":"rgba(0,200,160,0.2)"}` }}>a real shot.</span>
             </h2>
-
-            <p
-              style={{
-                fontSize: 16,
-                color: "var(--text-muted)",
-                fontFamily: "DM Sans, sans-serif",
-                lineHeight: 1.7,
-                maxWidth: 460,
-                margin: "0 auto 40px",
-                position: "relative",
-              }}
-            >
-              Join 12,000+ creators who have already made their vision a
-              reality on CrowdSpark.
+            <p style={{ fontSize:15, color:textMuted, fontFamily:"DM Sans, sans-serif", lineHeight:1.75, maxWidth:420, margin:"0 auto 36px", position:"relative" }}>
+              Join 12,000+ creators who have already made their vision a reality on CrowdSpark.
             </p>
-
-            <div
-              style={{
-                display: "flex",
-                gap: 14,
-                justifyContent: "center",
-                flexWrap: "wrap",
-                position: "relative",
-              }}
-            >
-              <Link href="/register" className="hp-btn-primary">
-                Create free account
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  aria-hidden="true"
-                >
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
+            <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap", position:"relative" }}>
+              <Link href="/register" style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"13px 28px", borderRadius:12, background:"linear-gradient(135deg,#ff6b00,#ffcc00)", color:"#fff", fontFamily:"Syne, sans-serif", fontWeight:700, fontSize:14.5, textDecoration:"none", boxShadow:"0 4px 24px rgba(255,100,0,0.35)", position:"relative", overflow:"hidden" }}>
+                <span style={{ position:"absolute", inset:0, background:"linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.22) 50%,transparent 70%)", animation:"hbshimmer 2.4s ease-in-out infinite" }}/>
+                <span style={{ position:"relative" }}>Create free account</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ position:"relative" }}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
               </Link>
-              <Link href="/explore" className="hp-btn-ghost">
+              <Link href="/explore" style={{ display:"inline-flex", alignItems:"center", gap:7, padding:"13px 24px", borderRadius:12, background:"none", border:`1px solid ${cardBdr}`, color:isDark?"rgba(255,255,255,0.65)":"rgba(0,0,0,0.55)", fontFamily:"DM Sans, sans-serif", fontWeight:600, fontSize:14.5, textDecoration:"none", transition:"border-color 0.15s,color 0.15s" }}>
                 Browse campaigns
               </Link>
             </div>
@@ -939,182 +263,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ═══════════════════ SCOPED STYLES ═══════════════════ */}
       <style>{`
-        /* ── keyframes ─────────────────────────────── */
-        @keyframes orbFloat {
-          0%, 100% { transform: translateY(0) scale(1); }
-          50%      { transform: translateY(-20px) scale(1.05); }
-        }
-
-        /* ── fallback visibility for JS-animated elements ── */
-        .hp-animated-el {
-          opacity: 0;
-        }
-
-        /* ── hero orbs ─────────────────────────────── */
-        .hp-orb {
-          position: absolute;
-          border-radius: 50%;
-          pointer-events: none;
-        }
-        .hp-orb-lg {
-          width: 320px; height: 320px;
-          background: radial-gradient(circle, rgba(0,200,160,0.18) 0%, transparent 70%);
-          filter: blur(40px);
-          animation: orbFloat 6s ease-in-out infinite;
-        }
-        .hp-orb-md {
-          width: 200px; height: 200px;
-          background: radial-gradient(circle, rgba(123,47,255,0.15) 0%, transparent 70%);
-          filter: blur(30px);
-          top: 30%; right: 20%;
-          animation: orbFloat 8s ease-in-out infinite reverse;
-        }
-        .hp-orb-sm {
-          width: 140px; height: 140px;
-          background: radial-gradient(circle, rgba(0,200,160,0.12) 0%, transparent 70%);
-          filter: blur(20px);
-          bottom: 25%; left: 25%;
-          animation: orbFloat 5s ease-in-out infinite 2s;
-        }
-
-        /* ── stat numbers ──────────────────────────── */
-        .stat-num {
-          font-family: "Syne", sans-serif;
-          font-weight: 800;
-          font-size: clamp(28px, 3.5vw, 42px);
-          color: var(--text);
-          letter-spacing: -0.02em;
-          line-height: 1;
-        }
-
-        /* ── buttons ───────────────────────────────── */
-        .hp-btn-primary {
-          display: inline-flex; align-items: center; gap: 8px;
-          padding: 14px 30px; border-radius: 12px;
-          background: linear-gradient(135deg, var(--accent), var(--accent-h));
-          color: var(--icon-clr);
-          font-family: "Syne", sans-serif; font-weight: 700; font-size: 15px;
-          text-decoration: none;
-          box-shadow: 0 4px 24px var(--accent-glow);
-          transition: transform 0.18s, box-shadow 0.18s;
-        }
-        .hp-btn-primary:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 32px var(--accent-glow);
-        }
-        .hp-btn-primary:active {
-          transform: translateY(0);
-        }
-
-        .hp-btn-ghost {
-          display: inline-flex; align-items: center; gap: 8px;
-          padding: 14px 26px; border-radius: 12px;
-          background: var(--bg-ghost);
-          border: 1px solid var(--border);
-          color: var(--text);
-          font-family: "DM Sans", sans-serif; font-weight: 600; font-size: 15px;
-          text-decoration: none;
-          transition: border-color 0.18s, color 0.18s;
-        }
-        .hp-btn-ghost:hover {
-          border-color: var(--accent);
-          color: var(--accent);
-        }
-        .hp-btn-sm {
-          padding: 11px 22px; border-radius: 10px; font-size: 14px;
-        }
-
-        /* ── feature cards ─────────────────────────── */
-        .hp-feature-card {
-          padding: 28px; border-radius: 18px;
-          background: var(--card-bg);
-          border: 1px solid var(--card-border);
-          cursor: default;
-          transition: transform 0.22s, border-color 0.22s, box-shadow 0.22s;
-        }
-        .hp-feature-card:hover {
-          transform: translateY(-4px);
-          border-color: var(--accent);
-          box-shadow: 0 12px 36px rgba(0,0,0,0.2);
-        }
-
-        /* ── project cards ─────────────────────────── */
-        .hp-project-card {
-          border-radius: 18px; overflow: hidden;
-          background: var(--bg);
-          border: 1px solid var(--card-border);
-          cursor: pointer;
-          transition: transform 0.22s, box-shadow 0.22s;
-        }
-        .hp-project-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 16px 40px rgba(0,0,0,0.2);
-        }
-
-        /* ── CTA banner ────────────────────────────── */
-        .hp-cta-banner {
-          border-radius: 28px; padding: 80px 56px;
-          text-align: center;
-          background: var(--card-bg);
-          border: 1px solid var(--card-border);
-          position: relative; overflow: hidden;
-        }
-
-        /* ── no-JS fallback: show all animated elements ─────── */
-        @media (scripting: none) {
-          .hp-animated-el {
-            opacity: 1 !important;
-          }
-        }
-
-        /* ── responsive ────────────────────────────── */
-        @media (max-width: 900px) {
-          .hp-hero {
-            flex-direction: column !important;
-          }
-          .hp-hero-left {
-            flex: none !important;
-            padding: 100px 24px 40px !important;
-          }
-          .hp-hero-right {
-            flex: none !important;
-            min-height: 40vh !important;
-            height: auto !important;
-          }
-          .hp-features-grid {
-            grid-template-columns: 1fr 1fr !important;
-          }
-          .hp-projects-grid {
-            grid-template-columns: 1fr 1fr !important;
-          }
-          .hp-cta-banner {
-            padding: 56px 24px !important;
-          }
-        }
-
-        @media (max-width: 600px) {
-          .hp-hero-left {
-            padding: 90px 20px 32px !important;
-          }
-          .hp-stats-grid {
-            grid-template-columns: 1fr 1fr !important;
-          }
-          .hp-features-grid {
-            grid-template-columns: 1fr !important;
-          }
-          .hp-projects-grid {
-            grid-template-columns: 1fr !important;
-          }
-          .hp-section {
-            padding-left: 20px !important;
-            padding-right: 20px !important;
-          }
-          .hp-cta-banner {
-            padding: 48px 20px !important;
-          }
-        }
+        @keyframes orbFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-18px) scale(1.04)}}
+        @keyframes hbshimmer{0%{transform:translateX(-100%)}60%{transform:translateX(200%)}100%{transform:translateX(200%)}}
+        @keyframes hbpulse{0%,100%{opacity:.5}50%{opacity:1}}
+        .hp-orb{position:absolute;border-radius:50%;pointer-events:none}
+        .hp-orb-lg{width:300px;height:300px;background:radial-gradient(circle,rgba(0,200,160,0.16) 0%,transparent 70%);filter:blur(36px);animation:orbFloat 6s ease-in-out infinite}
+        .hp-orb-md{width:180px;height:180px;background:radial-gradient(circle,rgba(255,107,0,0.12) 0%,transparent 70%);filter:blur(28px);top:30%;right:20%;animation:orbFloat 8s ease-in-out infinite reverse}
+        .hp-orb-sm{width:120px;height:120px;background:radial-gradient(circle,rgba(0,200,160,0.1) 0%,transparent 70%);filter:blur(20px);bottom:25%;left:25%;animation:orbFloat 5s ease-in-out infinite 2s}
+        @media(max-width:900px){.hp-feat-grid{grid-template-columns:1fr 1fr!important}.hp-proj-grid{grid-template-columns:1fr 1fr!important}}
+        @media(max-width:600px){.hp-stats-grid{grid-template-columns:1fr 1fr!important}.hp-feat-grid{grid-template-columns:1fr!important}.hp-proj-grid{grid-template-columns:1fr!important}}
       `}</style>
     </div>
   );

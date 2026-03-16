@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect, useCallback, useId, useMemo } from "react";
+import { motion } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useProfile } from "@/contexts/ProfileContext";
 import { calcCompletion, getBadge, COMPLETION_FIELDS, type UserProfile } from "@/lib/profile";
@@ -317,7 +318,12 @@ export default function ProfilePage() {
   const G2 = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 } as const;
 
   return (
-    <div style={{ maxWidth: 860, margin: "0 auto", padding: "0 0 60px" }}>
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      style={{ maxWidth: 860, margin: "0 auto", padding: "0 0 60px" }}
+    >
       <div style={{ position: "relative", marginBottom: 64 }}>
         <div style={{ position: "relative" }}>
           <UploadZone previewUrl={bannerPreview} onFile={handleBanner} onError={handleErr} loading={bannerLoading} shape="rect" height={180} label="Upload banner" />
@@ -458,6 +464,6 @@ export default function ProfilePage() {
         .prof-upload:focus-visible{outline:2px solid #ff6b00;outline-offset:2px}
         @media(max-width:600px){.pfgrid{grid-template-columns:1fr!important}}
       `}</style>
-    </div>
+    </motion.div>
   );
 }

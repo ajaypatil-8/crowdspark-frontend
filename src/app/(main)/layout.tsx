@@ -1,15 +1,31 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/footer";
-import { ProfileProvider } from "@/contexts/ProfileContext";
+import {
+  ProfileProvider,
+} from "@/contexts/ProfileContext";
 
-const NAVBAR_HEIGHT = 64;
-
-export default function MainLayout({ children }: { children: React.ReactNode }) {
+export default function MainLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <ProfileProvider>
-      <div style={{ display:"flex", flexDirection:"column", minHeight:"100vh" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          minHeight: "100vh",
+        }}
+      >
         <Navbar />
-        <main id="main-content" style={{ paddingTop: NAVBAR_HEIGHT, flex: 1 }}>
+        <main
+          id="main-content"
+          style={{
+            paddingTop: 64,
+            flex: 1,
+          }}
+        >
           {children}
         </main>
         <Footer />

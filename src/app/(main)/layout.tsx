@@ -12,6 +12,7 @@ export default function MainLayout({
   return (
     <ProfileProvider>
       <div
+        suppressHydrationWarning
         style={{
           display: "flex",
           flexDirection: "column",

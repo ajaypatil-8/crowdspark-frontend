@@ -1,17 +1,7 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// lib/api.ts  —  based on actual backend code (read every line)
-//
-// KEY FINDING: JwtAuthenticationFilter reads Authorization header ONLY.
-//   String authHeader = request.getHeader("Authorization");
-//   if (authHeader == null || !authHeader.startsWith("Bearer ")) → passes through
-//
-// Solution: store token in localStorage, send as "Authorization: Bearer <token>"
-// ─────────────────────────────────────────────────────────────────────────────
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/crowdspark";
 
-// ─── Token storage ────────────────────────────────────────────────────────────
 
 export const tokenStorage = {
   getAccess: (): string | null => {
@@ -32,7 +22,7 @@ export const tokenStorage = {
   },
 };
 
-// ─── Core fetch ───────────────────────────────────────────────────────────────
+
 
 async function request<T>(
   path: string,
@@ -187,28 +177,26 @@ export interface UpdateProfileRequest {
 }
 
 export interface KycSubmitRequest {
-  panNumber: string;           // regex: [A-Z]{5}[0-9]{4}[A-Z]{1}
+  panNumber: string;          
   panCardImageUrl: string;
   panCardImagePublicId: string;
-  aadhaarNumber: string;       // format: "XXXX-XXXX-XXXX"
+  aadhaarNumber: string;       
   aadhaarFrontImageUrl: string;
   aadhaarFrontPublicId: string;
   aadhaarBackImageUrl: string;
   aadhaarBackPublicId: string;
   bankAccountHolderName: string;
   bankAccountNumber: string;
-  bankIfscCode: string;        // regex: ^[A-Z]{4}0[A-Z0-9]{6}$
+  bankIfscCode: string;      
   bankName: string;
   bankBranchName?: string;
-  upiId: string;               // regex: ^[\w.\-_]+@[a-zA-Z]+$
+  upiId: string;              
 }
 
 // ─── Auth API ─────────────────────────────────────────────────────────────────
 
 export const authApi = {
-  // POST /auth/register
-  // { username, name, email, phoneNumber?, password }
-  // phoneNumber: Indian format (+91XXXXXXXXXX or 10 digits starting 6-9)
+
   register: (data: {
     username: string;
     name: string;
@@ -272,8 +260,7 @@ export const authApi = {
     });
   },
 
-  // POST /auth/send-verification-email
-  // ⚠️ NOT YET IMPLEMENTED in backend — add to AuthController when ready
+
   sendVerificationEmail: async (): Promise<void> => {
     try {
       await request<void>("/auth/send-verification-email", { method: "POST" });
@@ -300,28 +287,17 @@ export const authApi = {
 // ─── Creator / KYC API ────────────────────────────────────────────────────────
 
 export const creatorApi = {
-  // POST /api/creator/send-otp
-  // Needs: authenticated (any logged-in user)
-  // Sends OTP email to user's registered email
+
   sendOtp: () =>
     request<string>("/api/creator/send-otp", { method: "POST" }),
 
-  // POST /api/creator/verify-otp
-  // Needs: authenticated (any logged-in user)
-  // Body: { otp: "123456" }
-  // Effect: Backend adds CREATOR role to user + sets kycStatus=PENDING_SUBMISSION
-  // ⚠️ IMPORTANT: Call authApi.refresh() AFTER this to get new JWT with CREATOR role
+
   verifyOtp: (otp: string) =>
     request<string>("/api/creator/verify-otp", {
       method: "POST",
       body: JSON.stringify({ otp }),
     }),
 
-  // POST /api/creator/upload-kyc-doc
-  // Needs: ROLE_CREATOR (only after verify-otp + token refresh)
-  // Multipart field: "file"
-  // Returns: { secure_url, public_id } — save both for submit-kyc
-  // Call this 3 times: PAN card, Aadhaar front, Aadhaar back
   uploadKycDoc: (file: File) => {
     const form = new FormData();
     form.append("file", file);
@@ -331,21 +307,18 @@ export const creatorApi = {
     );
   },
 
-  // POST /api/creator/submit-kyc
-  // Needs: ROLE_CREATOR
-  // Requires all KYC fields including doc URLs from uploadKycDoc
+
   submitKyc: (data: KycSubmitRequest) =>
     request<KycStatusResponse>("/api/creator/submit-kyc", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
-  // GET /api/creator/kyc-status
-  // Needs: ROLE_CREATOR
+
   getKycStatus: () =>
     request<KycStatusResponse>("/api/creator/kyc-status"),
 
-  // Alias — settings page calls creatorApi.kycStatus()
+
   kycStatus: () =>
     request<KycStatusResponse>("/api/creator/kyc-status"),
 };
@@ -364,4 +337,54 @@ export const profileApi = {
   update: (data: UpdateProfileRequest) => authApi.updateProfile(data),
   uploadAvatar: (file: File) => authApi.uploadProfileImage(file),
   uploadBanner: (file: File) => authApi.uploadBannerImage(file),
+};
+
+// ─── Types for projects ───────────────────────────────────────────────────────
+
+export interface CreatorProjectResponse {
+  id: number;
+  title: string;
+  thumbnailUrl: string | null;
+  goalAmount: number;
+  currentAmount: number;
+  status: string;
+  rejectionReason: string | null;
+  createdAt: string;
+  deadline: string | null;
+}
+
+export interface ProjectFeedResponse {
+  id: number;
+  title: string;
+  shortDescription: string;
+  thumbnailUrl: string | null;
+  previewVideoUrl: string | null;
+  category: string;
+  goalAmount: number;
+  currentAmount: number;
+  fundedPercentage: number;
+  daysLeft: number;
+  backersCount: number;
+  creator: {
+    id: number;
+    username: string;
+    profileImage: string | null;
+    about: string | null;
+    joinedAt: string;
+    totalProjects: number;
+    totalBackers: number;
+  };
+}
+
+// ─── Project API ──────────────────────────────────────────────────────────────
+
+export const projectApi = {
+  // GET /api/projects/feed — public
+  feed: () => request<ProjectFeedResponse[]>("/api/projects/feed"),
+
+  // GET /api/projects/{id} — public
+  getById: (id: number) => request<ProjectFeedResponse>(`/api/projects/${id}`),
+
+  // GET /api/projects/creator/projects — ROLE_CREATOR
+  myProjects: () => request<CreatorProjectResponse[]>("/api/projects/creator/projects"),
 };

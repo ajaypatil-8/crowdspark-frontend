@@ -323,7 +323,7 @@ export default function LoginPage() {
     setError(null); setLoading(true);
     try {
       await authApi.login(identifier.trim(), password);
-      window.location.href = "/";
+      window.location.href = "/dashboard";
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed. Check your credentials.");
     } finally { setLoading(false); }

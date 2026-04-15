@@ -1,4 +1,3 @@
-
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/crowdspark";
 
@@ -52,7 +51,8 @@ async function request<T>(
           { method: "POST" }
         );
         if (rr.ok) {
-          const d: LoginResponse = await rr.json();
+          const body = await rr.json();
+          const d: LoginResponse = (body && "data" in body && "success" in body) ? body.data : body;
           tokenStorage.set(d.accessToken, d.refreshToken);
           return request<T>(path, options, true);
         }
@@ -72,7 +72,11 @@ async function request<T>(
   }
 
   if (res.status === 204) return undefined as T;
-  return res.json();
+  const body = await res.json();
+  // Unwrap ApiResponse<T> wrapper: { success, message, data, timestamp }
+  return (body !== null && typeof body === "object" && "data" in body && "success" in body)
+    ? body.data
+    : body;
 }
 
 // ─── Types (exact match to backend DTOs) ─────────────────────────────────────
@@ -387,4 +391,153 @@ export const projectApi = {
 
   // GET /api/projects/creator/projects — ROLE_CREATOR
   myProjects: () => request<CreatorProjectResponse[]>("/api/projects/creator/projects"),
+};
+// ─── Notification types ───────────────────────────────────────────────────────
+
+export interface NotificationResponse {
+  id: number;
+  type: string;
+  title: string;
+  message: string;
+  link: string | null;
+  referenceId: number | null;
+  read: boolean;
+  createdAt: string;
+  readAt: string | null;
+}
+
+export interface Page<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+  last: boolean;
+}
+
+// ─── Notification API ─────────────────────────────────────────────────────────
+
+export const notificationApi = {
+  // GET /api/notifications?page=0&size=20
+  getAll: (page = 0, size = 20) =>
+    request<Page<NotificationResponse>>(
+      `/api/notifications?page=${page}&size=${size}`
+    ),
+
+  // GET /api/notifications/unread-count
+  unreadCount: () =>
+    request<number>("/api/notifications/unread-count"),
+
+  // PUT /api/notifications/{id}/read
+  markRead: (id: number) =>
+    request<NotificationResponse>(`/api/notifications/${id}/read`, {
+      method: "PUT",
+    }),
+
+  // PUT /api/notifications/read-all
+  markAllRead: () =>
+    request<number>("/api/notifications/read-all", { method: "PUT" }),
+};
+
+// ─── Explore types ────────────────────────────────────────────────────────────
+
+export interface ExploreParams {
+  categoryId?: number;
+  keyword?: string;
+  sort?: "NEWEST" | "MOST_FUNDED" | "TRENDING";
+  page?: number;
+  size?: number;
+}
+
+export interface RewardTierResponse {
+  id: number;
+  title: string;
+  description: string | null;
+  minimumAmount: number;
+}
+
+export interface ProjectFullDetailsResponse {
+  id: number;
+  title: string;
+  shortDescription: string;
+  fullDescription: string;
+  category: string | null;
+  goalAmount: number;
+  currentAmount: number;
+  fundedPercentage: number;
+  daysLeft: number;
+  deadline: string;
+  thumbnailUrl: string | null;
+  previewVideos: string[];
+  galleryImages: string[];
+  storyImages: string[];
+  rewards: RewardTierResponse[];
+  creator: {
+    id: number;
+    username: string;
+    profileImage: string | null;
+    about: string | null;
+  };
+}
+
+// ─── Extended Project API ─────────────────────────────────────────────────────
+
+// Extend projectApi with explore + full details
+export const exploreApi = {
+  // GET /api/projects/explore?categoryId=&keyword=&sort=&page=&size=
+  search: (params: ExploreParams = {}) => {
+    const q = new URLSearchParams();
+    if (params.categoryId !== undefined) q.set("categoryId", String(params.categoryId));
+    if (params.keyword)                  q.set("keyword", params.keyword);
+    if (params.sort)                     q.set("sort", params.sort);
+    q.set("page", String(params.page ?? 0));
+    q.set("size", String(params.size ?? 12));
+    return request<Page<ProjectFeedResponse>>(`/api/projects/explore?${q.toString()}`);
+  },
+
+  // GET /api/projects/{id} — full details with rewards
+  getFullDetails: (id: number) =>
+    request<ProjectFullDetailsResponse>(`/api/projects/${id}`),
+
+  // GET /api/projects/{id}/rewards
+  getRewards: (projectId: number) =>
+    request<RewardTierResponse[]>(`/api/projects/${projectId}/rewards`),
+};
+
+// ─── Category types ───────────────────────────────────────────────────────────
+
+export interface Category {
+  id: number;
+  name: string;
+}
+
+export const categoryApi = {
+  getAll: () => request<Category[]>("/api/categories"),
+};
+
+// ─── Backer API ───────────────────────────────────────────────────────────────
+
+export interface BackedProjectResponse {
+  projectId: number;
+  projectTitle: string;
+  thumbnailUrl: string | null;
+  goalAmount: number;
+  currentAmount: number;
+  fundedPercentage: number;
+  status: string;
+  amountBacked: number;
+  backedAt: string;
+}
+
+export interface BackerStatsResponse {
+  totalBacked: number;
+  totalAmountBacked: number;
+  activeCampaigns: number;
+}
+
+export const backerApi = {
+  backedProjects: () =>
+    request<BackedProjectResponse[]>("/api/backer/backed-projects"),
+  stats: () =>
+    request<BackerStatsResponse>("/api/backer/stats"),
 };

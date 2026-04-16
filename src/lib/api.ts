@@ -426,7 +426,7 @@ export const notificationApi = {
 
   // GET /api/notifications/unread-count
   unreadCount: () =>
-    request<number>("/api/notifications/unread-count"),
+    request<{ unreadCount: number }>("/api/notifications/unread-count"),
 
   // PUT /api/notifications/{id}/read
   markRead: (id: number) =>

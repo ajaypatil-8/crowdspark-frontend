@@ -82,6 +82,14 @@ const IcRocket = () => (
     <path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/>
   </svg>
 );
+const IcPlus = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24"
+    fill="none" stroke="currentColor"
+    strokeWidth="2" strokeLinecap="round"
+    strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+);
 const IcLogout = () => (
   <svg width="15" height="15" viewBox="0 0 24 24"
     fill="none" stroke="currentColor"
@@ -173,6 +181,16 @@ function DashboardInner({
           icon: <IcRocket />,
           exact: false,
         },
+    ...(isCreator
+      ? [
+          {
+            href: "/dashboard/create-campaign",
+            label: "Create Campaign",
+            icon: <IcPlus />,
+            exact: false,
+          },
+        ]
+      : []),
   ];
 
   const sidebarBg = isDark ? "#0e0e0e" : "#ffffff";

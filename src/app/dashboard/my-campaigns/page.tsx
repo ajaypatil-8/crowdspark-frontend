@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useProfile } from "@/contexts/ProfileContext";
 import { projectApi, type CreatorProjectResponse } from "@/lib/api";
@@ -15,8 +16,7 @@ const IcPlus = ({ s = 14 }: { s?: number }) => (
   <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
   </svg>
-);
-const IcRocket = ({ s = 28 }: { s?: number }) => (
+); (
   <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
     <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/>
     <path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/>
@@ -242,12 +242,23 @@ function PageSkeleton({ isDark }: { isDark: boolean }) {
 export default function MyCampaignsPage() {
   const { isDark } = useTheme();
   const { user, loading: profileLoading } = useProfile();
+  const searchParams = useSearchParams();
   const [projects, setProjects] = useState<CreatorProjectResponse[]>([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
   const [mounted, setMounted]   = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
+
+  // Show success toast when redirected after campaign creation
+  useEffect(() => {
+    if (searchParams.get("created") === "1") {
+      setShowToast(true);
+      const t = setTimeout(() => setShowToast(false), 5000);
+      return () => clearTimeout(t);
+    }
+  }, [searchParams]);
 
   const fetchProjects = useCallback(async () => {
     setLoading(true);
@@ -277,6 +288,35 @@ export default function MyCampaignsPage() {
   return (
     <div style={{ padding: "40px 36px 60px", maxWidth: 1100, margin: "0 auto" }}>
 
+      {/* Success toast */}
+      {showToast && (
+        <div style={{
+          position: "fixed", top: 24, right: 24, zIndex: 9999,
+          padding: "14px 20px", borderRadius: 14,
+          background: isDark ? "#1a1a1a" : "#fff",
+          border: "1px solid rgba(52,211,153,0.4)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+          display: "flex", alignItems: "center", gap: 12,
+          animation: "toastIn 0.3s ease",
+        }}>
+          <span style={{ fontSize: 20 }}>🎉</span>
+          <div>
+            <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 13.5, color: "#34d399", margin: "0 0 2px" }}>
+              Campaign submitted!
+            </p>
+            <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12.5, color: "var(--text-muted)", margin: 0 }}>
+              It's under review. We'll notify you once approved.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowToast(false)}
+            style={{ marginLeft: 8, background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: 4 }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ marginBottom: 32, display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
         <div>
@@ -291,20 +331,36 @@ export default function MyCampaignsPage() {
           </h1>
         </div>
 
-        {projects.length > 0 && (
-          <div style={{ display: "flex", gap: 10 }}>
-            {[
-              { label: "Total campaigns", value: String(projects.length), color: "#ff8800" },
-              { label: "Live now",         value: String(live),            color: "#34d399" },
-              { label: "Total raised",     value: `₹${totalRaised.toLocaleString("en-IN")}`, color: "#a78bfa" },
-            ].map(({ label, value, color }) => (
-              <div key={label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "12px 18px", borderRadius: 14, background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)", border: `1px solid ${cardBdr}` }}>
-                <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 20, color, lineHeight: 1 }}>{value}</span>
-                <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: "var(--text-muted)" }}>{label}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          {projects.length > 0 && (
+            <>
+              {[
+                { label: "Total campaigns", value: String(projects.length), color: "#ff8800" },
+                { label: "Live now",         value: String(live),            color: "#34d399" },
+                { label: "Total raised",     value: `₹${totalRaised.toLocaleString("en-IN")}`, color: "#a78bfa" },
+              ].map(({ label, value, color }) => (
+                <div key={label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "12px 18px", borderRadius: 14, background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)", border: `1px solid ${cardBdr}` }}>
+                  <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 20, color, lineHeight: 1 }}>{value}</span>
+                  <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: "var(--text-muted)" }}>{label}</span>
+                </div>
+              ))}
+            </>
+          )}
+          <Link
+            href="/dashboard/create-campaign"
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 7,
+              padding: "11px 20px", borderRadius: 12,
+              background: "linear-gradient(135deg,#ff6b00,#ffcc00)",
+              color: "#fff", textDecoration: "none",
+              fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 13.5,
+              boxShadow: "0 0 20px rgba(255,100,0,0.3)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <IcPlus s={13} /> New Campaign
+          </Link>
+        </div>
       </div>
 
       {/* Error */}
@@ -332,6 +388,7 @@ export default function MyCampaignsPage() {
       <style>{`
         @keyframes mcShimmer { 0%{transform:translateX(-100%)} 60%{transform:translateX(200%)} 100%{transform:translateX(200%)} }
         @keyframes mcPulse   { 0%,100%{opacity:.4} 50%{opacity:.9} }
+        @keyframes toastIn   { from{opacity:0;transform:translateY(-12px)} to{opacity:1;transform:translateY(0)} }
         @media (max-width: 900px) { .mc-grid { grid-template-columns: 1fr 1fr !important; } }
         @media (max-width: 580px) { .mc-grid { grid-template-columns: 1fr !important; } }
       `}</style>

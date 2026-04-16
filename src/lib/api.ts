@@ -380,6 +380,36 @@ export interface ProjectFeedResponse {
   };
 }
 
+// ─── Campaign creation types ──────────────────────────────────────────────────
+
+export type MediaType = "IMAGE" | "VIDEO";
+export type MediaUsage = "THUMBNAIL" | "CARD_VIDEO" | "GALLERY_IMAGE" | "STORY_IMAGE";
+
+export interface ProjectMediaRequest {
+  mediaUrl: string;
+  mediaType: MediaType;
+  usage: MediaUsage;
+  displayOrder: number;
+}
+
+export interface RewardTierRequest {
+  title: string;
+  description?: string;
+  minimumAmount: number;
+}
+
+export interface CreateProjectRequest {
+  title: string;
+  shortDescription: string;
+  fullDescription: string;
+  goalAmount: number;
+  deadline: string;
+  location: string;
+  categoryIds: number[];
+  media: ProjectMediaRequest[];
+  rewardTiers: RewardTierRequest[];
+}
+
 // ─── Project API ──────────────────────────────────────────────────────────────
 
 export const projectApi = {
@@ -391,6 +421,13 @@ export const projectApi = {
 
   // GET /api/projects/creator/projects — ROLE_CREATOR
   myProjects: () => request<CreatorProjectResponse[]>("/api/projects/creator/projects"),
+
+  // POST /api/projects/creator/create — ROLE_CREATOR
+  create: (body: CreateProjectRequest) =>
+    request<{ id: number }>("/api/projects/creator/create", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 };
 // ─── Notification types ───────────────────────────────────────────────────────
 

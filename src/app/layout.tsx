@@ -11,7 +11,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" data-theme="dark" suppressHydrationWarning>
-      <body className="font-body">
+      {/* suppressHydrationWarning on body fixes "cz-shortcut-listen" attr injected by browser extensions (Grammarly etc) */}
+      <body className="font-body" suppressHydrationWarning>
         <ThemeProvider>
           <LenisProvider>
             {children}

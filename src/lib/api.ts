@@ -265,17 +265,8 @@ export const authApi = {
   },
 
 
-  sendVerificationEmail: async (): Promise<void> => {
-    try {
-      await request<void>("/auth/send-verification-email", { method: "POST" });
-    } catch (err: any) {
-      // If endpoint doesn't exist yet, throw a user-friendly message
-      if (err.message?.includes("404") || err.message?.includes("not found")) {
-        throw new Error("Email verification is not yet available. Coming soon!");
-      }
-      throw err;
-    }
-  },
+  sendVerificationEmail: () =>
+    request<void>("/auth/send-verification-email", { method: "POST" }),
 
   // POST /auth/refresh?refreshToken=xxx — query param NOT body
   refresh: async (refreshToken: string): Promise<LoginResponse> => {
@@ -577,4 +568,75 @@ export const backerApi = {
     request<BackedProjectResponse[]>("/api/backer/backed-projects"),
   stats: () =>
     request<BackerStatsResponse>("/api/backer/stats"),
+};
+// ─── Email Verification API ───────────────────────────────────────────────────
+
+export const emailVerifyApi = {
+  // POST /auth/send-verification-email  (requires auth)
+  send: () =>
+    request<void>("/auth/send-verification-email", { method: "POST" }),
+
+  // GET /auth/verify-email?token=xxx&email=yyy  (public — called from email link)
+  verify: (token: string, email: string) =>
+    request<void>(
+      `/auth/verify-email?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`
+    ),
+};
+
+// ─── Admin API ────────────────────────────────────────────────────────────────
+
+export interface AdminProjectResponse {
+  id: number;
+  title: string;
+  creatorUsername: string;
+  creatorEmail: string;
+  thumbnailUrl: string | null;
+  goalAmount: number;
+  deadline: string | null;
+  createdAt: string;
+  status: string;
+}
+
+export const adminApi = {
+  // Projects
+  pendingProjects: () =>
+    request<AdminProjectResponse[]>("/admin/projects/pending"),
+
+  allProjects: () =>
+    request<AdminProjectResponse[]>("/admin/projects/all"),
+
+  approveProject: (id: number) =>
+    request<void>(`/admin/projects/${id}/approve`, { method: "PUT" }),
+
+  rejectProject: (id: number, reason: string) =>
+    request<void>(`/admin/projects/${id}/reject`, {
+      method: "PUT",
+      body: JSON.stringify({ reason }),
+    }),
+
+  // KYC
+  pendingKyc: () =>
+    request<KycStatusResponse[]>("/admin/kyc/pending"),
+
+  getUserKyc: (userId: number) =>
+    request<KycStatusResponse>(`/admin/kyc/${userId}`),
+
+  approveKyc: (userId: number) =>
+    request<KycStatusResponse>(`/admin/kyc/${userId}/approve`, { method: "PUT" }),
+
+  rejectKyc: (userId: number, rejectionReason: string) =>
+    request<KycStatusResponse>(`/admin/kyc/${userId}/reject`, {
+      method: "PUT",
+      body: JSON.stringify({ rejectionReason }),
+    }),
+
+  // Users
+  allUsers: () =>
+    request<UserResponse[]>("/admin/users"),
+
+  suspendUser: (id: number) =>
+    request<void>(`/admin/users/${id}/suspend`, { method: "PUT" }),
+
+  activateUser: (id: number) =>
+    request<void>(`/admin/users/${id}/activate`, { method: "PUT" }),
 };

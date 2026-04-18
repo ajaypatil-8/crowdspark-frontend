@@ -413,9 +413,9 @@ export const projectApi = {
   // GET /api/projects/creator/projects — ROLE_CREATOR
   myProjects: () => request<CreatorProjectResponse[]>("/api/projects/creator/projects"),
 
-  // POST /api/projects/creator/create — ROLE_CREATOR
+  // POST /api/projects/create — ROLE_CREATOR
   create: (body: CreateProjectRequest) =>
-    request<{ id: number }>("/api/projects/creator/create", {
+    request<{ id: number }>("/api/projects/create", {
       method: "POST",
       body: JSON.stringify(body),
     }),

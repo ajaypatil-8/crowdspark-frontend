@@ -66,7 +66,7 @@ export default function CreateCampaignPage() {
         basic.categoryIds.length > 0 &&
         basic.location.trim()
       );
-    if (step === 1) return basic.shortDescription.length > 0; // story optional min
+    if (step === 1) return story.fullDescription.trim().length >= 50;
     if (step === 2) return !!media.media.find((m) => m.usage === "THUMBNAIL");
     return true; // rewards + review always ok
   };

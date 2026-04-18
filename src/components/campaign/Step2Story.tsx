@@ -101,9 +101,14 @@ export default function Step2Story({ data, onChange, isDark }: Props) {
           }}
         >
           {data.fullDescription.length} chars
-          {data.fullDescription.length < 200 && (
+          {data.fullDescription.length < 50 && (
             <span style={{ color: "#ef4444", marginLeft: 6 }}>
-              (min ~200 chars recommended)
+              (min 50 chars required — {50 - data.fullDescription.length} more)
+            </span>
+          )}
+          {data.fullDescription.length >= 50 && data.fullDescription.length < 200 && (
+            <span style={{ color: "#f59e0b", marginLeft: 6 }}>
+              (200+ chars recommended)
             </span>
           )}
         </div>

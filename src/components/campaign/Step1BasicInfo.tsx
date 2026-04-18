@@ -19,9 +19,19 @@ interface Props {
 
 export default function Step1BasicInfo({ data, onChange, isDark }: Props) {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [catError, setCatError] = useState(false);
+  const [catLoading, setCatLoading] = useState(true);
 
   useEffect(() => {
-    categoryApi.getAll().then(setCategories).catch(() => {});
+    setCatLoading(true);
+    categoryApi
+      .getAll()
+      .then((cats) => {
+        setCategories(cats);
+        setCatError(false);
+      })
+      .catch(() => setCatError(true))
+      .finally(() => setCatLoading(false));
   }, []);
 
   const set = (k: keyof BasicInfo, v: unknown) =>
@@ -45,6 +55,7 @@ export default function Step1BasicInfo({ data, onChange, isDark }: Props) {
     fontSize: 14,
     outline: "none",
     transition: "border 0.15s",
+    boxSizing: "border-box" as const,
   };
   const lbl: React.CSSProperties = {
     display: "block",
@@ -89,7 +100,7 @@ export default function Step1BasicInfo({ data, onChange, isDark }: Props) {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         <div>
-          <label style={lbl}>Funding Goal (₹) *</label>
+          <label style={lbl}>Funding Goal (₹) * (min ₹1,000)</label>
           <input
             style={inp}
             type="number"
@@ -98,6 +109,9 @@ export default function Step1BasicInfo({ data, onChange, isDark }: Props) {
             value={data.goalAmount}
             onChange={(e) => set("goalAmount", e.target.value)}
           />
+          {data.goalAmount && Number(data.goalAmount) < 1000 && (
+            <div style={{ fontSize: 11, color: "#ef4444", marginTop: 4 }}>Minimum goal is ₹1,000</div>
+          )}
         </div>
         <div>
           <label style={lbl}>Campaign Deadline *</label>
@@ -124,7 +138,27 @@ export default function Step1BasicInfo({ data, onChange, isDark }: Props) {
       <div>
         <label style={lbl}>Categories * (pick at least one)</label>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 2 }}>
-          {categories.map((c) => {
+          {catLoading && (
+            <span style={{ fontSize: 13, color: "var(--text-muted)" }}>Loading categories…</span>
+          )}
+          {catError && !catLoading && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 13, color: "#ef4444" }}>
+                ⚠ Failed to load categories. Is the backend running?
+              </span>
+              <button
+                onClick={() => {
+                  setCatLoading(true);
+                  setCatError(false);
+                  categoryApi.getAll().then(setCategories).catch(() => setCatError(true)).finally(() => setCatLoading(false));
+                }}
+                style={{ fontSize: 12, padding: "4px 10px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.4)", background: "transparent", color: "#ef4444", cursor: "pointer" }}
+              >
+                Retry
+              </button>
+            </div>
+          )}
+          {!catLoading && !catError && categories.map((c) => {
             const active = data.categoryIds.includes(c.id);
             return (
               <button
@@ -147,10 +181,17 @@ export default function Step1BasicInfo({ data, onChange, isDark }: Props) {
               </button>
             );
           })}
-          {categories.length === 0 && (
-            <span style={{ fontSize: 13, color: "var(--text-muted)" }}>Loading categories…</span>
+          {!catLoading && !catError && categories.length === 0 && (
+            <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
+              No categories found. Add some via admin panel first.
+            </span>
           )}
         </div>
+        {data.categoryIds.length > 0 && (
+          <div style={{ fontSize: 11, color: "#ff8800", marginTop: 6 }}>
+            {data.categoryIds.length} selected
+          </div>
+        )}
       </div>
     </div>
   );

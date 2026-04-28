@@ -617,6 +617,9 @@ export const adminApi = {
   allProjects: () =>
     request<AdminProjectResponse[]>("/admin/projects/all"),
 
+  getProjectDetail: (id: number) =>
+    request<ProjectFullDetailsResponse>(`/admin/projects/${id}`),
+
   approveProject: (id: number) =>
     request<void>(`/admin/projects/${id}/approve`, { method: "PUT" }),
 

@@ -49,11 +49,12 @@ const IcWarn = ({ s = 14 }: { s?: number }) => (
 // ─── Status badge config ──────────────────────────────────────────────────────
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
   DRAFT:           { label: "Draft",           color: "#94a3b8", bg: "rgba(148,163,184,0.1)",  border: "rgba(148,163,184,0.2)" },
-  PENDING_REVIEW:  { label: "Under Review",    color: "#f59e0b", bg: "rgba(245,158,11,0.1)",   border: "rgba(245,158,11,0.25)" },
+  PENDING:         { label: "Under Review",    color: "#f59e0b", bg: "rgba(245,158,11,0.1)",   border: "rgba(245,158,11,0.25)" },
   APPROVED:        { label: "Live",            color: "#34d399", bg: "rgba(52,211,153,0.1)",   border: "rgba(52,211,153,0.25)" },
   REJECTED:        { label: "Rejected",        color: "#ef4444", bg: "rgba(239,68,68,0.1)",    border: "rgba(239,68,68,0.25)" },
   FUNDED:          { label: "Funded",          color: "#a78bfa", bg: "rgba(167,139,250,0.1)",  border: "rgba(167,139,250,0.25)" },
   COMPLETED:       { label: "Completed",       color: "#34d399", bg: "rgba(52,211,153,0.1)",   border: "rgba(52,211,153,0.25)" },
+  CLOSED:          { label: "Closed",           color: "#6b7280", bg: "rgba(107,114,128,0.1)",  border: "rgba(107,114,128,0.2)" },
   CANCELLED:       { label: "Cancelled",       color: "#94a3b8", bg: "rgba(148,163,184,0.1)",  border: "rgba(148,163,184,0.2)" },
 };
 

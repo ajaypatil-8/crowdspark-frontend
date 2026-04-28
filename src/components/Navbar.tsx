@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import gsap from "gsap";
 import { useTheme } from "@/contexts/ThemeContext";
 import ThemeToggle from "@/components/ThemeToggle";
+import NotificationBell from "@/components/NotificationBell";
 import { useProfile } from "@/contexts/ProfileContext";
 import { authApi, isLoggedIn } from "@/lib/api";
 
@@ -527,6 +528,9 @@ export default function Navbar() {
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
               {/* Theme toggle always visible */}
               <ThemeToggle />
+
+              {/* Notification bell */}
+              {mounted && loggedIn && <NotificationBell isDark={isDark} />}
 
               {/* Auth */}
               {mounted && (

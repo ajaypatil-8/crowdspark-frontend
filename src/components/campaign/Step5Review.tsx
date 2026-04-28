@@ -53,7 +53,7 @@ export default function Step5Review({ basic, story, media, rewards, categories, 
   const missing: string[] = [];
   if (!basic.title.trim()) missing.push("Title");
   if (!basic.shortDescription.trim()) missing.push("Short description");
-  if (!basic.fullDescription) missing.push("Full story");
+  if (!story.fullDescription.trim()) missing.push("Full story");
   if (!basic.goalAmount || Number(basic.goalAmount) <= 0) missing.push("Funding goal");
   if (!basic.deadline) missing.push("Deadline");
   if (basic.categoryIds.length === 0) missing.push("At least one category");

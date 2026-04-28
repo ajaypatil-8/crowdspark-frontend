@@ -20,12 +20,15 @@ async function uploadToCloudinary(file: File): Promise<{ secure_url: string; res
   const form = new FormData();
   form.append("file", file);
   const token = tokenStorage.getAccess();
-  const res = await fetch(`${BASE_URL}/api/creator/upload-kyc-doc`, {
+  const res = await fetch(`${BASE_URL}/api/projects/upload-media`, {
     method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: form,
   });
-  if (!res.ok) throw new Error("Upload failed");
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body?.message ?? "Upload failed");
+  }
   const body = await res.json();
   const d = body?.data ?? body;
   return { secure_url: d.secure_url, resource_type: file.type.startsWith("video") ? "video" : "image" };

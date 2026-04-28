@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { easeOut } from "framer-motion";
+import { staggerContainer, cardItem } from "@/animations/variants";
 import gsap from "gsap";
 import { useTheme } from "@/contexts/ThemeContext";
 import { exploreApi, categoryApi, type ProjectFeedResponse, type Category } from "@/lib/api";
@@ -36,10 +37,7 @@ function CampaignCard({ p, isDark, bdr, card, txt, muted }: {
   return (
     <motion.article
       layout
-      initial={{ opacity: 0, scale: 0.93 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      transition={{ duration: 0.3 }}
+      variants={cardItem}
       whileHover={{ y: -6, boxShadow: isDark ? "0 20px 48px rgba(0,0,0,0.45)" : "0 20px 48px rgba(0,0,0,0.1)" }}
       style={{ borderRadius: 20, overflow: "hidden", background: card, border: `1px solid ${bdr}`, cursor: "pointer", transition: "box-shadow 0.22s" }}
     >
@@ -244,7 +242,7 @@ export default function ExplorePage() {
                   <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: muted }}>Try different keywords or browse all categories.</p>
                 </motion.div>
               ) : (
-                <motion.div layout key="grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 20 }}>
+                <motion.div layout key="grid" variants={staggerContainer} initial="hidden" animate="show" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 20 }}>
                   {projects.map(p => <CampaignCard key={p.id} p={p} isDark={isDark} bdr={bdr} card={card} txt={txt} muted={muted} />)}
                 </motion.div>
               )}

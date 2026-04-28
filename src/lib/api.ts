@@ -419,6 +419,18 @@ export const projectApi = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+
+  // POST /api/projects/upload-media — ROLE_CREATOR
+  // Upload a single image/video before submitting CreateProjectRequest.
+  // Returns { secure_url, public_id, resource_type }
+  uploadMedia: (file: File): Promise<{ secure_url: string; public_id: string; resource_type: string }> => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<{ secure_url: string; public_id: string; resource_type: string }>(
+      "/api/projects/upload-media",
+      { method: "POST", body: form }
+    );
+  },
 };
 // ─── Notification types ───────────────────────────────────────────────────────
 

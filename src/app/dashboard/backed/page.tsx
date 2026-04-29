@@ -181,7 +181,7 @@ export default function BackedPage() {
                 const statusColor = STATUS_COLORS[p.status] ?? "#6b7280";
                 return (
                   <motion.div
-                    key={p.projectId}
+                    key={p.donationId ?? `${p.projectId}-${i}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05, duration: 0.3 }}

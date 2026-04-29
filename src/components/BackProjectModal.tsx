@@ -11,34 +11,54 @@ interface Props {
   projectTitle: string;
   rewards: RewardTierResponse[];
   isDark: boolean;
+  goalAmount?: number;
+  currentAmount?: number;
   onSuccess?: () => void;
 }
 
 export default function BackProjectModal({
-  open, onClose, projectId, projectTitle, rewards, isDark, onSuccess,
+  open, onClose, projectId, projectTitle, rewards, isDark,
+  goalAmount = 0, currentAmount = 0, onSuccess,
 }: Props) {
   const [selectedReward, setSelectedReward] = useState<number | null>(null);
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount]   = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
+  const [error, setError]     = useState<string | null>(null);
+  const [done, setDone]       = useState(false);
 
-  const bdr = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
-  const bg  = isDark ? "#111" : "#fff";
-  const txt = isDark ? "#fff" : "#0a0a0a";
-  const muted = isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.45)";
-  const inputBg = isDark ? "rgba(255,255,255,0.05)" : "#f8f8f8";
-  const accent = "#ff6b00";
+  const bdr      = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
+  const bg       = isDark ? "#111" : "#fff";
+  const txt      = isDark ? "#fff" : "#0a0a0a";
+  const muted    = isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.45)";
+  const inputBg  = isDark ? "rgba(255,255,255,0.05)" : "#f8f8f8";
+  const accent   = "#ff5c00";
+
+  const remaining   = Math.max(goalAmount - currentAmount, 0);
+  const goalReached = remaining <= 0;
 
   const minAmount = selectedReward
     ? rewards.find((r) => r.id === selectedReward)?.minimumAmount ?? 1
     : 1;
 
+  function handleAmountChange(val: string) {
+    const num = parseFloat(val);
+    // silently cap at remaining
+    if (!isNaN(num) && num > remaining) {
+      setAmount(String(remaining));
+    } else {
+      setAmount(val);
+    }
+  }
+
   async function handleSubmit() {
     const amt = parseFloat(amount);
     if (!amt || amt < minAmount) {
       setError(`Minimum amount is ₹${minAmount}`);
+      return;
+    }
+    if (amt > remaining) {
+      setError(`Maximum you can contribute is ₹${remaining.toFixed(0)}`);
       return;
     }
     setLoading(true);
@@ -91,7 +111,7 @@ export default function BackProjectModal({
           onClick={handleClose}
           style={{
             position: "fixed", inset: 0, zIndex: 9000,
-            background: "rgba(0,0,0,0.7)",
+            background: "rgba(0,0,0,0.72)",
             display: "flex", alignItems: "center", justifyContent: "center",
             padding: 16,
           }}
@@ -103,58 +123,70 @@ export default function BackProjectModal({
             transition={{ type: "spring", damping: 22, stiffness: 280 }}
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: bg,
-              border: `1px solid ${bdr}`,
-              borderRadius: 20,
-              padding: "32px 28px",
-              maxWidth: 520,
-              width: "100%",
-              maxHeight: "90vh",
-              overflowY: "auto",
+              background: bg, border: `1px solid ${bdr}`,
+              borderRadius: 20, padding: "32px 28px",
+              maxWidth: 520, width: "100%",
+              maxHeight: "90vh", overflowY: "auto",
             }}
           >
-            {done ? (
-              /* Success state */
+            {/* ── Goal already reached ─────────────────────────────── */}
+            {goalReached ? (
               <div style={{ textAlign: "center", padding: "24px 0" }}>
-                <div style={{ fontSize: 56, marginBottom: 16 }}>🎉</div>
-                <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 22, color: txt, marginBottom: 8 }}>
-                  You&apos;re a backer!
+                <div style={{ fontSize: 56, marginBottom: 16 }}>🏆</div>
+                <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 22, color: txt, marginBottom: 8 }}>
+                  Goal Reached!
                 </h2>
-                <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: muted, marginBottom: 28 }}>
-                  Thank you for backing <strong style={{ color: txt }}>{projectTitle}</strong>. Your support means the world!
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: muted, marginBottom: 28 }}>
+                  <strong style={{ color: txt }}>{projectTitle}</strong> has already hit its funding goal.
+                  No more contributions are needed. 🎉
                 </p>
-                <button
-                  onClick={handleClose}
-                  style={{ padding: "12px 32px", borderRadius: 12, background: accent, color: "#fff", border: "none", fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 15, cursor: "pointer" }}
-                >
+                <button onClick={handleClose} style={{ padding: "12px 32px", borderRadius: 12, background: accent, color: "#fff", border: "none", fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
                   Close
                 </button>
               </div>
+
+            /* ── Success state ─────────────────────────────────────── */
+            ) : done ? (
+              <div style={{ textAlign: "center", padding: "24px 0" }}>
+                <div style={{ fontSize: 56, marginBottom: 16 }}>🎉</div>
+                <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 22, color: txt, marginBottom: 8 }}>
+                  You&apos;re a backer!
+                </h2>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: muted, marginBottom: 28 }}>
+                  Thank you for backing <strong style={{ color: txt }}>{projectTitle}</strong>. Your support means the world!
+                </p>
+                <button onClick={handleClose} style={{ padding: "12px 32px", borderRadius: 12, background: accent, color: "#fff", border: "none", fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
+                  Close
+                </button>
+              </div>
+
+            /* ── Form ──────────────────────────────────────────────── */
             ) : (
               <>
                 {/* Header */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
                   <div>
-                    <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 20, color: txt, margin: "0 0 4px" }}>
+                    <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 20, color: txt, margin: "0 0 4px" }}>
                       Back this project
                     </h2>
-                    <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: muted, margin: 0 }}>
-                      {projectTitle}
-                    </p>
+                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: muted, margin: 0 }}>{projectTitle}</p>
                   </div>
-                  <button
-                    onClick={handleClose}
-                    style={{ width: 32, height: 32, borderRadius: "50%", background: bdr, border: "none", color: txt, cursor: "pointer", fontSize: 16, flexShrink: 0 }}
-                  >
-                    ✕
-                  </button>
+                  <button onClick={handleClose} style={{ width: 32, height: 32, borderRadius: "50%", background: bdr, border: "none", color: txt, cursor: "pointer", fontSize: 16, flexShrink: 0 }}>✕</button>
+                </div>
+
+                {/* Remaining info pill */}
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 12, background: isDark ? "rgba(255,92,0,0.08)" : "rgba(255,92,0,0.06)", border: `1px solid ${accent}25`, marginBottom: 22 }}>
+                  <span style={{ fontSize: 16 }}>💰</span>
+                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: muted }}>
+                    <strong style={{ color: txt, fontFamily: "'Syne', sans-serif" }}>₹{remaining.toLocaleString("en-IN")}</strong> still needed to reach the goal
+                  </span>
                 </div>
 
                 {/* Reward tiers */}
                 {rewards.length > 0 && (
-                  <div style={{ marginBottom: 24 }}>
-                    <p style={{ fontFamily: "DM Sans, sans-serif", fontWeight: 600, fontSize: 13, color: muted, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                      Choose a reward (optional)
+                  <div style={{ marginBottom: 22 }}>
+                    <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: muted, marginBottom: 10, letterSpacing: "0.08em" }}>
+                      CHOOSE A REWARD (OPTIONAL)
                     </p>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {rewards.map((r) => {
@@ -164,24 +196,21 @@ export default function BackProjectModal({
                             key={r.id}
                             onClick={() => {
                               setSelectedReward(sel ? null : r.id);
-                              if (!sel) setAmount(String(r.minimumAmount));
+                              if (!sel) setAmount(String(Math.min(r.minimumAmount, remaining)));
                             }}
                             style={{
-                              textAlign: "left",
-                              padding: "14px 16px",
-                              borderRadius: 12,
+                              textAlign: "left", padding: "14px 16px", borderRadius: 12,
                               border: `1.5px solid ${sel ? accent : bdr}`,
                               background: sel ? `${accent}12` : inputBg,
-                              cursor: "pointer",
-                              transition: "all 0.18s",
+                              cursor: "pointer", transition: "all 0.18s",
                             }}
                           >
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                              <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 14, color: txt }}>{r.title}</span>
-                              <span style={{ fontFamily: "DM Sans, sans-serif", fontWeight: 700, fontSize: 13, color: accent }}>₹{r.minimumAmount}+</span>
+                              <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, color: txt }}>{r.title}</span>
+                              <span style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 13, color: accent }}>₹{r.minimumAmount}+</span>
                             </div>
                             {r.description && (
-                              <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: muted, margin: 0, lineHeight: 1.5 }}>{r.description}</p>
+                              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: muted, margin: 0, lineHeight: 1.5 }}>{r.description}</p>
                             )}
                           </button>
                         );
@@ -192,38 +221,42 @@ export default function BackProjectModal({
 
                 {/* Amount input */}
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ fontFamily: "DM Sans, sans-serif", fontWeight: 600, fontSize: 13, color: muted, display: "block", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                    Your pledge amount
+                  <label style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: muted, display: "block", marginBottom: 8, letterSpacing: "0.08em" }}>
+                    YOUR PLEDGE AMOUNT
                   </label>
                   <div style={{ position: "relative" }}>
-                    <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 15, color: muted }}>₹</span>
+                    <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 15, color: muted }}>₹</span>
                     <input
                       type="number"
                       min={minAmount}
+                      max={remaining}
                       value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
+                      onChange={(e) => handleAmountChange(e.target.value)}
                       placeholder={String(minAmount)}
                       style={{
                         width: "100%", boxSizing: "border-box",
                         padding: "14px 16px 14px 32px",
                         borderRadius: 12, border: `1.5px solid ${bdr}`,
                         background: inputBg, color: txt,
-                        fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 16,
+                        fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 16,
                         outline: "none",
                       }}
                     />
                   </div>
-                  {minAmount > 1 && (
-                    <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: muted, margin: "6px 0 0" }}>
-                      Minimum: ₹{minAmount}
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+                    {minAmount > 1 && (
+                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: muted, margin: 0 }}>Min: ₹{minAmount}</p>
+                    )}
+                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: muted, margin: "0 0 0 auto" }}>
+                      Max: ₹{remaining.toLocaleString("en-IN")}
                     </p>
-                  )}
+                  </div>
                 </div>
 
                 {/* Message */}
-                <div style={{ marginBottom: 24 }}>
-                  <label style={{ fontFamily: "DM Sans, sans-serif", fontWeight: 600, fontSize: 13, color: muted, display: "block", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                    Message to creator (optional)
+                <div style={{ marginBottom: 22 }}>
+                  <label style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: muted, display: "block", marginBottom: 8, letterSpacing: "0.08em" }}>
+                    MESSAGE TO CREATOR (OPTIONAL)
                   </label>
                   <textarea
                     value={message}
@@ -233,18 +266,18 @@ export default function BackProjectModal({
                     placeholder="Share your support..."
                     style={{
                       width: "100%", boxSizing: "border-box",
-                      padding: "12px 14px",
-                      borderRadius: 12, border: `1.5px solid ${bdr}`,
+                      padding: "12px 14px", borderRadius: 12,
+                      border: `1.5px solid ${bdr}`,
                       background: inputBg, color: txt,
-                      fontFamily: "DM Sans, sans-serif", fontSize: 14,
+                      fontFamily: "'DM Sans', sans-serif", fontSize: 14,
                       outline: "none", resize: "vertical",
                     }}
                   />
                 </div>
 
                 {error && (
-                  <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: "#ef4444", marginBottom: 16, padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
-                    {error}
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#ef4444", marginBottom: 16, padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                    ⚠️ {error}
                   </p>
                 )}
 
@@ -252,17 +285,12 @@ export default function BackProjectModal({
                   onClick={handleSubmit}
                   disabled={loading}
                   style={{
-                    width: "100%",
-                    padding: "15px",
-                    borderRadius: 12,
-                    background: loading ? "rgba(255,107,0,0.5)" : `linear-gradient(135deg,${accent},#ffcc00)`,
-                    border: "none",
-                    color: "#fff",
-                    fontFamily: "Syne, sans-serif",
-                    fontWeight: 800,
-                    fontSize: 15,
+                    width: "100%", padding: "15px", borderRadius: 12,
+                    background: loading ? "rgba(255,92,0,0.5)" : `linear-gradient(135deg,${accent},#ff8c00)`,
+                    border: "none", color: "#fff",
+                    fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 15,
                     cursor: loading ? "not-allowed" : "pointer",
-                    boxShadow: loading ? "none" : "0 4px 20px rgba(255,100,0,0.3)",
+                    boxShadow: loading ? "none" : "0 4px 20px rgba(255,92,0,0.3)",
                     transition: "all 0.2s",
                   }}
                 >

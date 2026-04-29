@@ -558,6 +558,7 @@ export const categoryApi = {
 // ─── Backer API ───────────────────────────────────────────────────────────────
 
 export interface BackedProjectResponse {
+  donationId?: number;
   projectId: number;
   projectTitle: string;
   thumbnailUrl: string | null;

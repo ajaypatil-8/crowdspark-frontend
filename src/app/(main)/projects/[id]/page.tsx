@@ -1,61 +1,153 @@
 "use client";
-
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
-  exploreApi,
-  isLoggedIn,
-  type ProjectFullDetailsResponse,
-  type RewardTierResponse,
+  exploreApi, isLoggedIn,
+  type ProjectFullDetailsResponse, type RewardTierResponse,
 } from "@/lib/api";
 import ProjectGallery from "@/components/ProjectGallery";
 import BackProjectModal from "@/components/BackProjectModal";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import {
+  ChevronRight, BookOpen, Gift, Bell, Clock, Users,
+  Share2, Bookmark, BookmarkCheck, AlertTriangle,
+  TrendingUp, Calendar, ArrowLeft,
+} from "lucide-react";
 
 if (typeof window !== "undefined") gsap.registerPlugin(ScrollTrigger);
 
-/* ── tiny helpers ────────────────────────────────────────────────────────── */
 const fmt = (n: number) =>
-  n >= 100000
-    ? `₹${(n / 100000).toFixed(1)}L`
-    : n >= 1000
-    ? `₹${(n / 1000).toFixed(0)}K`
-    : `₹${n}`;
+  n >= 100000 ? `₹${(n / 100000).toFixed(1)}L`
+  : n >= 1000  ? `₹${(n / 1000).toFixed(0)}K`
+  : `₹${n}`;
 
 const daysColor = (d: number | null | undefined) =>
   !d || d <= 3 ? "#ef4444" : d <= 7 ? "#f59e0b" : "#22c55e";
 
-/* ── component ───────────────────────────────────────────────────────────── */
+// ── Ambient Canvas ───────────────────────────────────────────────────────────
+function AmbientCanvas({ isDark }: { isDark: boolean }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = ref.current; if (!canvas) return;
+    const ctx = canvas.getContext("2d")!;
+    let raf: number;
+    const dpr = window.devicePixelRatio || 1;
+    const resize = () => {
+      canvas.width  = canvas.offsetWidth  * dpr;
+      canvas.height = canvas.offsetHeight * dpr;
+      ctx.scale(dpr, dpr);
+    };
+    resize(); window.addEventListener("resize", resize);
+    type Orb = { x:number; y:number; r:number; vx:number; vy:number; hue:number; a:number };
+    const orbs: Orb[] = [
+      { x:0.05, y:0.10, r:0.35, vx:0.00020, vy:0.00015, hue:22,  a:isDark?0.07:0.045 },
+      { x:0.90, y:0.60, r:0.30, vx:-0.00015,vy:0.00018, hue:200, a:isDark?0.055:0.035},
+      { x:0.50, y:0.02, r:0.22, vx:0.00016, vy:-0.0002, hue:260, a:isDark?0.05:0.03  },
+    ];
+    const W=()=>canvas.offsetWidth, H=()=>canvas.offsetHeight;
+    const tick=()=>{
+      raf=requestAnimationFrame(tick);
+      const w=W(),h=H();
+      ctx.clearRect(0,0,w,h);
+      orbs.forEach(o=>{
+        o.x+=o.vx; o.y+=o.vy;
+        if(o.x<-0.15||o.x>1.15)o.vx*=-1;
+        if(o.y<-0.15||o.y>1.15)o.vy*=-1;
+        const gx=o.x*w,gy=o.y*h,gr=o.r*Math.min(w,h);
+        const g=ctx.createRadialGradient(gx,gy,0,gx,gy,gr);
+        g.addColorStop(0,`hsla(${o.hue},80%,${isDark?58:50}%,${o.a})`);
+        g.addColorStop(1,"transparent");
+        ctx.fillStyle=g;
+        ctx.beginPath();ctx.arc(gx,gy,gr,0,Math.PI*2);ctx.fill();
+      });
+    };
+    tick();
+    return ()=>{cancelAnimationFrame(raf);window.removeEventListener("resize",resize);};
+  },[isDark]);
+  return <canvas ref={ref} style={{ position:"fixed",inset:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:0 }}/>;
+}
+
+// ── Tab button ───────────────────────────────────────────────────────────────
+function TabBtn({ id, active, label, icon, onClick, txt, muted, card2, bdr, card }: any) {
+  return (
+    <motion.button
+      whileTap={{ scale: 0.96 }}
+      onClick={() => onClick(id)}
+      style={{
+        flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+        padding: "11px 0", borderRadius: 11, border: "none",
+        background: active ? card : "transparent",
+        color: active ? txt : muted,
+        fontFamily: "Syne, sans-serif", fontWeight: active ? 700 : 500,
+        fontSize: 13.5, cursor: "pointer", transition: "all 0.2s",
+        boxShadow: active ? (card === "#fff" ? "0 2px 10px rgba(0,0,0,0.08)" : "0 2px 10px rgba(0,0,0,0.3)") : "none",
+      }}
+    >
+      {icon} {label}
+    </motion.button>
+  );
+}
+
+// ── Skeleton loader ──────────────────────────────────────────────────────────
+function PageSkeleton({ isDark }: { isDark: boolean }) {
+  const bdr = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
+  const S = ({ w="100%", h=14, mb=8, style={} }: any) => (
+    <motion.div
+      animate={{ opacity: [0.4, 0.8, 0.4] }}
+      transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+      style={{ height: h, width: w, borderRadius: 6, background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)", marginBottom: mb, ...style }}
+    />
+  );
+  return (
+    <div style={{ minHeight: "100vh", background: isDark ? "#080808" : "#f9f9f7", paddingTop: 88 }}>
+      <AmbientCanvas isDark={isDark} />
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 24px", position: "relative", zIndex: 1, display: "grid", gridTemplateColumns: "1fr clamp(300px,30%,370px)", gap: 40 }}>
+        <div>
+          <S h={12} w="30%" mb={24} />
+          <S h={56} mb={12} />
+          <S h={56} w="70%" mb={20} />
+          <S h={18} mb={8} />
+          <S h={18} w="80%" mb={32} />
+          <S h={300} mb={0} style={{ borderRadius: 20 }} />
+        </div>
+        <div>
+          <S h={320} style={{ borderRadius: 22 }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
 export default function ProjectDetailPage() {
-  const params = useParams();
-  const router = useRouter();
-  const id = Number(params.id);
+  const params  = useParams();
+  const router  = useRouter();
+  const id      = Number(params.id);
   const { isDark } = useTheme();
 
-  const [project, setProject] = useState<ProjectFullDetailsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [modal, setModal] = useState(false);
+  const [project, setProject]  = useState<ProjectFullDetailsResponse | null>(null);
+  const [loading, setLoading]  = useState(true);
+  const [error,   setError]    = useState<string | null>(null);
+  const [modal,   setModal]    = useState(false);
   const [activeTab, setActiveTab] = useState<"story" | "rewards" | "updates">("story");
   const [myUsername, setMyUsername] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [toast,   setToast]    = useState<string | null>(null);
+  const [saved,   setSaved]    = useState(false);
+  const [faqOpen, setFaqOpen]  = useState<number | null>(null);
 
-  const heroImgRef = useRef<HTMLDivElement>(null);
-  const mainRef = useRef<HTMLDivElement>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mainRef     = useRef<HTMLDivElement>(null);
+  const toastTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 2500);
+    toastTimer.current = setTimeout(() => setToast(null), 2600);
   }, []);
 
-  /* fetch project + current user */
   useEffect(() => {
     if (!id) return;
     (async () => {
@@ -64,184 +156,183 @@ export default function ProjectDetailPage() {
         const [proj] = await Promise.all([
           exploreApi.getFullDetails(id),
           loggedIn()
-            ? auth.me().then((u) => setMyUsername(u.username)).catch(() => {})
+            ? auth.me().then(u => setMyUsername(u.username)).catch(() => {})
             : Promise.resolve(),
         ]);
         setProject(proj);
-        // init saved state
         try {
           const s = JSON.parse(localStorage.getItem("cs_saved_projects") ?? "[]") as number[];
           setSaved(s.includes(proj.id));
         } catch { /* ignore */ }
       } catch (e: any) {
         setError(e.message ?? "Project not found");
-      } finally {
-        setLoading(false);
-      }
+      } finally { setLoading(false); }
     })();
   }, [id]);
 
-  /* GSAP entrance */
   useEffect(() => {
     if (!project) return;
     const ctx = gsap.context(() => {
-      gsap.fromTo(
-        ".hero-text > *",
-        { y: 40, opacity: 0 },
-        { y: 0, opacity: 1, stagger: 0.12, duration: 0.9, ease: "power3.out", delay: 0.1 }
+      gsap.fromTo(".hero-text > *",
+        { y: 44, opacity: 0 },
+        { y: 0, opacity: 1, stagger: 0.1, duration: 0.95, ease: "power3.out", delay: 0.12 }
       );
-      gsap.fromTo(
-        ".sidebar-card",
-        { x: 32, opacity: 0 },
-        { x: 0, opacity: 1, duration: 0.85, ease: "power3.out", delay: 0.35 }
+      gsap.fromTo(".sidebar-card",
+        { x: 36, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.9, ease: "power3.out", delay: 0.3 }
       );
-      gsap.utils.toArray<Element>(".reveal").forEach((el) => {
-        gsap.fromTo(
-          el,
-          { y: 28, opacity: 0 },
-          {
-            y: 0, opacity: 1, duration: 0.7, ease: "power2.out",
-            scrollTrigger: { trigger: el, start: "top 88%", once: true },
-          }
-        );
+      gsap.utils.toArray<Element>(".reveal").forEach(el => {
+        gsap.fromTo(el, { y: 30, opacity: 0 }, {
+          y: 0, opacity: 1, duration: 0.7, ease: "power2.out",
+          scrollTrigger: { trigger: el, start: "top 88%", once: true },
+        });
       });
     }, mainRef);
     return () => ctx.revert();
   }, [project]);
 
-  /* ── theme tokens ──────────────────────────────────────────────────────── */
-  const bg     = isDark ? "#060608"      : "#f7f6f3";
-  const card   = isDark ? "#0d0d0f"      : "#ffffff";
-  const card2  = isDark ? "#111114"      : "#f0efe9";
-  const bdr    = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)";
-  const txt    = isDark ? "#f1f0ee"      : "#100f0d";
-  const muted  = isDark ? "rgba(241,240,238,0.42)" : "rgba(16,15,13,0.42)";
+  // Tokens
+  const bg     = isDark ? "#080808"                 : "#f9f9f7";
+  const card   = isDark ? "#0e0e0e"                 : "#ffffff";
+  const card2  = isDark ? "#141414"                 : "#f2f2f0";
+  const bdr    = isDark ? "rgba(255,255,255,0.07)"  : "rgba(0,0,0,0.07)";
+  const txt    = isDark ? "#f0f0f0"                 : "#0a0a0a";
+  const muted  = isDark ? "rgba(255,255,255,0.42)"  : "rgba(0,0,0,0.42)";
   const accent = "#ff5c00";
   const accentSoft = isDark ? "rgba(255,92,0,0.12)" : "rgba(255,92,0,0.09)";
 
-  /* ── states ────────────────────────────────────────────────────────────── */
-  if (loading) {
-    return (
-      <div style={{ minHeight: "100vh", background: bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
-          <div style={{ position: "relative", width: 52, height: 52 }}>
-            <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `2px solid ${accent}20` }} />
-            <div style={{
-              position: "absolute", inset: 0, borderRadius: "50%",
-              border: `2px solid transparent`,
-              borderTopColor: accent,
-              animation: "cspin 0.7s linear infinite",
-            }} />
-          </div>
-          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: muted, letterSpacing: "0.15em" }}>LOADING PROJECT</span>
-        </div>
-        <style>{`@keyframes cspin{to{transform:rotate(360deg)}}`}</style>
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton isDark={isDark} />;
 
   if (error || !project) {
     return (
-      <div style={{ minHeight: "100vh", background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 20 }}>
-        <div style={{ fontSize: 72, lineHeight: 1 }}>💫</div>
-        <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 26, color: txt, margin: 0 }}>Project not found</h1>
-        {error && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: muted, maxWidth: 320, textAlign: "center", margin: 0 }}>{error}</p>}
-        <Link href="/explore" style={{ marginTop: 8, padding: "12px 28px", borderRadius: 12, background: accent, color: "#fff", fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, textDecoration: "none" }}>
-          Browse campaigns
-        </Link>
+      <div style={{ minHeight: "100vh", background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 20, paddingTop: 88, position: "relative" }}>
+        <AmbientCanvas isDark={isDark} />
+        <div style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
+          <div style={{ width: 80, height: 80, borderRadius: 24, background: accentSoft, border: `1px solid ${accent}25`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+            <AlertTriangle size={36} color={accent} />
+          </div>
+          <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 28, color: txt, margin: "0 0 10px" }}>Project not found</h1>
+          {error && <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: muted, maxWidth: 340, margin: "0 auto 24px", lineHeight: 1.7 }}>{error}</p>}
+          <Link href="/explore" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "12px 28px", borderRadius: 12, background: `linear-gradient(135deg,${accent},#ff9900)`, color: "#fff", fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 14, textDecoration: "none", boxShadow: "0 4px 20px rgba(255,92,0,0.35)" }}>
+            <ArrowLeft size={16} /> Browse campaigns
+          </Link>
+        </div>
       </div>
     );
   }
 
-  const pct    = Math.min(project.fundedPercentage ?? 0, 100);
-  const raised = fmt(project.currentAmount ?? 0);
-  const goal   = fmt(project.goalAmount ?? 0);
+  const pct     = Math.min(project.fundedPercentage ?? 0, 100);
+  const raised  = fmt(project.currentAmount ?? 0);
+  const goal    = fmt(project.goalAmount ?? 0);
   const rewards: RewardTierResponse[] = (project as any).rewards ?? [];
+  const isOwner = !!(myUsername && project.creator?.username === myUsername);
 
   return (
-    <div ref={mainRef} style={{ minHeight: "100vh", background: bg, paddingTop: 72 }}>
-      {/* ── toast ── */}
+    <div ref={mainRef} style={{ minHeight: "100vh", background: bg, paddingTop: 80 }}>
+      <AmbientCanvas isDark={isDark} />
+
+      {/* Toast */}
       <AnimatePresence>
         {toast && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 24, scale: 0.95 }}
             style={{
               position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)",
-              zIndex: 9999, padding: "12px 22px", borderRadius: 12,
-              background: isDark ? "#1a1a1e" : "#fff",
-              border: `1px solid ${accent}40`,
-              boxShadow: `0 8px 32px rgba(0,0,0,0.25), 0 0 0 1px ${accent}20`,
-              fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600, color: txt,
-              display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap",
+              zIndex: 9999, padding: "12px 22px", borderRadius: 14,
+              background: isDark ? "#141414" : "#fff",
+              border: `1px solid ${accent}35`,
+              boxShadow: `0 12px 36px rgba(0,0,0,0.25), 0 0 0 1px ${accent}18`,
+              fontFamily: "DM Sans, sans-serif", fontSize: 14, fontWeight: 600, color: txt,
+              display: "flex", alignItems: "center", gap: 9, whiteSpace: "nowrap",
+              backdropFilter: "blur(12px)",
             }}
           >
-            <span style={{ color: accent }}>✓</span> {toast}
+            <span style={{ color: accent, fontSize: 16 }}>✓</span> {toast}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── ambient blobs ── */}
-      <div aria-hidden style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: "0%", right: "-10%", width: 600, height: 600, borderRadius: "50%", background: `radial-gradient(circle,${accent}09 0%,transparent 65%)`, filter: "blur(80px)" }} />
-        <div style={{ position: "absolute", bottom: "10%", left: "-5%", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle,rgba(59,130,246,0.06) 0%,transparent 65%)", filter: "blur(70px)" }} />
-      </div>
-
       <div style={{ position: "relative", zIndex: 1 }}>
 
-        {/* ─────────────────────────── HERO STRIP ─────────────────────────── */}
-        <div style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 24px 0" }}>
+        {/* ── HERO AREA ──────────────────────────────────────────────────── */}
+        <div style={{ maxWidth: 1220, margin: "0 auto", padding: "32px 24px 0" }}>
 
-          {/* breadcrumb */}
-          <nav className="hero-text" style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'DM Mono', monospace", fontSize: 11, color: muted, letterSpacing: "0.1em", marginBottom: 24 }}>
-            <Link href="/" style={{ color: muted, textDecoration: "none" }}>HOME</Link>
-            <span style={{ opacity: 0.4 }}>/</span>
-            <Link href="/explore" style={{ color: muted, textDecoration: "none" }}>EXPLORE</Link>
-            <span style={{ opacity: 0.4 }}>/</span>
-            <span style={{ color: accent }}>{project.title.slice(0, 24).toUpperCase()}{project.title.length > 24 ? "…" : ""}</span>
+          {/* Breadcrumb */}
+          <nav className="hero-text" style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: "DM Mono, monospace", fontSize: 10.5, color: muted, letterSpacing: "0.1em", marginBottom: 26 }}>
+            <Link href="/" style={{ color: muted, textDecoration: "none", transition: "color 0.15s" }} onMouseEnter={e => (e.currentTarget.style.color = txt)} onMouseLeave={e => (e.currentTarget.style.color = muted)}>HOME</Link>
+            <ChevronRight size={12} style={{ opacity: 0.4 }} />
+            <Link href="/explore" style={{ color: muted, textDecoration: "none", transition: "color 0.15s" }} onMouseEnter={e => (e.currentTarget.style.color = txt)} onMouseLeave={e => (e.currentTarget.style.color = muted)}>EXPLORE</Link>
+            <ChevronRight size={12} style={{ opacity: 0.4 }} />
+            <span style={{ color: accent }}>{project.title.slice(0, 28).toUpperCase()}{project.title.length > 28 ? "…" : ""}</span>
           </nav>
 
-          {/* title block */}
+          {/* Title block */}
           <div className="hero-text">
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
               {project.category && (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 12px", borderRadius: 999, background: accentSoft, border: `1px solid ${accent}30`, fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 600, color: accent, letterSpacing: "0.1em" }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 999, background: accentSoft, border: `1px solid ${accent}28`, fontFamily: "DM Mono, monospace", fontSize: 11, fontWeight: 600, color: accent, letterSpacing: "0.1em" }}>
                   ◆ {project.category.toUpperCase()}
                 </span>
               )}
               {(project.daysLeft ?? 0) <= 7 && (project.daysLeft ?? 0) > 0 && (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 999, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", fontFamily: "'DM Mono', monospace", fontSize: 11, color: "#ef4444", letterSpacing: "0.08em" }}>
-                  ⏳ ENDING SOON
+                <motion.span
+                  animate={{ opacity: [1, 0.6, 1] }} transition={{ duration: 1.5, repeat: Infinity }}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 12px", borderRadius: 999, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.28)", fontFamily: "DM Mono, monospace", fontSize: 11, color: "#ef4444", letterSpacing: "0.08em" }}
+                >
+                  <Clock size={11} /> ENDING SOON
+                </motion.span>
+              )}
+              {pct >= 100 && (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 999, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)", fontFamily: "DM Mono, monospace", fontSize: 11, color: "#22c55e", letterSpacing: "0.08em" }}>
+                  🏆 FULLY FUNDED
                 </span>
               )}
             </div>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 900, fontSize: "clamp(28px,4.5vw,56px)", lineHeight: 1.06, letterSpacing: "-0.03em", color: txt, margin: "0 0 16px", maxWidth: 860 }}>
+
+            <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: "clamp(28px,4.5vw,58px)", lineHeight: 1.06, letterSpacing: "-0.033em", color: txt, margin: "0 0 18px", maxWidth: 860 }}>
               {project.title}
             </h1>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "clamp(15px,1.6vw,18px)", color: muted, lineHeight: 1.75, maxWidth: 680, margin: 0 }}>
+
+            <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: "clamp(15px,1.6vw,18px)", color: muted, lineHeight: 1.8, maxWidth: 700, margin: 0 }}>
               {project.shortDescription}
             </p>
           </div>
 
-          {/* creator strip */}
-          <div className="hero-text" style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 24, padding: "14px 18px", borderRadius: 14, background: card2, border: `1px solid ${bdr}`, maxWidth: 420 }}>
-            <div style={{ width: 40, height: 40, borderRadius: "50%", background: `conic-gradient(from 135deg,${accent},#facc15,${accent})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: `0 0 0 3px ${accentSoft}` }}>
-              <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 900, fontSize: 16, color: "#fff" }}>
-                {project.creator?.username?.charAt(0)?.toUpperCase() ?? "?"}
-              </span>
-            </div>
+          {/* Creator strip */}
+          <div className="hero-text" style={{ display: "inline-flex", alignItems: "center", gap: 12, marginTop: 24, padding: "12px 18px", borderRadius: 16, background: card2, border: `1px solid ${bdr}` }}>
+            {project.creator?.profileImage ? (
+              <img src={project.creator.profileImage} alt={project.creator.username} style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", border: `2px solid ${accent}30` }} />
+            ) : (
+              <div style={{ width: 40, height: 40, borderRadius: "50%", background: `conic-gradient(from 120deg,${accent},#facc15,${accent})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: `0 0 0 3px ${accentSoft}` }}>
+                <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 16, color: "#fff" }}>
+                  {project.creator?.username?.charAt(0)?.toUpperCase() ?? "?"}
+                </span>
+              </div>
+            )}
             <div>
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: muted, margin: "0 0 2px", letterSpacing: "0.12em" }}>CAMPAIGN BY</p>
-              <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, color: txt, margin: 0 }}>@{project.creator?.username}</p>
+              <p style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: muted, margin: "0 0 2px", letterSpacing: "0.12em" }}>CAMPAIGN BY</p>
+              <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 14, color: txt, margin: 0 }}>@{project.creator?.username}</p>
             </div>
+            {project.creator?.about && (
+              <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12.5, color: muted, margin: 0, maxWidth: 220, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden", borderLeft: `1px solid ${bdr}`, paddingLeft: 12 }}>
+                {project.creator.about}
+              </p>
+            )}
           </div>
         </div>
 
-        {/* ──────────────────────── MAIN GRID ──────────────────────────────── */}
-        <div style={{ maxWidth: 1180, margin: "0 auto", padding: "36px 24px 100px", display: "grid", gridTemplateColumns: "1fr clamp(300px, 32%, 380px)", gap: 40, alignItems: "start" }}>
+        {/* ── MAIN GRID ────────────────────────────────────────────────── */}
+        <div style={{
+          maxWidth: 1220, margin: "0 auto",
+          padding: "36px 24px 100px",
+          display: "grid",
+          gridTemplateColumns: "1fr clamp(300px,31%,380px)",
+          gap: 44, alignItems: "start",
+        }}>
 
-          {/* ═══════ LEFT COLUMN ═══════ */}
+          {/* ═══ LEFT COLUMN ═══ */}
           <div>
             {/* Gallery */}
             <div className="reveal" style={{ marginBottom: 36, borderRadius: 20, overflow: "hidden", border: `1px solid ${bdr}` }}>
@@ -253,107 +344,116 @@ export default function ProjectDetailPage() {
               />
             </div>
 
-            {/* Tab bar */}
-            <div className="reveal" style={{ display: "flex", gap: 4, marginBottom: 28, background: card2, borderRadius: 14, padding: 4, border: `1px solid ${bdr}` }}>
-              {(["story", "rewards", "updates"] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  style={{
-                    flex: 1,
-                    padding: "10px 0",
-                    borderRadius: 10,
-                    border: "none",
-                    background: activeTab === tab ? card : "transparent",
-                    color: activeTab === tab ? txt : muted,
-                    fontFamily: "'Syne', sans-serif",
-                    fontWeight: activeTab === tab ? 700 : 500,
-                    fontSize: 13,
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                    boxShadow: activeTab === tab ? `0 1px 8px rgba(0,0,0,0.12)` : "none",
-                    textTransform: "capitalize",
-                    letterSpacing: "0.02em",
-                  }}
-                >
-                  {tab === "story" ? "📖 Story" : tab === "rewards" ? "🎁 Rewards" : "📢 Updates"}
-                </button>
+            {/* Quick stats strip */}
+            <div className="reveal" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 32 }}>
+              {[
+                { icon: <TrendingUp size={15} color={accent} />, label: "Funded", value: `${pct}%` },
+                { icon: <Users size={15} color="#00d4b8" />, label: "Backers", value: (project as any).backersCount?.toLocaleString("en-IN") ?? "—" },
+                { icon: <Calendar size={15} color="#818cf8" />, label: "Days Left", value: String(project.daysLeft ?? 0), color: daysColor(project.daysLeft) },
+              ].map(s => (
+                <div key={s.label} style={{ padding: "16px", borderRadius: 16, background: card, border: `1px solid ${bdr}`, textAlign: "center" }}>
+                  <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>{s.icon}</div>
+                  <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 20, color: s.color ?? txt, margin: "0 0 3px" }}>{s.value}</p>
+                  <p style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: muted, margin: 0, letterSpacing: "0.1em" }}>{s.label}</p>
+                </div>
               ))}
+            </div>
+
+            {/* Tab bar */}
+            <div className="reveal" style={{ display: "flex", gap: 4, marginBottom: 26, background: card2, borderRadius: 16, padding: 5, border: `1px solid ${bdr}` }}>
+              <TabBtn id="story"   active={activeTab === "story"}   label="Story"   icon={<BookOpen size={14}/>}  onClick={setActiveTab} {...{txt,muted,card,card2,bdr}} />
+              <TabBtn id="rewards" active={activeTab === "rewards"} label="Rewards" icon={<Gift size={14}/>}      onClick={setActiveTab} {...{txt,muted,card,card2,bdr}} />
+              <TabBtn id="updates" active={activeTab === "updates"} label="Updates" icon={<Bell size={14}/>}      onClick={setActiveTab} {...{txt,muted,card,card2,bdr}} />
             </div>
 
             {/* Tab content */}
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
+                initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               >
-                {/* ── Story tab ── */}
+                {/* ── Story ── */}
                 {activeTab === "story" && (
-                  <div style={{ padding: "32px", borderRadius: 20, background: card, border: `1px solid ${bdr}` }}>
-                    <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 22, color: txt, margin: "0 0 20px", display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ display: "inline-block", width: 4, height: 22, borderRadius: 2, background: accent }} />
+                  <div style={{ padding: "32px", borderRadius: 22, background: card, border: `1px solid ${bdr}` }}>
+                    <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 22, color: txt, margin: "0 0 22px", display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ display: "inline-block", width: 4, height: 22, borderRadius: 2, background: `linear-gradient(to bottom,${accent},#ffb300)` }} />
                       About this campaign
                     </h2>
                     <div
-                      style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15.5, color: txt, lineHeight: 1.9, opacity: 0.88 }}
+                      style={{ fontFamily: "DM Sans, sans-serif", fontSize: 15.5, color: txt, lineHeight: 1.92, opacity: 0.88 }}
                       dangerouslySetInnerHTML={{ __html: (project.fullDescription ?? "").replace(/\n/g, "<br/>") }}
                     />
                     {(project.storyImages ?? []).length > 0 && (
                       <div style={{ marginTop: 32, display: "flex", flexDirection: "column", gap: 20 }}>
                         {project.storyImages.map((img, i) => (
                           <motion.img
-                            key={i}
-                            src={img}
-                            alt={`Story ${i + 1}`}
-                            initial={{ opacity: 0, scale: 0.98 }}
-                            whileInView={{ opacity: 1, scale: 1 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.5 }}
-                            style={{ width: "100%", borderRadius: 14, objectFit: "cover", border: `1px solid ${bdr}` }}
+                            key={i} src={img} alt={`Story ${i + 1}`}
+                            initial={{ opacity: 0, scale: 0.98 }} whileInView={{ opacity: 1, scale: 1 }}
+                            viewport={{ once: true }} transition={{ duration: 0.5 }}
+                            style={{ width: "100%", borderRadius: 16, objectFit: "cover", border: `1px solid ${bdr}` }}
                           />
                         ))}
                       </div>
                     )}
+
+                    {/* Deadline callout */}
+                    <div style={{ marginTop: 32, padding: "18px 20px", borderRadius: 16, background: card2, border: `1px solid ${bdr}`, display: "flex", alignItems: "center", gap: 12 }}>
+                      <Calendar size={18} color={accent} />
+                      <div>
+                        <p style={{ fontFamily: "DM Mono, monospace", fontSize: 10.5, color: muted, margin: "0 0 2px", letterSpacing: "0.1em" }}>CAMPAIGN DEADLINE</p>
+                        <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 15, color: txt, margin: 0 }}>
+                          {new Date(project.deadline).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                        </p>
+                      </div>
+                      <div style={{ marginLeft: "auto" }}>
+                        <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 16, color: daysColor(project.daysLeft) }}>
+                          {project.daysLeft ?? 0}d left
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 )}
 
-                {/* ── Rewards tab ── */}
+                {/* ── Rewards ── */}
                 {activeTab === "rewards" && (
                   <div>
                     {rewards.length === 0 ? (
-                      <div style={{ padding: "40px 32px", borderRadius: 20, background: card, border: `1px solid ${bdr}`, textAlign: "center" }}>
-                        <p style={{ fontSize: 40, marginBottom: 12 }}>🎁</p>
-                        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: muted }}>No reward tiers for this campaign.</p>
-                        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: muted, opacity: 0.6 }}>You can still back this project with any amount.</p>
+                      <div style={{ padding: "48px 32px", borderRadius: 22, background: card, border: `1px solid ${bdr}`, textAlign: "center" }}>
+                        <div style={{ width: 64, height: 64, borderRadius: 18, background: accentSoft, border: `1px solid ${accent}20`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                          <Gift size={28} color={accent} />
+                        </div>
+                        <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 17, color: txt, margin: "0 0 8px" }}>No reward tiers</p>
+                        <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13.5, color: muted, margin: 0, lineHeight: 1.7 }}>You can still back this project with any amount.</p>
                       </div>
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                         {rewards.map((r, i) => (
                           <motion.div
                             key={r.id}
-                            initial={{ opacity: 0, x: -16 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: i * 0.07 }}
-                            whileHover={{ y: -3, boxShadow: `0 8px 32px ${accent}18` }}
+                            initial={{ opacity: 0, x: -18 }} animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.08 }}
+                            whileHover={{ y: -4, boxShadow: isDark ? `0 12px 36px rgba(0,0,0,0.5), 0 0 0 1px ${accent}20` : `0 12px 36px rgba(0,0,0,0.1), 0 0 0 1px ${accent}15` }}
                             onClick={() => setModal(true)}
-                            style={{ padding: "22px 24px", borderRadius: 18, background: card, border: `1px solid ${bdr}`, cursor: "pointer", transition: "box-shadow 0.2s" }}
+                            style={{ padding: "24px", borderRadius: 20, background: card, border: `1px solid ${bdr}`, cursor: "pointer", transition: "box-shadow 0.2s" }}
                           >
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14 }}>
                               <div style={{ flex: 1 }}>
-                                <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 16, color: txt, margin: "0 0 6px" }}>{r.title}</p>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                                  <span style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: muted, background: card2, border: `1px solid ${bdr}`, padding: "2px 7px", borderRadius: 5, letterSpacing: "0.08em" }}>TIER {i + 1}</span>
+                                </div>
+                                <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 17, color: txt, margin: "0 0 8px" }}>{r.title}</p>
                                 {r.description && (
-                                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, color: muted, margin: 0, lineHeight: 1.6 }}>{r.description}</p>
+                                  <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: muted, margin: 0, lineHeight: 1.65 }}>{r.description}</p>
                                 )}
                               </div>
-                              <div style={{ flexShrink: 0, padding: "8px 16px", borderRadius: 10, background: accentSoft, border: `1px solid ${accent}30` }}>
-                                <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 900, fontSize: 16, color: accent }}>₹{r.minimumAmount}+</span>
+                              <div style={{ flexShrink: 0, padding: "10px 16px", borderRadius: 12, background: accentSoft, border: `1px solid ${accent}28`, textAlign: "center" }}>
+                                <p style={{ fontFamily: "DM Mono, monospace", fontSize: 9.5, color: accent, margin: "0 0 2px", letterSpacing: "0.1em" }}>PLEDGE</p>
+                                <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 18, color: accent, margin: 0 }}>₹{r.minimumAmount}+</p>
                               </div>
                             </div>
-                            <div style={{ marginTop: 14, display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "'DM Mono', monospace", fontSize: 11, color: accent, letterSpacing: "0.08em" }}>
-                              SELECT THIS TIER →
+                            <div style={{ marginTop: 16, paddingTop: 14, borderTop: `1px solid ${bdr}`, display: "flex", alignItems: "center", gap: 6, fontFamily: "DM Mono, monospace", fontSize: 11, color: accent, letterSpacing: "0.08em" }}>
+                              SELECT THIS REWARD →
                             </div>
                           </motion.div>
                         ))}
@@ -362,151 +462,177 @@ export default function ProjectDetailPage() {
                   </div>
                 )}
 
-                {/* ── Updates tab ── */}
+                {/* ── Updates ── */}
                 {activeTab === "updates" && (
-                  <div style={{ padding: "40px 32px", borderRadius: 20, background: card, border: `1px solid ${bdr}`, textAlign: "center" }}>
-                    <p style={{ fontSize: 40, marginBottom: 12 }}>📢</p>
-                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: muted }}>No updates posted yet.</p>
-                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: muted, opacity: 0.6 }}>Check back later for campaign news.</p>
+                  <div style={{ padding: "48px 32px", borderRadius: 22, background: card, border: `1px solid ${bdr}`, textAlign: "center" }}>
+                    <div style={{ width: 64, height: 64, borderRadius: 18, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.22)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                      <Bell size={26} color="#818cf8" />
+                    </div>
+                    <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 17, color: txt, margin: "0 0 8px" }}>No updates yet</p>
+                    <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13.5, color: muted, margin: 0, lineHeight: 1.7 }}>Check back later for campaign news and announcements.</p>
                   </div>
                 )}
               </motion.div>
             </AnimatePresence>
           </div>
 
-          {/* ═══════ RIGHT SIDEBAR ═══════ */}
-          <div className="sidebar-card" style={{ position: "sticky", top: 88 }}>
+          {/* ═══ RIGHT SIDEBAR ═══ */}
+          <div className="sidebar-card" style={{ position: "sticky", top: 96, display: "flex", flexDirection: "column", gap: 14 }}>
 
             {/* Funding card */}
-            <div style={{ padding: "28px 24px", borderRadius: 22, background: card, border: `1px solid ${bdr}`, boxShadow: isDark ? "0 24px 64px rgba(0,0,0,0.5)" : "0 8px 40px rgba(0,0,0,0.1)", marginBottom: 16 }}>
-
-              {/* Amount */}
-              <div style={{ marginBottom: 6 }}>
-                <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 900, fontSize: 38, color: txt, letterSpacing: "-0.04em" }}>
-                  {raised}
-                </span>
+            <div style={{
+              padding: "28px 24px", borderRadius: 24,
+              background: card, border: `1px solid ${bdr}`,
+              boxShadow: isDark ? "0 28px 72px rgba(0,0,0,0.55)" : "0 10px 48px rgba(0,0,0,0.10)",
+            }}>
+              {/* Raised amount */}
+              <div style={{ marginBottom: 4 }}>
+                <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 40, color: txt, letterSpacing: "-0.04em" }}>{raised}</span>
               </div>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, color: muted, margin: "0 0 18px" }}>
+              <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13.5, color: muted, margin: "0 0 20px" }}>
                 raised of <strong style={{ color: txt }}>{goal}</strong> goal
               </p>
 
-              {/* Progress */}
-              <div style={{ position: "relative", height: 8, borderRadius: 4, background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)", marginBottom: 8, overflow: "hidden" }}>
+              {/* Progress bar */}
+              <div style={{ position: "relative", height: 9, borderRadius: 5, background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)", marginBottom: 8, overflow: "hidden" }}>
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${pct}%` }}
-                  transition={{ duration: 1.6, ease: [0.16, 1, 0.3, 1], delay: 0.5 }}
-                  style={{ position: "absolute", inset: "0 auto 0 0", borderRadius: 4, background: `linear-gradient(90deg,${accent},#ffb300)` }}
+                  transition={{ duration: 1.8, ease: [0.16, 1, 0.3, 1], delay: 0.5 }}
+                  style={{ position: "absolute", inset: "0 auto 0 0", borderRadius: 5, background: `linear-gradient(90deg,${accent},#ffb300)`, boxShadow: `0 0 10px ${accent}60` }}
                 />
               </div>
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: accent, letterSpacing: "0.1em", margin: "0 0 22px" }}>{pct}% FUNDED</p>
+              <p style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: accent, letterSpacing: "0.1em", margin: "0 0 22px" }}>{pct}% FUNDED</p>
 
               {/* Stats grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 22 }}>
                 {[
                   { label: "DAYS LEFT", value: project.daysLeft ?? 0, color: daysColor(project.daysLeft) },
-                  { label: "% FUNDED", value: `${pct}%`, color: txt },
-                ].map((s) => (
+                  { label: "% FUNDED",  value: `${pct}%`, color: txt },
+                ].map(s => (
                   <div key={s.label} style={{ padding: "14px 16px", borderRadius: 14, background: card2, border: `1px solid ${bdr}`, textAlign: "center" }}>
-                    <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 900, fontSize: 22, color: s.color as string, margin: "0 0 4px" }}>{s.value}</p>
-                    <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: muted, margin: 0, letterSpacing: "0.1em" }}>{s.label}</p>
+                    <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 22, color: s.color as string, margin: "0 0 4px" }}>{s.value}</p>
+                    <p style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: muted, margin: 0, letterSpacing: "0.1em" }}>{s.label}</p>
                   </div>
                 ))}
               </div>
 
               {/* CTA */}
               <motion.button
-                whileHover={{ scale: 1.02, boxShadow: `0 8px 32px ${accent}50` }}
-                whileTap={{ scale: 0.97 }}
+                whileHover={!isOwner ? { scale: 1.02, boxShadow: `0 10px 36px ${accent}55` } : {}}
+                whileTap={!isOwner ? { scale: 0.97 } : {}}
                 onClick={() => {
                   if (!isLoggedIn()) { router.push("/login"); return; }
-                  if (myUsername && project?.creator?.username === myUsername) return;
+                  if (isOwner) return;
                   setModal(true);
                 }}
                 style={{
-                  width: "100%",
-                  padding: "17px",
-                  borderRadius: 14,
-                  border: "none",
-                  background: myUsername && project?.creator?.username === myUsername
-                    ? (isDark ? "#2a2a2a" : "#e0e0e0")
-                    : `linear-gradient(135deg,${accent} 0%,#ff8c00 100%)`,
-                  cursor: myUsername && project?.creator?.username === myUsername ? "not-allowed" : "pointer",
-                  color: "#fff",
-                  fontFamily: "'Syne', sans-serif",
-                  fontWeight: 800,
-                  fontSize: 16,
-                  cursor: "pointer",
-                  letterSpacing: "0.01em",
-                  marginBottom: 12,
+                  width: "100%", padding: "17px", borderRadius: 16, border: "none",
+                  background: isOwner
+                    ? (isDark ? "#1e1e1e" : "#e5e5e5")
+                    : `linear-gradient(135deg,${accent} 0%,#ff9000 100%)`,
+                  cursor: isOwner ? "not-allowed" : "pointer",
+                  color: isOwner ? muted : "#fff",
+                  fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 16,
+                  letterSpacing: "0.01em", marginBottom: 12,
+                  transition: "background 0.2s",
                 }}
               >
-                {myUsername && project?.creator?.username === myUsername
-                  ? "🚫 Your own campaign"
-                  : "❤️ Back this project"}
+                {isOwner ? "🚫 Your own campaign" : "❤️ Back this project"}
               </motion.button>
 
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: muted, textAlign: "center", letterSpacing: "0.1em", margin: 0 }}>
+              <p style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: muted, textAlign: "center", letterSpacing: "0.1em", margin: 0 }}>
                 DEADLINE · {new Date(project.deadline).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }).toUpperCase()}
               </p>
             </div>
 
-            {/* Rewards quick list (if any) */}
+            {/* Rewards quick list */}
             {rewards.length > 0 && (
-              <div style={{ padding: "20px 22px", borderRadius: 18, background: card, border: `1px solid ${bdr}` }}>
-                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: muted, letterSpacing: "0.12em", margin: "0 0 14px" }}>POPULAR TIERS</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {rewards.slice(0, 3).map((r) => (
+              <div style={{ padding: "20px 22px", borderRadius: 20, background: card, border: `1px solid ${bdr}` }}>
+                <p style={{ fontFamily: "DM Mono, monospace", fontSize: 10.5, color: muted, letterSpacing: "0.12em", margin: "0 0 14px", textTransform: "uppercase" }}>Popular Tiers</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                  {rewards.slice(0, 3).map(r => (
                     <motion.button
                       key={r.id}
-                      whileHover={{ x: 4 }}
-                      onClick={() => { setActiveTab("rewards"); }}
-                      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 12, background: card2, border: `1px solid ${bdr}`, cursor: "pointer", textAlign: "left" }}
+                      whileHover={{ x: 4 }} whileTap={{ scale: 0.97 }}
+                      onClick={() => setActiveTab("rewards")}
+                      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 14px", borderRadius: 12, background: card2, border: `1px solid ${bdr}`, cursor: "pointer", textAlign: "left" }}
                     >
-                      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: txt, fontWeight: 500 }}>{r.title}</span>
-                      <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, color: accent, fontWeight: 700, flexShrink: 0 }}>₹{r.minimumAmount}+</span>
+                      <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: txt, fontWeight: 500 }}>{r.title}</span>
+                      <span style={{ fontFamily: "Syne, sans-serif", fontSize: 13, color: accent, fontWeight: 800, flexShrink: 0, background: accentSoft, padding: "2px 8px", borderRadius: 6 }}>₹{r.minimumAmount}+</span>
                     </motion.button>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Share strip */}
-            <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+            {/* Share / Save */}
+            <div style={{ display: "flex", gap: 8 }}>
               {[
-                { label: "Share", icon: "🔗", action: () => {
+                {
+                  label: "Share", icon: <Share2 size={14} />,
+                  action: () => {
                     navigator.clipboard?.writeText(window.location.href)
-                      .then(() => showToast("Link copied to clipboard!"))
+                      .then(() => showToast("Link copied!"))
                       .catch(() => showToast("Copy: " + window.location.href));
-                  }},
-                { label: saved ? "Saved ✓" : "Save", icon: saved ? "🔖" : "🔖", action: () => {
+                  },
+                },
+                {
+                  label: saved ? "Saved" : "Save",
+                  icon: saved ? <BookmarkCheck size={14} color={accent} /> : <Bookmark size={14} />,
+                  action: () => {
                     try {
                       const key = "cs_saved_projects";
                       const list = JSON.parse(localStorage.getItem(key) ?? "[]") as number[];
                       if (saved) {
-                        const updated = list.filter((x) => x !== project!.id);
-                        localStorage.setItem(key, JSON.stringify(updated));
-                        setSaved(false);
-                        showToast("Removed from saved");
+                        localStorage.setItem(key, JSON.stringify(list.filter(x => x !== project!.id)));
+                        setSaved(false); showToast("Removed from saved");
                       } else {
                         if (!list.includes(project!.id)) list.push(project!.id);
                         localStorage.setItem(key, JSON.stringify(list));
-                        setSaved(true);
-                        showToast("Project saved!");
+                        setSaved(true); showToast("Project saved!");
                       }
                     } catch { showToast("Could not save"); }
-                  }},
-              ].map((b) => (
+                  },
+                },
+              ].map(b => (
                 <motion.button
                   key={b.label}
-                  whileHover={{ y: -2 }}
-                  whileTap={{ scale: 0.96 }}
+                  whileHover={{ y: -2 }} whileTap={{ scale: 0.95 }}
                   onClick={b.action}
-                  style={{ flex: 1, padding: "11px", borderRadius: 12, background: card2, border: `1px solid ${bdr}`, color: muted, fontFamily: "'DM Sans', sans-serif", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                  style={{
+                    flex: 1, padding: "12px", borderRadius: 14,
+                    background: card, border: `1px solid ${bdr}`,
+                    color: saved && b.label === "Saved" ? accent : muted,
+                    fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600,
+                    cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                  }}
                 >
                   {b.icon} {b.label}
                 </motion.button>
               ))}
+            </div>
+
+            {/* Creator card */}
+            <div style={{ padding: "20px 22px", borderRadius: 20, background: card, border: `1px solid ${bdr}` }}>
+              <p style={{ fontFamily: "DM Mono, monospace", fontSize: 10.5, color: muted, letterSpacing: "0.12em", margin: "0 0 14px", textTransform: "uppercase" }}>About the Creator</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: project.creator?.about ? 12 : 0 }}>
+                {project.creator?.profileImage ? (
+                  <img src={project.creator.profileImage} alt={project.creator.username} style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover" }} />
+                ) : (
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: `conic-gradient(from 120deg,${accent},#facc15,${accent})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 18, color: "#fff" }}>{project.creator?.username?.charAt(0)?.toUpperCase()}</span>
+                  </div>
+                )}
+                <div>
+                  <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 15, color: txt, margin: "0 0 2px" }}>@{project.creator?.username}</p>
+                  <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11.5, color: muted, margin: 0 }}>Campaign Creator</p>
+                </div>
+              </div>
+              {project.creator?.about && (
+                <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: muted, margin: 0, lineHeight: 1.65 }}>{project.creator.about}</p>
+              )}
             </div>
           </div>
         </div>
@@ -514,14 +640,10 @@ export default function ProjectDetailPage() {
 
       {/* Back modal */}
       <BackProjectModal
-        open={modal}
-        onClose={() => setModal(false)}
-        projectId={project.id}
-        projectTitle={project.title}
-        rewards={rewards}
-        isDark={isDark}
-        goalAmount={project.goalAmount}
-        currentAmount={project.currentAmount}
+        open={modal} onClose={() => setModal(false)}
+        projectId={project.id} projectTitle={project.title}
+        rewards={rewards} isDark={isDark}
+        goalAmount={project.goalAmount} currentAmount={project.currentAmount}
         onSuccess={() => exploreApi.getFullDetails(id).then(setProject).catch(() => {})}
       />
     </div>

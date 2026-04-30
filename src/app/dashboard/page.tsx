@@ -1,736 +1,240 @@
 "use client";
-import {
-  useEffect,
-  useState,
-} from "react";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { calcCompletion } from "@/lib/profile";
+import {
+  StatCard, SectionCard, ActivityFeed, EmptyState,
+  StatsSkeleton, WidgetSkeleton, ProfileCompletionBar, AnimatedCounter,
+  type ActivityItem,
+} from "@/components/dashboard/widgets";
 
-const IcHeart = () => (
-  <svg width="17" height="17" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor"
-    strokeWidth="1.7" strokeLinecap="round"
-    strokeLinejoin="round">
-    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
-  </svg>
-);
-const IcCoin = () => (
-  <svg width="17" height="17" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor"
-    strokeWidth="1.7" strokeLinecap="round"
-    strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"/>
-    <path d="M12 8v1m0 6v1M9.5 10.5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5c0 2-5 2-5 4 0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5"/>
-  </svg>
-);
-const IcRocket = () => (
-  <svg width="17" height="17" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor"
-    strokeWidth="1.7" strokeLinecap="round"
-    strokeLinejoin="round">
-    <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/>
-    <path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/>
-  </svg>
-);
-const IcChart = () => (
-  <svg width="17" height="17" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor"
-    strokeWidth="1.7" strokeLinecap="round"
-    strokeLinejoin="round">
-    <line x1="18" y1="20" x2="18" y2="10"/>
-    <line x1="12" y1="20" x2="12" y2="4"/>
-    <line x1="6" y1="20" x2="6" y2="14"/>
-  </svg>
-);
-const IcCheck = () => (
-  <svg width="10" height="10" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor"
-    strokeWidth="2.5" strokeLinecap="round"
-    strokeLinejoin="round">
-    <polyline points="20 6 9 17 4 12"/>
-  </svg>
-);
-const IcCircle = () => (
-  <svg width="9" height="9" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor"
-    strokeWidth="2" strokeLinecap="round">
-    <circle cx="12" cy="12" r="10"/>
-  </svg>
-);
-const IcArrow = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor"
-    strokeWidth="2.2" strokeLinecap="round"
-    strokeLinejoin="round">
-    <path d="M5 12h14M12 5l7 7-7 7"/>
-  </svg>
-);
-const IcUser = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor"
-    strokeWidth="1.8" strokeLinecap="round"
-    strokeLinejoin="round">
-    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-    <circle cx="12" cy="7" r="4"/>
-  </svg>
-);
-const IcGear = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor"
-    strokeWidth="1.8" strokeLinecap="round"
-    strokeLinejoin="round">
-    <circle cx="12" cy="12" r="3"/>
-    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
-  </svg>
-);
-const IcBookmark = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor"
-    strokeWidth="1.8" strokeLinecap="round"
-    strokeLinejoin="round">
-    <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
-  </svg>
-);
-const IcZap = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor"
-    strokeWidth="1.8" strokeLinecap="round"
-    strokeLinejoin="round">
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-  </svg>
-);
-const IcTriangle = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor"
-    strokeWidth="2" strokeLinecap="round"
-    strokeLinejoin="round">
-    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-    <line x1="12" y1="9" x2="12" y2="13"/>
-    <line x1="12" y1="17" x2="12.01" y2="17"/>
-  </svg>
-);
+// ─── Icons ─────────────────────────────────────────────────────────────────────
+const Ic = {
+  Heart: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+    </svg>
+  ),
+  Rupee: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 3h12M6 8h12M6 21L12 8M6 13l8.5 8"/><path d="M6 8a4 4 0 000 5h4"/>
+    </svg>
+  ),
+  Rocket: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/>
+      <path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/>
+    </svg>
+  ),
+  TrendUp: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+    </svg>
+  ),
+  ArrowRight: () => (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12h14M12 5l7 7-7 7"/>
+    </svg>
+  ),
+  Zap: () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+    </svg>
+  ),
+  Plus: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  ),
+  Compass: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+    </svg>
+  ),
+  User: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+    </svg>
+  ),
+  Shield: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+  ),
+  Warning: () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+      <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+  ),
+  Retry: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>
+    </svg>
+  ),
+};
 
-function StatCard({
-  icon,
-  label,
-  value,
-  accentR,
-  accentG,
-  accentB,
-  delay,
-  isDark,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string | number;
-  accentR: number;
-  accentG: number;
-  accentB: number;
-  delay: number;
-  isDark: boolean;
-}) {
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(
-      () => setVisible(true),
-      delay,
-    );
-    return () => clearTimeout(t);
-  }, [delay]);
-
-  const accent =
-    `rgb(${accentR},${accentG},${accentB})`;
-  const accentBg =
-    isDark
-      ? `rgba(${accentR},${accentG},${accentB},0.1)`
-      : `rgba(${accentR},${accentG},${accentB},0.08)`;
-  const accentBdr =
-    `rgba(${accentR},${accentG},${accentB},0.2)`;
-
-  return (
-    <div
-      style={{
-        borderRadius: 16,
-        padding: "20px 22px",
-        background: isDark
-          ? "rgba(255,255,255,0.03)"
-          : "#ffffff",
-        border: `1px solid ${
-          isDark
-            ? "rgba(255,255,255,0.07)"
-            : "rgba(0,0,0,0.07)"
-        }`,
-        boxShadow: isDark
-          ? "none"
-          : "0 2px 14px rgba(0,0,0,0.04)",
-        transform: visible
-          ? "translateY(0)"
-          : "translateY(16px)",
-        opacity: visible ? 1 : 0,
-        transition:
-          "transform 0.4s cubic-bezier(.22,.68,0,1.2),opacity 0.3s",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 2,
-          background: `linear-gradient(90deg,transparent,${accentBdr},transparent)`,
-        }}
-      />
-      <div
-        style={{
-          width: 38,
-          height: 38,
-          borderRadius: 11,
-          background: accentBg,
-          border: `1px solid ${accentBdr}`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          marginBottom: 14,
-          color: accent,
-        }}
-      >
-        {icon}
-      </div>
-      <p
-        style={{
-          fontFamily: "Syne, sans-serif",
-          fontWeight: 800,
-          fontSize: 26,
-          color: "var(--text)",
-          margin: "0 0 4px",
-          letterSpacing: "-0.02em",
-          lineHeight: 1,
-        }}
-      >
-        {value}
-      </p>
-      <p
-        style={{
-          fontFamily: "DM Sans, sans-serif",
-          fontSize: 12.5,
-          color: "var(--text-muted)",
-          margin: 0,
-        }}
-      >
-        {label}
-      </p>
-    </div>
-  );
-}
-
-function StatusRow({
-  label,
-  verified,
-  link,
-  isDark,
-}: {
-  label: string;
-  verified: boolean;
-  link?: string;
-  isDark: boolean;
-}) {
-  const inner = (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "10px 13px",
-        borderRadius: 10,
-        background: isDark
-          ? "rgba(255,255,255,0.025)"
-          : "rgba(0,0,0,0.025)",
-        border: `1px solid ${
-          verified
-            ? "rgba(52,211,153,0.22)"
-            : isDark
-              ? "rgba(255,255,255,0.06)"
-              : "rgba(0,0,0,0.06)"
-        }`,
-        cursor: link ? "pointer" : "default",
-        transition:
-          "border-color 0.15s, background 0.15s",
-      }}
-      onMouseEnter={(e) => {
-        if (link) {
-          (
-            e.currentTarget as HTMLDivElement
-          ).style.background = isDark
-            ? "rgba(255,255,255,0.04)"
-            : "rgba(0,0,0,0.04)";
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (link) {
-          (
-            e.currentTarget as HTMLDivElement
-          ).style.background = isDark
-            ? "rgba(255,255,255,0.025)"
-            : "rgba(0,0,0,0.025)";
-        }
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 9,
-        }}
-      >
-        <div
-          style={{
-            width: 22,
-            height: 22,
-            borderRadius: "50%",
-            background: verified
-              ? "rgba(52,211,153,0.12)"
-              : isDark
-                ? "rgba(255,255,255,0.06)"
-                : "rgba(0,0,0,0.05)",
-            border: `1px solid ${
-              verified
-                ? "rgba(52,211,153,0.3)"
-                : isDark
-                  ? "rgba(255,255,255,0.1)"
-                  : "rgba(0,0,0,0.1)"
-            }`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: verified
-              ? "#34d399"
-              : "var(--text-muted)",
-          }}
-        >
-          {verified ? <IcCheck /> : <IcCircle />}
-        </div>
-        <span
-          style={{
-            fontFamily: "DM Sans, sans-serif",
-            fontSize: 13.5,
-            fontWeight: 500,
-            color: "var(--text)",
-          }}
-        >
-          {label}
-        </span>
-      </div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "DM Sans, sans-serif",
-            fontSize: 12,
-            fontWeight: 600,
-            color: verified
-              ? "#34d399"
-              : "var(--text-muted)",
-          }}
-        >
-          {verified ? "Verified" : "Not verified"}
-        </span>
-        {link && (
-          <span
-            style={{
-              color: "var(--text-muted)",
-              opacity: 0.5,
-              display: "flex",
-            }}
-          >
-            <IcArrow />
-          </span>
-        )}
-      </div>
-    </div>
-  );
-
-  return link ? (
-    <Link
-      href={link}
-      style={{ textDecoration: "none", display: "block" }}
-    >
-      {inner}
-    </Link>
-  ) : (
-    <div>{inner}</div>
-  );
-}
-
+// ─── Quick Action Card ─────────────────────────────────────────────────────────
 function QuickAction({
-  icon,
-  label,
-  sub,
-  href,
-  accent,
-  isDark,
+  icon, label, sub, href, accent
 }: {
-  icon: React.ReactNode;
-  label: string;
-  sub: string;
-  href: string;
-  accent: string;
-  isDark: boolean;
+  icon: React.ReactNode; label: string; sub: string; href: string; accent: string;
 }) {
+  const { isDark } = useTheme();
+  const [hovered, setHovered] = useState(false);
+  const bdr = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
+
   return (
     <Link
       href={href}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "10px 12px",
-        borderRadius: 11,
-        border: `1px solid ${
-          isDark
-            ? "rgba(255,255,255,0.05)"
-            : "rgba(0,0,0,0.05)"
-        }`,
+        display: "flex", alignItems: "center", gap: 12,
+        padding: "12px 14px", borderRadius: 14,
+        border: `1px solid ${hovered ? accent + "44" : bdr}`,
         textDecoration: "none",
-        transition: "all 0.15s",
-        cursor: "pointer",
-      }}
-      onMouseEnter={(e) => {
-        const el =
-          e.currentTarget as HTMLAnchorElement;
-        el.style.background = isDark
-          ? "rgba(255,255,255,0.04)"
-          : "rgba(0,0,0,0.025)";
-        el.style.borderColor = isDark
-          ? "rgba(255,255,255,0.1)"
-          : "rgba(0,0,0,0.1)";
-        el.style.transform = "translateX(3px)";
-      }}
-      onMouseLeave={(e) => {
-        const el =
-          e.currentTarget as HTMLAnchorElement;
-        el.style.background = "transparent";
-        el.style.borderColor = isDark
-          ? "rgba(255,255,255,0.05)"
-          : "rgba(0,0,0,0.05)";
-        el.style.transform = "translateX(0)";
+        background: hovered
+          ? (isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)")
+          : "transparent",
+        transition: "all 0.18s cubic-bezier(.22,1,.36,1)",
+        transform: hovered ? "translateX(3px)" : "translateX(0)",
       }}
     >
-      <div
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: 9,
-          background: isDark
-            ? "rgba(255,255,255,0.05)"
-            : "rgba(0,0,0,0.04)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: accent,
-          flexShrink: 0,
-        }}
-      >
+      <div style={{
+        width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+        background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        color: accent, fontSize: 16,
+        border: `1px solid ${bdr}`,
+        boxShadow: hovered ? `0 0 14px ${accent}44` : "none",
+        transition: "box-shadow 0.2s",
+      }}>
         {icon}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p
-          style={{
-            fontFamily: "DM Sans, sans-serif",
-            fontSize: 13.5,
-            fontWeight: 600,
-            color: "var(--text)",
-            margin: 0,
-          }}
-        >
-          {label}
-        </p>
-        <p
-          style={{
-            fontFamily: "DM Sans, sans-serif",
-            fontSize: 11.5,
-            color: "var(--text-muted)",
-            margin: 0,
-          }}
-        >
-          {sub}
-        </p>
+        <p style={{
+          fontFamily: "DM Sans, sans-serif", fontSize: 13.5, fontWeight: 600,
+          color: "var(--text)", margin: 0,
+        }}>{label}</p>
+        <p style={{
+          fontFamily: "DM Sans, sans-serif", fontSize: 11.5, color: "var(--text-muted)",
+          margin: "1px 0 0",
+        }}>{sub}</p>
       </div>
-      <span
-        style={{
-          color: "var(--text-muted)",
-          opacity: 0.38,
-          flexShrink: 0,
-          display: "flex",
-        }}
-      >
-        <IcArrow />
+      <span style={{ color: "var(--text-muted)", opacity: 0.4, display: "flex" }}>
+        <Ic.ArrowRight />
       </span>
     </Link>
   );
 }
 
-function SectionCard({
-  title,
-  children,
-  isDark,
-}: {
-  title: string;
-  children: React.ReactNode;
-  isDark: boolean;
-}) {
+// ─── Badge alert banner ────────────────────────────────────────────────────────
+function AlertBanner({ type, message, isDark }: { type: "warn" | "success"; message: string; isDark: boolean }) {
+  const [dismissed, setDismissed] = useState(false);
+  const bg = type === "warn"
+    ? (isDark ? "rgba(245,158,11,0.08)" : "rgba(245,158,11,0.07)")
+    : (isDark ? "rgba(34,197,94,0.08)" : "rgba(34,197,94,0.07)");
+  const color = type === "warn" ? "#f59e0b" : "#22c55e";
+  const bdr = `1px solid ${color}33`;
+
+  if (dismissed) return null;
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
       style={{
-        borderRadius: 18,
-        background: isDark
-          ? "rgba(255,255,255,0.03)"
-          : "#ffffff",
-        border: `1px solid ${
-          isDark
-            ? "rgba(255,255,255,0.07)"
-            : "rgba(0,0,0,0.07)"
-        }`,
-        boxShadow: isDark
-          ? "none"
-          : "0 2px 14px rgba(0,0,0,0.04)",
-        overflow: "hidden",
+        display: "flex", alignItems: "center", gap: 10,
+        padding: "11px 16px", borderRadius: 14,
+        background: bg, border: bdr, marginBottom: 22,
       }}
     >
-      <div
+      <span style={{ color, display: "flex" }}>
+        {type === "warn" ? <Ic.Warning /> : <Ic.Shield />}
+      </span>
+      <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: "var(--text)", flex: 1 }}>
+        {message}
+      </span>
+      <button
+        onClick={() => setDismissed(true)}
         style={{
-          padding: "13px 18px",
-          borderBottom: `1px solid ${
-            isDark
-              ? "rgba(255,255,255,0.05)"
-              : "rgba(0,0,0,0.05)"
-          }`,
-          background: isDark
-            ? "rgba(255,255,255,0.015)"
-            : "rgba(0,0,0,0.01)",
-          position: "relative",
-          overflow: "hidden",
+          background: "none", border: "none", cursor: "pointer",
+          color: "var(--text-muted)", fontFamily: "DM Sans, sans-serif", fontSize: 13,
+          padding: "2px 6px", borderRadius: 6,
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: "10%",
-            right: "10%",
-            height: 1,
-            background:
-              "linear-gradient(90deg,transparent,rgba(255,140,0,0.4),transparent)",
-          }}
-        />
-        <p
-          style={{
-            fontFamily: "Syne, sans-serif",
-            fontWeight: 700,
-            fontSize: 13.5,
-            color: "var(--text)",
-            margin: 0,
-          }}
-        >
-          {title}
-        </p>
-      </div>
-      <div style={{ padding: "14px 16px" }}>
-        {children}
-      </div>
-    </div>
+        ✕
+      </button>
+    </motion.div>
   );
 }
 
-function PageSkeleton({ isDark }: { isDark: boolean }) {
-  const b = isDark
-    ? "rgba(255,255,255,0.06)"
-    : "rgba(0,0,0,0.05)";
-  return (
-    <div
-      style={{
-        padding: "40px 36px 60px",
-        maxWidth: 1100,
-        margin: "0 auto",
-      }}
-    >
-      <div style={{ marginBottom: 36 }}>
-        <div
-          style={{
-            width: 140,
-            height: 12,
-            borderRadius: 6,
-            background: b,
-            marginBottom: 10,
-            animation: "ovPulse 2s ease-in-out infinite",
-          }}
-        />
-        <div
-          style={{
-            width: 280,
-            height: 36,
-            borderRadius: 10,
-            background: b,
-            animation: "ovPulse 2s ease-in-out infinite",
-          }}
-        />
-      </div>
-      <div
-        className="ov-stats"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4,1fr)",
-          gap: 16,
-          marginBottom: 28,
-        }}
-      >
-        {[0, 1, 2, 3].map((i) => (
-          <div
-            key={i}
-            style={{
-              height: 118,
-              borderRadius: 16,
-              background: b,
-              animation:
-                "ovPulse 2s ease-in-out infinite",
-              animationDelay: `${i * 0.1}s`,
-            }}
-          />
-        ))}
-      </div>
-      <div
-        style={{
-          height: 220,
-          borderRadius: 18,
-          background: b,
-          animation: "ovPulse 2s ease-in-out infinite",
-        }}
-      />
-      <style>{`
-        @keyframes ovPulse {
-          0%,100% { opacity: 0.4; }
-          50%     { opacity: 0.9; }
-        }
-      `}</style>
-    </div>
-  );
-}
-
-export default function DashboardPage() {
-  const { user, loading, error, refetch } =
-    useProfile();
+// ─── Skeleton ──────────────────────────────────────────────────────────────────
+function PageSkeleton() {
   const { isDark } = useTheme();
-  const [visible, setVisible] = useState(false);
+  return (
+    <div style={{ padding: "36px 36px 60px", maxWidth: 1100, margin: "0 auto" }}>
+      <div style={{ marginBottom: 32 }}>
+        <WidgetSkeleton height={14} />
+        <div style={{ marginTop: 10 }}><WidgetSkeleton height={36} /></div>
+      </div>
+      <StatsSkeleton />
+      <div style={{ marginTop: 24, display: "grid", gap: 20, gridTemplateColumns: "1fr 1fr" }}>
+        <WidgetSkeleton height={220} delay={0.1}/>
+        <WidgetSkeleton height={220} delay={0.2}/>
+      </div>
+    </div>
+  );
+}
 
-  useEffect(() => {
-    const t = setTimeout(
-      () => setVisible(true),
-      80,
-    );
-    return () => clearTimeout(t);
-  }, []);
+// ─── Main Page ─────────────────────────────────────────────────────────────────
+export default function DashboardPage() {
+  const { user, loading, error, refetch } = useProfile();
+  const { isDark } = useTheme();
 
-  if (loading) {
-    return <PageSkeleton isDark={isDark} />;
-  }
+  if (loading) return <PageSkeleton />;
 
   if (error || !user) {
     return (
-      <div
-        style={{
-          padding: "40px 36px",
-          maxWidth: 600,
-        }}
-      >
-        <div
-          style={{
-            padding: "18px 20px",
-            borderRadius: 14,
-            background: "rgba(239,68,68,0.06)",
-            border:
-              "1px solid rgba(239,68,68,0.2)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 10,
-              marginBottom: 12,
-            }}
-          >
-            <div
-              style={{
-                color: "#ef4444",
-                marginTop: 2,
-              }}
-            >
-              <IcTriangle />
-            </div>
+      <div style={{ padding: "40px 36px", maxWidth: 560 }}>
+        <div style={{
+          padding: "20px 22px", borderRadius: 18,
+          background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.18)",
+        }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
+            <span style={{ color: "#ef4444", display: "flex", marginTop: 2 }}><Ic.Warning /></span>
             <div>
-              <p
-                style={{
-                  fontFamily: "Syne, sans-serif",
-                  fontWeight: 700,
-                  fontSize: 15,
-                  color: "#ef4444",
-                  margin: "0 0 5px",
-                }}
-              >
+              <p style={{
+                fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 15,
+                color: "#ef4444", margin: "0 0 5px",
+              }}>
                 Could not load dashboard
               </p>
-              <p
-                style={{
-                  fontFamily: "DM Sans, sans-serif",
-                  fontSize: 13.5,
-                  color: "var(--text-muted)",
-                  margin: 0,
-                }}
-              >
-                {error ??
-                  "Unknown error. Check the backend."}
+              <p style={{
+                fontFamily: "DM Sans, sans-serif", fontSize: 13.5,
+                color: "var(--text-muted)", margin: 0,
+              }}>
+                {error ?? "Unknown error. Check the backend."}
               </p>
             </div>
           </div>
           <button
             onClick={refetch}
             style={{
+              display: "flex", alignItems: "center", gap: 7,
               padding: "9px 18px",
-              background:
-                "linear-gradient(135deg,#ff6b00,#ffcc00)",
-              color: "#fff",
-              border: "none",
-              borderRadius: 9,
-              cursor: "pointer",
-              fontSize: 13.5,
-              fontFamily: "Syne, sans-serif",
-              fontWeight: 700,
-              position: "relative",
-              overflow: "hidden",
+              background: "linear-gradient(135deg,#ff6b00,#ffcc00)",
+              color: "#fff", border: "none", borderRadius: 10, cursor: "pointer",
+              fontSize: 13.5, fontFamily: "Syne, sans-serif", fontWeight: 700,
             }}
           >
-            <span
-              style={{
-                position: "absolute",
-                inset: 0,
-                background:
-                  "linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.22) 50%,transparent 70%)",
-                animation:
-                  "ovShimmer 2.4s ease-in-out infinite",
-              }}
-            />
-            <span style={{ position: "relative" }}>
-              Retry
-            </span>
+            <Ic.Retry /> Retry
           </button>
         </div>
       </div>
@@ -739,419 +243,373 @@ export default function DashboardPage() {
 
   const isCreator = user.roles?.includes("CREATOR");
   const pct = calcCompletion(user);
-  const cardBdr = isDark
-    ? "rgba(255,255,255,0.07)"
-    : "rgba(0,0,0,0.07)";
 
-  const stats = [
+  const statsData = [
     {
-      icon: <IcHeart />,
+      icon: <Ic.Heart />,
       label: "Projects Backed",
       value: user.totalProjectsBacked ?? 0,
-      accentR: 239,
-      accentG: 68,
-      accentB: 68,
+      accentColor: "#ef4444",
       delay: 100,
     },
     {
-      icon: <IcCoin />,
+      icon: <Ic.Rupee />,
       label: "Total Backed",
-      value: `₹${(
-        (user.totalAmountBacked ?? 0)
-      ).toLocaleString("en-IN")}`,
-      accentR: 52,
-      accentG: 211,
-      accentB: 153,
+      value: `₹${((user.totalAmountBacked ?? 0) / 1000).toFixed(1)}K`,
+      accentColor: "#f59e0b",
       delay: 180,
     },
+    ...(isCreator ? [
+      {
+        icon: <Ic.Rocket />,
+        label: "Campaigns Created",
+        value: user.totalProjectsCreated ?? 0,
+        accentColor: "#8b5cf6",
+        delay: 260,
+      },
+      {
+        icon: <Ic.TrendUp />,
+        label: "Total Raised",
+        value: `₹${((user.totalFundsRaised ?? 0) / 1000).toFixed(1)}K`,
+        accentColor: "#22c55e",
+        delay: 340,
+      },
+    ] : [
+      {
+        icon: <Ic.Rocket />,
+        label: "Campaigns Explored",
+        value: "—",
+        accentColor: "#8b5cf6",
+        delay: 260,
+      },
+    ]),
+  ];
+
+  const quickActions = isCreator ? [
+    { icon: "🚀", label: "Create Campaign", sub: "Launch a new project", href: "/dashboard/create-campaign", accent: "#ff8800" },
+    { icon: "⚡", label: "My Campaigns", sub: "Manage your projects", href: "/dashboard/my-campaigns", accent: "#8b5cf6" },
+    { icon: "🔍", label: "Explore", sub: "Discover campaigns", href: "/explore", accent: "#22c55e" },
+    { icon: "👤", label: "Edit Profile", sub: "Update your info", href: "/dashboard/profile", accent: "#3b82f6" },
+  ] : [
+    { icon: "🔍", label: "Explore Campaigns", sub: "Discover new projects", href: "/explore", accent: "#ff8800" },
+    { icon: "💜", label: "Backed Projects", sub: "View your contributions", href: "/dashboard/backed", accent: "#8b5cf6" },
+    { icon: "🔖", label: "Saved Projects", sub: "Your wishlist", href: "/dashboard/saved", accent: "#22c55e" },
+    { icon: "🌟", label: "Become a Creator", sub: "Launch your first campaign", href: "/dashboard/become-creator", accent: "#f59e0b" },
+  ];
+
+  const activityItems: ActivityItem[] = [
+    ...(user.totalProjectsBacked > 0 ? [{
+      id: "b1", icon: "💜", title: `${user.totalProjectsBacked} project${user.totalProjectsBacked === 1 ? "" : "s"} backed`,
+      sub: `Total contribution: ₹${(user.totalAmountBacked ?? 0).toLocaleString("en-IN")}`,
+      time: "Recent",
+    }] : []),
+    ...(isCreator && user.totalProjectsCreated > 0 ? [{
+      id: "c1", icon: "🚀", title: `${user.totalProjectsCreated} campaign${user.totalProjectsCreated === 1 ? "" : "s"} created`,
+      sub: `Total raised: ₹${(user.totalFundsRaised ?? 0).toLocaleString("en-IN")}`,
+      time: "Lifetime",
+    }] : []),
     {
-      icon: <IcRocket />,
-      label: "Projects Created",
-      value: user.totalProjectsCreated ?? 0,
-      accentR: 255,
-      accentG: 107,
-      accentB: 0,
-      delay: 260,
-    },
-    {
-      icon: <IcChart />,
-      label: "Funds Raised",
-      value: `₹${(
-        (user.totalFundsRaised ?? 0)
-      ).toLocaleString("en-IN")}`,
-      accentR: 167,
-      accentG: 139,
-      accentB: 250,
-      delay: 340,
+      id: "j1", icon: "🎉", title: "Joined CrowdSpark-X",
+      sub: "Welcome to the community!",
+      time: new Date(user.createdAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" }),
     },
   ];
 
-  const quickActions = [
-    {
-      icon: <IcUser />,
-      label: "Edit profile",
-      sub: "Update bio, links & avatar",
-      href: "/dashboard/profile",
-      accent: "#ff8800",
-    },
-    {
-      icon: <IcGear />,
-      label: "Settings",
-      sub: "Verification & KYC status",
-      href: "/dashboard/settings",
-      accent: "#a78bfa",
-    },
-    {
-      icon: <IcBookmark />,
-      label: "Saved campaigns",
-      sub: "Your bookmarked projects",
-      href: "/dashboard/saved",
-      accent: "#00d4b8",
-    },
-    isCreator
-      ? {
-          icon: <IcZap />,
-          label: "My campaigns",
-          sub: "Manage your projects",
-          href: "/dashboard/my-campaigns",
-          accent: "#34d399",
-        }
-      : {
-          icon: <IcRocket />,
-          label: "Become a creator",
-          sub: "Start raising funds",
-          href: "/dashboard/become-creator",
-          accent: "#ff8800",
-        },
-  ];
+  const kycStatus = user.kycStatus;
+  const needsKyc = !user.kycVerified && kycStatus !== "PENDING";
+  const kycPending = kycStatus === "PENDING";
 
   return (
-    <div
-      style={{
-        padding: "40px 36px 60px",
-        maxWidth: 1100,
-        margin: "0 auto",
-        opacity: visible ? 1 : 0,
-        transform: visible
-          ? "translateY(0)"
-          : "translateY(12px)",
-        transition:
-          "opacity 0.4s, transform 0.4s",
-      }}
-    >
-      <div style={{ marginBottom: 34 }}>
-        <p
-          style={{
-            fontFamily: "DM Sans, sans-serif",
-            fontSize: 12,
-            color: "var(--text-muted)",
-            margin: "0 0 6px",
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-          }}
-        >
-          {new Date().toLocaleDateString("en-IN", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-          })}
-        </p>
-        <h1
-          style={{
-            fontFamily: "Syne, sans-serif",
-            fontWeight: 800,
-            fontSize: "clamp(22px,3vw,34px)",
-            color: "var(--text)",
-            letterSpacing: "-0.03em",
-            margin: "0 0 5px",
-          }}
-        >
-          Welcome back,{" "}
-          {user.name?.split(" ")[0]} 👋
-        </h1>
-        <p
-          style={{
-            fontFamily: "DM Sans, sans-serif",
-            color: "var(--text-muted)",
-            fontSize: 14,
-            margin: 0,
-          }}
-        >
-          {"Here's what's happening with your account"}
-        </p>
-      </div>
-
-      <div
-        className="ov-stats"
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-            "repeat(4,1fr)",
-          gap: 16,
-          marginBottom: 24,
-        }}
-      >
-        {stats.map((s) => (
-          <StatCard
-            key={s.label}
-            icon={s.icon}
-            label={s.label}
-            value={s.value}
-            accentR={s.accentR}
-            accentG={s.accentG}
-            accentB={s.accentB}
-            delay={s.delay}
+    <div style={{ padding: "32px 32px 60px", maxWidth: 1100, margin: "0 auto" }}>
+      {/* Alerts */}
+      <AnimatePresence>
+        {needsKyc && isCreator && (
+          <AlertBanner
+            type="warn"
+            message="Complete KYC verification to receive payouts from your campaigns."
             isDark={isDark}
           />
+        )}
+        {kycPending && (
+          <AlertBanner
+            type="warn"
+            message="Your KYC is under review. You'll be notified once it's approved."
+            isDark={isDark}
+          />
+        )}
+        {!user.emailVerified && (
+          <AlertBanner
+            type="warn"
+            message="Please verify your email address to unlock all features."
+            isDark={isDark}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Greeting */}
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        style={{ marginBottom: 28 }}
+      >
+        <p style={{
+          fontFamily: "DM Sans, sans-serif", fontSize: 13, color: "var(--text-muted)",
+          margin: "0 0 5px", fontWeight: 500,
+        }}>
+          {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 17 ? "Good afternoon" : "Good evening"} 👋
+        </p>
+        <h1 style={{
+          fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 28,
+          color: "var(--text)", margin: 0, letterSpacing: "-0.02em",
+          lineHeight: 1.15,
+        }}>
+          Welcome back, {user.name?.split(" ")[0]}
+        </h1>
+        {isCreator && (
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8,
+            padding: "4px 10px", borderRadius: 20,
+            background: "rgba(255,107,0,0.1)", border: "1px solid rgba(255,107,0,0.22)",
+          }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#ff8800" }}/>
+            <span style={{
+              fontSize: 11, fontFamily: "DM Sans, sans-serif", fontWeight: 700,
+              color: "#ff8800", letterSpacing: "0.06em", textTransform: "uppercase",
+            }}>
+              Creator Account
+            </span>
+          </div>
+        )}
+      </motion.div>
+
+      {/* Stats Grid */}
+      <div style={{
+        display: "grid", gap: 16, marginBottom: 24,
+        gridTemplateColumns: `repeat(${statsData.length}, 1fr)`,
+      }}
+        className="cs-dash-stats"
+      >
+        {statsData.map((s, i) => (
+          <StatCard key={i} {...s} />
         ))}
       </div>
 
-      <div
-        className="ov-grid"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 16,
-          marginBottom: 16,
-        }}
+      {/* Main Grid */}
+      <div style={{
+        display: "grid", gap: 20,
+        gridTemplateColumns: "1fr 340px",
+      }}
+        className="cs-dash-main"
       >
-        <SectionCard
-          title="Profile Status"
-          isDark={isDark}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              marginBottom: 14,
-            }}
+        {/* Left column */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* Quick Actions */}
+          <SectionCard
+            title="Quick Actions"
+            icon={<Ic.Zap />}
+            delay={300}
           >
-            <div
-              style={{
-                flex: 1,
-                height: 6,
-                borderRadius: 3,
-                background: isDark
-                  ? "rgba(255,255,255,0.07)"
-                  : "rgba(0,0,0,0.07)",
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  width: `${pct}%`,
-                  height: "100%",
-                  borderRadius: 3,
-                  background:
-                    "linear-gradient(90deg,#ff6b00,#ffcc00)",
-                  transition: "width 0.8s ease",
-                }}
-              />
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {quickActions.map((a) => (
+                <QuickAction key={a.href} {...a} />
+              ))}
             </div>
-            <span
-              style={{
-                fontFamily: "Syne, sans-serif",
-                fontWeight: 700,
-                fontSize: 12,
-                color: "#ff8800",
-                flexShrink: 0,
-              }}
-            >
-              {pct}%
-            </span>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-            }}
-          >
-            <StatusRow
-              label="Email"
-              verified={user.emailVerified}
-              link={
-                !user.emailVerified
-                  ? "/dashboard/settings"
-                  : undefined
-              }
-              isDark={isDark}
-            />
-            <StatusRow
-              label="Phone"
-              verified={user.phoneVerified ?? false}
-              isDark={isDark}
-            />
-            <StatusRow
-              label="KYC"
-              verified={user.kycVerified ?? false}
-              link={
-                !user.kycVerified
-                  ? "/dashboard/settings"
-                  : undefined
-              }
-              isDark={isDark}
-            />
-            <StatusRow
-              label="Creator"
-              verified={!!isCreator}
-              link={
-                !isCreator
-                  ? "/dashboard/become-creator"
-                  : undefined
-              }
-              isDark={isDark}
-            />
-          </div>
-        </SectionCard>
+          </SectionCard>
 
-        <SectionCard
-          title="Quick Actions"
-          isDark={isDark}
-        >
-          <div
+          {/* Activity */}
+          <SectionCard
+            title="Recent Activity"
+            icon={
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+            }
+            delay={380}
+          >
+            <ActivityFeed items={activityItems} emptyMessage="No activity yet"/>
+          </SectionCard>
+        </div>
+
+        {/* Right column */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* Profile card */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.22, ease: [0.22, 1, 0.36, 1] }}
             style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 6,
+              borderRadius: 20, overflow: "hidden",
+              border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
+              background: isDark ? "rgba(255,255,255,0.025)" : "#ffffff",
+              boxShadow: isDark ? "none" : "0 2px 16px rgba(0,0,0,0.04)",
             }}
           >
-            {quickActions.map((a) => (
-              <QuickAction
-                key={a.href}
-                icon={a.icon}
-                label={a.label}
-                sub={a.sub}
-                href={a.href}
-                accent={a.accent}
-                isDark={isDark}
-              />
-            ))}
-          </div>
-        </SectionCard>
+            {/* Banner */}
+            <div style={{
+              height: 80,
+              background: user.bannerImageUrl
+                ? `url(${user.bannerImageUrl}) center/cover`
+                : "linear-gradient(135deg,#ff6b00 0%,#ff9500 40%,#ffcc00 100%)",
+              position: "relative",
+            }}>
+              <div style={{
+                position: "absolute", inset: 0,
+                background: "linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.25) 100%)",
+              }}/>
+            </div>
+
+            {/* Avatar + Info */}
+            <div style={{ padding: "0 18px 18px", position: "relative" }}>
+              <div style={{
+                width: 58, height: 58, borderRadius: "50%",
+                border: `3px solid ${isDark ? "#0d0d0d" : "#ffffff"}`,
+                overflow: "hidden", marginTop: -30, marginBottom: 10,
+                boxShadow: "0 0 0 2px rgba(255,107,0,0.35)",
+              }}>
+                {user.profileImageUrl ? (
+                  <img src={user.profileImageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}/>
+                ) : (
+                  <div style={{
+                    width: "100%", height: "100%",
+                    background: "linear-gradient(135deg,#ff6b00,#ffcc00)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "#fff", fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 20,
+                  }}>
+                    {user.name?.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <p style={{
+                fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 15,
+                color: "var(--text)", margin: "0 0 2px",
+              }}>
+                {user.name}
+              </p>
+              <p style={{
+                fontFamily: "DM Sans, sans-serif", fontSize: 12, color: "var(--text-muted)",
+                margin: "0 0 12px",
+              }}>
+                @{user.username}
+              </p>
+
+              {pct < 100 && <ProfileCompletionBar pct={pct}/>}
+
+              {/* Badges */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: pct < 100 ? 12 : 0 }}>
+                {user.emailVerified && (
+                  <span style={{
+                    fontSize: 10.5, fontFamily: "DM Sans, sans-serif", fontWeight: 600,
+                    padding: "3px 8px", borderRadius: 20,
+                    background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)",
+                    color: "#22c55e",
+                  }}>
+                    ✓ Email Verified
+                  </span>
+                )}
+                {user.kycVerified && (
+                  <span style={{
+                    fontSize: 10.5, fontFamily: "DM Sans, sans-serif", fontWeight: 600,
+                    padding: "3px 8px", borderRadius: 20,
+                    background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.25)",
+                    color: "#8b5cf6",
+                  }}>
+                    ✓ KYC Verified
+                  </span>
+                )}
+                {isCreator && (
+                  <span style={{
+                    fontSize: 10.5, fontFamily: "DM Sans, sans-serif", fontWeight: 600,
+                    padding: "3px 8px", borderRadius: 20,
+                    background: "rgba(255,107,0,0.1)", border: "1px solid rgba(255,107,0,0.25)",
+                    color: "#ff8800",
+                  }}>
+                    🚀 Creator
+                  </span>
+                )}
+              </div>
+
+              <Link href="/dashboard/profile" style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                marginTop: 14, padding: "9px",
+                background: "linear-gradient(135deg,#ff6b00,#ffcc00)",
+                color: "#fff", borderRadius: 12, textDecoration: "none",
+                fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 12.5,
+                boxShadow: "0 4px 14px rgba(255,107,0,0.3)",
+                transition: "opacity 0.15s",
+              }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.opacity = "0.88"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.opacity = "1"; }}
+              >
+                <Ic.User /> Edit Profile
+              </Link>
+            </div>
+          </motion.div>
+
+          {/* Platform tips */}
+          <SectionCard title="Get Started" delay={460}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {[
+                { done: user.emailVerified, label: "Verify your email", href: "/dashboard/settings", icon: "📧" },
+                { done: pct >= 80, label: "Complete your profile", href: "/dashboard/profile", icon: "👤" },
+                { done: user.kycVerified, label: "Complete KYC", href: "/dashboard/settings", icon: "🛡️" },
+                ...(isCreator ? [{ done: user.totalProjectsCreated > 0, label: "Launch first campaign", href: "/dashboard/create-campaign", icon: "🚀" }]
+                  : [{ done: user.totalProjectsBacked > 0, label: "Back your first project", href: "/explore", icon: "💜" }]),
+              ].map((step) => (
+                <Link
+                  key={step.label}
+                  href={step.href}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    padding: "9px 12px", borderRadius: 12,
+                    textDecoration: "none",
+                    background: step.done
+                      ? (isDark ? "rgba(34,197,94,0.05)" : "rgba(34,197,94,0.04)")
+                      : "transparent",
+                    border: `1px solid ${step.done
+                      ? "rgba(34,197,94,0.18)"
+                      : (isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)")}`,
+                    transition: "all 0.15s",
+                    opacity: step.done ? 0.75 : 1,
+                  }}
+                >
+                  <span style={{ fontSize: 16, flexShrink: 0 }}>{step.done ? "✅" : step.icon}</span>
+                  <span style={{
+                    fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 500,
+                    color: step.done ? "var(--text-muted)" : "var(--text)",
+                    flex: 1,
+                    textDecoration: step.done ? "line-through" : "none",
+                  }}>
+                    {step.label}
+                  </span>
+                  {!step.done && (
+                    <span style={{ color: "var(--text-muted)", opacity: 0.4, display: "flex" }}>
+                      <Ic.ArrowRight />
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </SectionCard>
+        </div>
       </div>
 
-      {!isCreator && (
-        <div
-          style={{
-            borderRadius: 18,
-            padding: "22px 28px",
-            background: isDark
-              ? "rgba(255,107,0,0.06)"
-              : "rgba(255,107,0,0.04)",
-            border:
-              "1px solid rgba(255,107,0,0.2)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 24,
-            flexWrap: "wrap",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              top: -40,
-              right: -40,
-              width: 180,
-              height: 180,
-              borderRadius: "50%",
-              background: "rgba(255,107,0,0.08)",
-              filter: "blur(60px)",
-              pointerEvents: "none",
-            }}
-          />
-          <div>
-            <p
-              style={{
-                fontFamily: "Syne, sans-serif",
-                fontWeight: 800,
-                fontSize: 17,
-                color: "var(--text)",
-                margin: "0 0 4px",
-              }}
-            >
-              Ready to launch your campaign?
-            </p>
-            <p
-              style={{
-                fontFamily: "DM Sans, sans-serif",
-                fontSize: 13.5,
-                color: "var(--text-muted)",
-                margin: 0,
-              }}
-            >
-              Complete KYC to start raising
-              funds on CrowdSpark
-            </p>
-          </div>
-          <Link
-            href="/dashboard/become-creator"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "11px 22px",
-              borderRadius: 11,
-              background:
-                "linear-gradient(135deg,#ff6b00,#ffcc00)",
-              color: "#fff",
-              textDecoration: "none",
-              fontFamily: "Syne, sans-serif",
-              fontWeight: 700,
-              fontSize: 13.5,
-              boxShadow:
-                "0 0 20px rgba(255,100,0,0.3)",
-              position: "relative",
-              overflow: "hidden",
-              whiteSpace: "nowrap",
-              flexShrink: 0,
-            }}
-          >
-            <span
-              style={{
-                position: "absolute",
-                inset: 0,
-                background:
-                  "linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.22) 50%,transparent 70%)",
-                animation:
-                  "ovShimmer 2.4s ease-in-out infinite",
-              }}
-            />
-            <span style={{ position: "relative" }}>
-              Apply now →
-            </span>
-          </Link>
-        </div>
-      )}
-
       <style>{`
-        @keyframes ovShimmer {
-          0%   { transform: translateX(-100%); }
-          60%  { transform: translateX(200%); }
-          100% { transform: translateX(200%); }
+        .cs-dash-stats {
+          grid-template-columns: repeat(${statsData.length}, 1fr) !important;
         }
-        @keyframes ovPulse {
-          0%,100% { opacity: 0.4; }
-          50%     { opacity: 0.9; }
+        .cs-dash-main {
+          grid-template-columns: 1fr 320px !important;
         }
-        @media (max-width: 900px) {
-          .ov-stats {
-            grid-template-columns: 1fr 1fr !important;
-          }
+        @media (max-width: 1024px) {
+          .cs-dash-stats { grid-template-columns: repeat(2, 1fr) !important; }
+          .cs-dash-main  { grid-template-columns: 1fr !important; }
         }
-        @media (max-width: 700px) {
-          .ov-grid {
-            grid-template-columns: 1fr !important;
-          }
+        @media (max-width: 580px) {
+          .cs-dash-stats { grid-template-columns: 1fr 1fr !important; }
         }
-        @media (max-width: 480px) {
-          .ov-stats {
-            grid-template-columns: 1fr !important;
-          }
+        @media (max-width: 400px) {
+          .cs-dash-stats { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </div>

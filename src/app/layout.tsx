@@ -1,55 +1,112 @@
-import type { Metadata } from "next";
-import "@/app/globals.css";
+import type { Metadata, Viewport } from "next";
+import { Syne, DM_Sans } from "next/font/google";
+import "./globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import LenisProvider from "@/providers/Lenisprovider";
-import CustomCursor from "@/components/CustomCursor";
+import { ToastProvider }   from "@/components/ui/Toast";
+import { ConfirmProvider }  from "@/components/ui/ConfirmDialog";
+import RouteLoader          from "@/components/ui/PageLoader";
+import { SkipToMain }       from "@/components/ui/Accessibility";
 
+// ─── Fonts ────────────────────────────────────────────────────────────────────
+const syne = Syne({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-syne",
+  display: "swap",
+  preload: true,
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-dm-sans",
+  display: "swap",
+  preload: true,
+});
+
+// ─── Metadata ─────────────────────────────────────────────────────────────────
 export const metadata: Metadata = {
-  title: "CrowdSpark — Ignite Ideas Together",
-  description: "The modern crowdfunding platform for creators and innovators.",
-  keywords: ["crowdfunding", "creators", "campaigns", "kickstarter", "funding"],
+  title: {
+    default: "CrowdSpark — Fund What Matters",
+    template: "%s | CrowdSpark",
+  },
+  description:
+    "CrowdSpark is a modern, premium crowdfunding platform. Back visionary projects or launch your own campaign and connect with a global community of supporters.",
+  keywords: ["crowdfunding", "campaigns", "fundraising", "startup", "creators"],
+  authors: [{ name: "CrowdSpark Team" }],
+  creator: "CrowdSpark",
   openGraph: {
-    title: "CrowdSpark — Ignite Ideas Together",
-    description: "The modern crowdfunding platform for creators and innovators.",
     type: "website",
+    locale: "en_US",
+    title: "CrowdSpark — Fund What Matters",
+    description:
+      "Back visionary projects or launch your own campaign on CrowdSpark.",
+    siteName: "CrowdSpark",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "CrowdSpark — Fund What Matters",
+    description:
+      "Back visionary projects or launch your own campaign on CrowdSpark.",
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)",  color: "#04040a" },
+    { media: "(prefers-color-scheme: light)", color: "#f8f8fc" },
+  ],
+};
+
+// ─── Root Layout ──────────────────────────────────────────────────────────────
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en" data-theme="dark" suppressHydrationWarning>
-      <body className="font-body" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${syne.variable} ${dmSans.variable}`}
+    >
+      <head>
+        {/* Prevent flash of unstyled theme */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var t = localStorage.getItem("cs-theme") || "dark";
+                document.documentElement.setAttribute("data-theme", t);
+              } catch(e) {}
+            `,
+          }}
+        />
+      </head>
+      <body>
         <ThemeProvider>
-          <LenisProvider>
-            {/* Ambient atmosphere */}
-            <div className="orb orb-1" aria-hidden="true" />
-            <div className="orb orb-2" aria-hidden="true" />
-            <div className="orb orb-3" aria-hidden="true" />
-            <div className="dot-grid" aria-hidden="true" />
+          <ToastProvider>
+            <ConfirmProvider>
+              {/* Accessibility: skip navigation for keyboard users */}
+              <SkipToMain />
 
-            {/* Custom cursor — hidden on touch devices via CSS */}
-            <CustomCursor />
+              {/* Route transition progress bar */}
+              <RouteLoader />
 
-            {children}
-          </LenisProvider>
+              {/* Main content landmark for skip-link target */}
+              <main id="main-content" style={{ display: "contents" }}>
+                {children}
+              </main>
+            </ConfirmProvider>
+          </ToastProvider>
         </ThemeProvider>
-
-        <style>{`
-          @keyframes shimmerBtn {
-            0% { transform: translateX(-100%); }
-            60% { transform: translateX(200%); }
-            100% { transform: translateX(200%); }
-          }
-          @keyframes progressShine {
-            0%, 100% { opacity: 0; }
-            50% { opacity: 1; }
-          }
-          @keyframes spin { to { transform: rotate(360deg); } }
-          @keyframes glowPulse {
-            0%, 100% { box-shadow: 0 0 0 2px var(--accent-glow); }
-            50% { box-shadow: 0 0 0 4px var(--accent-glow); }
-          }
-        `}</style>
       </body>
     </html>
   );

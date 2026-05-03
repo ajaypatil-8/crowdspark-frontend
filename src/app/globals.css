@@ -1012,3 +1012,682 @@ body {
   color: var(--accent);
   margin-bottom: 8px;
 }
+
+
+
+
+
+/* ════════════════════════════════════════════════════════════
+   SECTION 11 — ADDITIONS TO globals.css
+   Append these styles at the end of your existing globals.css
+════════════════════════════════════════════════════════════ */
+
+/* ────────────────────────────────────────────────────────────
+   SKELETON PULSE BASE
+──────────────────────────────────────────────────────────── */
+@keyframes skPulse {
+  0%, 100% { opacity: 0.45; }
+  50%       { opacity: 0.85; }
+}
+
+@keyframes skShimmer {
+  0%   { transform: translateX(-200%); }
+  100% { transform: translateX(200%); }
+}
+
+.sk-pulse {
+  background: var(--bg-ghost);
+  position: relative;
+  overflow: hidden;
+  animation: skPulse 1.6s ease-in-out infinite;
+}
+
+/* shimmer sweep */
+.sk-pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 65%
+  );
+  animation: skShimmer 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+[data-theme="light"] .sk-pulse {
+  background: rgba(0,0,0,0.07);
+}
+[data-theme="light"] .sk-pulse::after {
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255,255,255,0.55) 50%,
+    transparent 65%
+  );
+}
+
+.sk-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+}
+
+/* ────────────────────────────────────────────────────────────
+   TOAST / NOTIFICATION ANIMATIONS
+──────────────────────────────────────────────────────────── */
+@keyframes toastSlideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes toastSlideOut {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(110%); opacity: 0; }
+}
+
+/* ────────────────────────────────────────────────────────────
+   PAGE LOADER
+──────────────────────────────────────────────────────────── */
+@keyframes loaderRing {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes loaderDot {
+  0%, 100% { transform: translateY(0);    opacity: 0.4; }
+  50%       { transform: translateY(-60%); opacity: 1;   }
+}
+
+/* ────────────────────────────────────────────────────────────
+   ANIMATE-SPIN UTILITY (if not in Tailwind)
+──────────────────────────────────────────────────────────── */
+.animate-spin {
+  animation: loaderRing 0.75s linear infinite;
+}
+
+/* ────────────────────────────────────────────────────────────
+   ROUTE PROGRESS BAR
+──────────────────────────────────────────────────────────── */
+#route-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  z-index: 9999;
+  background: linear-gradient(90deg, var(--accent), var(--cta));
+  box-shadow: 0 0 8px var(--accent-glow);
+  border-radius: 0 2px 2px 0;
+  transition: width 0.3s ease, opacity 0.4s ease;
+}
+
+/* ────────────────────────────────────────────────────────────
+   GLOBAL FOCUS RING (accessibility)
+──────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ────────────────────────────────────────────────────────────
+   SCROLLBAR HIDE UTILITY
+──────────────────────────────────────────────────────────── */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* ────────────────────────────────────────────────────────────
+   CUSTOM SCROLLBAR (styled, for non-hidden areas)
+──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ────────────────────────────────────────────────────────────
+   SELECTION HIGHLIGHT
+──────────────────────────────────────────────────────────── */
+::selection {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+/* ────────────────────────────────────────────────────────────
+   TOAST MOBILE POSITIONING
+──────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  /* Force toasts to bottom center on mobile */
+  [aria-label="Notifications"] {
+    left: 16px !important;
+    right: 16px !important;
+    bottom: 80px !important; /* above mobile nav if present */
+  }
+  [aria-label="Notifications"] > div {
+    width: 100% !important;
+  }
+}
+/* ════════════════════════════════════════════════════════════
+   SECTION 11 PART 2 — APPEND TO globals.css
+   Adds: empty-state, error-state, confirm-dialog, 404, a11y
+════════════════════════════════════════════════════════════ */
+
+/* ────────────────────────────────────────────────────────────
+   EMPTY STATE
+──────────────────────────────────────────────────────────── */
+.empty-icon-pulse {
+  animation: emptyIconPulse 3s ease-in-out infinite;
+}
+
+@keyframes emptyIconPulse {
+  0%, 100% { box-shadow: 0 0 0 6px transparent; }
+  50%       { box-shadow: 0 0 0 10px rgba(255,107,0,0.06); }
+}
+
+/* ────────────────────────────────────────────────────────────
+   CONFIRM DIALOG OVERLAY
+──────────────────────────────────────────────────────────── */
+.confirm-overlay-enter {
+  animation: confirmFadeIn 0.18s ease forwards;
+}
+.confirm-overlay-exit {
+  animation: confirmFadeOut 0.18s ease forwards;
+}
+
+@keyframes confirmFadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes confirmFadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+/* ────────────────────────────────────────────────────────────
+   ERROR BOUNDARY (inline variant)
+──────────────────────────────────────────────────────────── */
+.error-inline {
+  border-radius: 14px;
+  background: var(--danger-dim);
+  border: 1px solid rgba(239,68,68,0.2);
+  padding: 16px 18px;
+}
+
+/* ────────────────────────────────────────────────────────────
+   404 PAGE PARTICLES CANVAS
+──────────────────────────────────────────────────────────── */
+.particles-canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ────────────────────────────────────────────────────────────
+   ANIMATED GRADIENT TEXT UTILITY
+──────────────────────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, var(--cta) 0%, var(--cta-2) 50%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-animate {
+  background-size: 200% 200%;
+  animation: gradientShift 4s ease infinite;
+}
+
+@keyframes gradientShift {
+  0%   { background-position: 0%   50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0%   50%; }
+}
+
+/* ────────────────────────────────────────────────────────────
+   GLASS CARD UTILITY
+──────────────────────────────────────────────────────────── */
+.glass-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 20px;
+}
+
+/* ────────────────────────────────────────────────────────────
+   SMOOTH MODAL SCROLL LOCK
+──────────────────────────────────────────────────────────── */
+body.modal-open {
+  overflow: hidden;
+  padding-right: var(--scrollbar-width, 0px);
+}
+
+/* ────────────────────────────────────────────────────────────
+   REDUCED MOTION — RESPECT USER PREFERENCE
+──────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────
+   PRINT STYLES
+──────────────────────────────────────────────────────────── */
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff !important; color: #000 !important; }
+}
+/* ════════════════════════════════════════════════════════════
+   SECTION 11 PART 3 — APPEND TO src/app/globals.css
+   Covers: mobile responsiveness, animation polish,
+           accessibility, reduced-motion, touch targets,
+           print styles, utility classes.
+════════════════════════════════════════════════════════════ */
+
+/* ────────────────────────────────────────────────────────────
+   REDUCED MOTION  (always wins)
+──────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:   0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration:  0.01ms !important;
+    scroll-behavior:      auto  !important;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────
+   FOCUS VISIBLE  (keyboard-only focus rings)
+──────────────────────────────────────────────────────────── */
+:focus { outline: none; }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Buttons and links */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--cta);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* ────────────────────────────────────────────────────────────
+   TOUCH TARGETS  (min 44×44 px for interactive elements)
+──────────────────────────────────────────────────────────── */
+@media (pointer: coarse) {
+  button, a, [role="button"], [role="link"],
+  input[type="checkbox"], input[type="radio"],
+  select {
+    min-height: 44px;
+    min-width:  44px;
+  }
+
+  /* Pill/badge buttons that are intentionally small get override */
+  .touch-compact {
+    min-height: unset;
+    min-width:  unset;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────
+   SMOOTH SCROLL + SCROLL SNAP
+──────────────────────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
+
+.scroll-snap-x {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.scroll-snap-x > * { scroll-snap-align: start; }
+
+.scroll-snap-y {
+  scroll-snap-type: y mandatory;
+}
+.scroll-snap-y > * { scroll-snap-align: start; }
+
+/* ────────────────────────────────────────────────────────────
+   MOBILE TYPOGRAPHY SCALE
+──────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  h1 { font-size: clamp(26px, 8vw, 40px) !important; }
+  h2 { font-size: clamp(20px, 6vw, 30px) !important; }
+  h3 { font-size: clamp(16px, 5vw, 22px) !important; }
+
+  /* Prevent text overflow on small screens */
+  p, span, li { overflow-wrap: break-word; word-break: break-word; }
+}
+
+/* ────────────────────────────────────────────────────────────
+   MOBILE LAYOUT FIXES
+──────────────────────────────────────────────────────────── */
+
+/* Prevent horizontal overflow */
+body { overflow-x: hidden; }
+
+/* ────────────────────────────────────────────────────────────
+   CARD RESPONSIVE TWEAKS
+──────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .card-padding-sm {
+    padding: 16px !important;
+  }
+  .hide-mobile { display: none !important; }
+  .full-width-mobile { width: 100% !important; }
+  .stack-mobile {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .hide-xs { display: none !important; }
+  .text-center-xs { text-align: center !important; }
+  .justify-center-xs { justify-content: center !important; }
+}
+
+/* ────────────────────────────────────────────────────────────
+   DASHBOARD RESPONSIVE
+──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .dash-page-pad {
+    padding: 20px 16px 48px !important;
+  }
+  .dash-stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+  }
+  .dash-main-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .dash-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────
+   NAVBAR RESPONSIVE
+──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .nb-desktop-links { display: none !important; }
+  .nb-hamburger     { display: flex !important; }
+}
+@media (min-width: 769px) {
+  .nb-hamburger     { display: none !important; }
+  .nb-desktop-links { display: flex !important; }
+}
+
+/* ────────────────────────────────────────────────────────────
+   HERO SECTION RESPONSIVE
+──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hero-buttons {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 12px !important;
+  }
+  .hero-stats {
+    gap: 20px !important;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────
+   EXPLORE PAGE RESPONSIVE
+──────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .ex-grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
+}
+@media (max-width: 560px) {
+  .ex-grid-3 { grid-template-columns: 1fr !important; }
+  .ex-filters { overflow-x: auto; flex-wrap: nowrap !important; padding-bottom: 8px; }
+}
+
+/* ────────────────────────────────────────────────────────────
+   PROJECT DETAILS RESPONSIVE
+──────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .pd-layout {
+    flex-direction: column !important;
+  }
+  .pd-sidebar {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────
+   FORM RESPONSIVE
+──────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .form-row-2 {
+    grid-template-columns: 1fr !important;
+  }
+  .form-actions {
+    flex-direction: column !important;
+  }
+  .form-actions > * { width: 100% !important; }
+}
+
+/* ────────────────────────────────────────────────────────────
+   MODAL RESPONSIVE
+──────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .modal-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 24px 24px 0 0 !important;
+    bottom: 0 !important;
+    position: fixed !important;
+    top: auto !important;
+    transform: none !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 !important;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────
+   TABLE RESPONSIVE  (horizontal scroll on small screens)
+──────────────────────────────────────────────────────────── */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 14px;
+}
+.table-responsive table { min-width: 600px; }
+
+/* ────────────────────────────────────────────────────────────
+   IMAGE UTILITIES
+──────────────────────────────────────────────────────────── */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ────────────────────────────────────────────────────────────
+   ANIMATION UTILITY CLASSES
+──────────────────────────────────────────────────────────── */
+.animate-fade-in {
+  animation: fadeIn 0.4s ease forwards;
+}
+.animate-fade-up {
+  animation: fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+.animate-scale-in {
+  animation: scaleIn 0.4s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+.animate-slide-right {
+  animation: slideRight 0.45s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+
+@keyframes fadeIn    { from { opacity: 0 }          to { opacity: 1 } }
+@keyframes fadeUp    { from { opacity: 0; transform: translateY(20px) } to { opacity: 1; transform: translateY(0) } }
+@keyframes scaleIn   { from { opacity: 0; transform: scale(0.94) }      to { opacity: 1; transform: scale(1) } }
+@keyframes slideRight{ from { opacity: 0; transform: translateX(-16px) } to { opacity: 1; transform: translateX(0) } }
+
+/* Delay utilities */
+.anim-delay-1 { animation-delay: 0.1s; opacity: 0; }
+.anim-delay-2 { animation-delay: 0.2s; opacity: 0; }
+.anim-delay-3 { animation-delay: 0.3s; opacity: 0; }
+.anim-delay-4 { animation-delay: 0.4s; opacity: 0; }
+.anim-delay-5 { animation-delay: 0.5s; opacity: 0; }
+.anim-delay-6 { animation-delay: 0.6s; opacity: 0; }
+
+/* ────────────────────────────────────────────────────────────
+   PULSE RING  (used by PulseRing component)
+──────────────────────────────────────────────────────────── */
+@keyframes pulseRing {
+  0%   { transform: scale(1);   opacity: 0.8; }
+  80%  { transform: scale(2.8); opacity: 0; }
+  100% { transform: scale(2.8); opacity: 0; }
+}
+
+/* ────────────────────────────────────────────────────────────
+   ANIMATED GRADIENT TEXT
+──────────────────────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--cta) 50%, var(--cta-2) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 4s linear infinite;
+}
+
+@keyframes gradientShift {
+  0%   { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+/* ────────────────────────────────────────────────────────────
+   GLASSMORPHISM UTILITIES
+──────────────────────────────────────────────────────────── */
+.glass {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+}
+
+.glass-strong {
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  background: rgba(10, 10, 20, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+[data-theme="light"] .glass {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] .glass-strong {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+/* ────────────────────────────────────────────────────────────
+   HOVER GLOW UTILITIES
+──────────────────────────────────────────────────────────── */
+.hover-glow-accent {
+  transition: box-shadow 0.25s ease;
+}
+.hover-glow-accent:hover {
+  box-shadow: 0 0 24px var(--accent-glow), 0 8px 32px rgba(0,0,0,0.3);
+}
+
+.hover-glow-cta {
+  transition: box-shadow 0.25s ease;
+}
+.hover-glow-cta:hover {
+  box-shadow: 0 0 24px var(--cta-glow), 0 8px 32px rgba(0,0,0,0.3);
+}
+
+.hover-lift {
+  transition: transform 0.2s cubic-bezier(0.22,1,0.36,1), box-shadow 0.2s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.22);
+}
+
+/* ────────────────────────────────────────────────────────────
+   SELECTION COLOR
+──────────────────────────────────────────────────────────── */
+::selection {
+  background: rgba(0, 245, 212, 0.25);
+  color: var(--text);
+}
+
+/* ────────────────────────────────────────────────────────────
+   PRINT STYLES
+──────────────────────────────────────────────────────────── */
+@media print {
+  * { animation: none !important; transition: none !important; }
+  .no-print, nav, footer, .nb-hamburger, .sidebar { display: none !important; }
+  body { background: #fff !important; color: #000 !important; }
+  a[href]::after { content: " (" attr(href) ")"; font-size: 11px; color: #555; }
+}
+
+/* ────────────────────────────────────────────────────────────
+   SCROLLBAR (refined)
+──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }
+* { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+
+/* ────────────────────────────────────────────────────────────
+   OVERFLOW HELPERS
+──────────────────────────────────────────────────────────── */
+.overflow-hidden { overflow: hidden; }
+.overflow-auto   { overflow: auto; }
+.overflow-x-auto { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.truncate        { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ────────────────────────────────────────────────────────────
+   CURSOR
+──────────────────────────────────────────────────────────── */
+.cursor-pointer  { cursor: pointer; }
+.cursor-default  { cursor: default; }
+.cursor-not-allowed { cursor: not-allowed; }
+.pointer-events-none { pointer-events: none; }
+
+/* ────────────────────────────────────────────────────────────
+   SAFE AREA (notch / dynamic island support)
+──────────────────────────────────────────────────────────── */
+.safe-top    { padding-top:    env(safe-area-inset-top,    0px); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.safe-left   { padding-left:   env(safe-area-inset-left,   0px); }
+.safe-right  { padding-right:  env(safe-area-inset-right,  0px); }
+
+/* Fixed bottom elements (mobile nav, CTAs) */
+.fixed-bottom-safe {
+  bottom: max(16px, env(safe-area-inset-bottom, 16px));
+}
+

@@ -59,6 +59,26 @@ function UploadSlot({ idx, cfg, existing, uploading, error, onFile, onRemove }: 
         ? "rgba(239,68,68,0.4)"
         : isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.09)";
 
+  // Upload button styles split into two sets — avoids invalid 'border2' CSS property
+  const uploadBtnStyle: React.CSSProperties = has
+    ? {
+        padding: "7px 16px", borderRadius: 9, border: "1px solid rgba(52,211,153,0.35)",
+        background: "transparent", color: "#34d399", fontSize: 13,
+        fontFamily: "Syne, sans-serif", fontWeight: 700,
+        cursor: uploading ? "wait" : "pointer",
+        opacity: uploading ? 0.6 : 1,
+        position: "relative", overflow: "hidden", transition: "all 0.18s",
+      }
+    : {
+        padding: "7px 16px", borderRadius: 9, border: "none",
+        background: "linear-gradient(135deg,#ff6b00,#ffcc00)", color: "#fff", fontSize: 13,
+        fontFamily: "Syne, sans-serif", fontWeight: 700,
+        cursor: uploading ? "wait" : "pointer",
+        opacity: uploading ? 0.6 : 1,
+        boxShadow: uploading ? "none" : "0 0 14px rgba(255,107,0,0.25)",
+        position: "relative", overflow: "hidden", transition: "all 0.18s",
+      };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -133,9 +153,11 @@ function UploadSlot({ idx, cfg, existing, uploading, error, onFile, onRemove }: 
             onClick={() => inputRef.current?.click()}
             whileHover={!uploading ? { scale: 1.02 } : {}}
             whileTap={!uploading ? { scale: 0.97 } : {}}
-            style={{ padding: "7px 16px", borderRadius: 9, border: "none", background: has ? "transparent" : "linear-gradient(135deg,#ff6b00,#ffcc00)", border2: has ? `1px solid rgba(52,211,153,0.35)` : "none", color: has ? "#34d399" : "#fff", fontSize: 13, fontFamily: "Syne, sans-serif", fontWeight: 700, cursor: uploading ? "wait" : "pointer", opacity: uploading ? 0.6 : 1, boxShadow: !has && !uploading ? "0 0 14px rgba(255,107,0,0.25)" : "none", position: "relative", overflow: "hidden", transition: "all 0.18s" } as any}
+            style={uploadBtnStyle}
           >
-            {!has && <span style={{ position: "absolute", inset: 0, background: "linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.2) 50%,transparent 70%)", animation: "s3shimmer 2.4s ease-in-out infinite" }} />}
+            {!has && (
+              <span style={{ position: "absolute", inset: 0, background: "linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.2) 50%,transparent 70%)", animation: "s3shimmer 2.4s ease-in-out infinite" }} />
+            )}
             <span style={{ position: "relative" }}>{uploading ? "Uploading…" : has ? "Replace" : "Upload"}</span>
           </motion.button>
         </div>

@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { easeOut } from "framer-motion";
-import { Clock, Users, TrendingUp, Zap } from "lucide-react";
+import { Clock, Users, Zap } from "lucide-react";
 import type { ProjectFeedResponse } from "@/lib/api";
 
 const ACCENT  = "#ff6b00";
@@ -17,19 +17,20 @@ interface Props {
   p: ProjectFeedResponse;
   isDark: boolean;
   featured?: boolean;
+  index?: number; // optional stagger delay support
 }
 
-export default function CampaignCard({ p, isDark, featured = false }: Props) {
-  const pct      = Math.min(p.fundedPercentage ?? 0, 100);
-  const isHot    = pct >= 75;
-  const isNew    = (p.daysLeft ?? 0) >= 25;
-  const urgent   = (p.daysLeft ?? 0) <= 5 && (p.daysLeft ?? 0) > 0;
+export default function CampaignCard({ p, isDark, featured = false, index = 0 }: Props) {
+  const pct    = Math.min(p.fundedPercentage ?? 0, 100);
+  const isHot  = pct >= 75;
+  const isNew  = (p.daysLeft ?? 0) >= 25;
+  const urgent = (p.daysLeft ?? 0) <= 5 && (p.daysLeft ?? 0) > 0;
 
-  const card   = isDark ? "rgba(14,14,14,0.95)"   : "rgba(255,255,255,0.95)";
-  const bdr    = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
-  const txt    = isDark ? "#f0f0f0"                : "#0a0a0a";
-  const muted  = isDark ? "rgba(255,255,255,0.42)" : "rgba(0,0,0,0.42)";
-  const track  = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
+  const card  = isDark ? "rgba(14,14,14,0.95)"   : "rgba(255,255,255,0.95)";
+  const bdr   = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
+  const txt   = isDark ? "#f0f0f0"                : "#0a0a0a";
+  const muted = isDark ? "rgba(255,255,255,0.42)" : "rgba(0,0,0,0.42)";
+  const track = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
 
   const barColor = isHot
     ? `linear-gradient(90deg,${ACCENT},#ffcc00)`
@@ -38,14 +39,15 @@ export default function CampaignCard({ p, isDark, featured = false }: Props) {
   return (
     <motion.article
       layout
-      variants={cardItem}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: index * 0.05, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{
         y: -8,
         boxShadow: isDark
           ? "0 24px 56px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,107,0,0.12)"
           : "0 24px 56px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,107,0,0.10)",
       }}
-      transition={{ type: "spring", stiffness: 260, damping: 22 }}
       style={{
         borderRadius: featured ? 24 : 20,
         overflow: "hidden",
@@ -169,7 +171,7 @@ export default function CampaignCard({ p, isDark, featured = false }: Props) {
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${pct}%` }}
-              transition={{ duration: 1.4, ease: easeOut, delay: 0.3 }}
+              transition={{ duration: 1.4, ease: easeOut, delay: 0.3 + index * 0.04 }}
               style={{ height: "100%", borderRadius: 3, background: barColor, boxShadow: isHot ? `0 0 8px ${ACCENT}60` : "none" }}
             />
           </div>

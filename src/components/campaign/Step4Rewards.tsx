@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { motion, AnimatePresence, Reorder } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
 import type { RewardTierRequest } from "@/lib/api";
 

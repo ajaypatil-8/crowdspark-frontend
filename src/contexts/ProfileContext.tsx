@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
   ReactNode,
 } from "react";
 import { authApi, tokenStorage, type UserResponse } from "@/lib/api";
@@ -28,35 +29,55 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const [user, setUser]       = useState<UserResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
+  // Increments on every fetchUser call so stale in-flight responses are ignored
+  const fetchIdRef = useRef(0);
 
   const fetchUser = useCallback(async () => {
     const token = tokenStorage.getAccess();
+
+    // No token → not logged in, stop spinner immediately
     if (!token) {
       setLoading(false);
-      setError("Not logged in");
+      setUser(null);
+      setError(null);
       return;
     }
+
+    const thisId = ++fetchIdRef.current;
     setLoading(true);
     setError(null);
+
     try {
       const data = await authApi.me();
+
+      // Ignore response if a newer fetch has already started
+      if (fetchIdRef.current !== thisId) return;
+
       setUser(data);
+      setError(null);
     } catch (err: any) {
-      setError(err.message || "Failed to load profile");
-      if (err.message?.includes("Session expired")) {
-        window.location.href = "/login";
+      if (fetchIdRef.current !== thisId) return;
+
+      const msg: string = err.message || "Failed to load profile";
+      setError(msg);
+      setUser(null);
+
+      // Session expired: clear tokens so the layout redirects to /login
+      if (msg.includes("Session expired") || msg.includes("Unauthorized")) {
+        tokenStorage.clear();
       }
     } finally {
-      setLoading(false);
+      if (fetchIdRef.current === thisId) {
+        setLoading(false);
+      }
     }
   }, []);
 
+  // useEffect never runs on the server so we don't need the mounted gate.
+  // localStorage is always available here.
   useEffect(() => {
-    if (mounted) fetchUser();
-  }, [mounted, fetchUser]);
+    fetchUser();
+  }, [fetchUser]);
 
   return (
     <ProfileCtx.Provider value={{ user, loading, error, refetch: fetchUser }}>

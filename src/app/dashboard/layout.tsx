@@ -1,13 +1,13 @@
 "use client";
 
-import { ReactNode, useEffect, useState, useRef } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProfileProvider, useProfile } from "@/contexts/ProfileContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import ThemeToggle from "@/components/ThemeToggle";
-import { authApi, isLoggedIn } from "@/lib/api";
+import { authApi, tokenStorage } from "@/lib/api";
 import DashboardNotificationBell from "@/components/dashboard/DashboardNotificationBell";
 
 // ─── Icons ─────────────────────────────────────────────────────────────────────
@@ -379,17 +379,21 @@ function DashboardInner({ children }: { children: ReactNode }) {
   const { user, loading } = useProfile();
   const { isDark } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
-
+  // Redirect to login once loading completes and there is no token in storage.
+  // We intentionally exclude `router` from deps — it is stable in Next.js App Router
+  // and including it caused extra effect fires that raced with the profile fetch.
   useEffect(() => {
-    if (!loading && !isLoggedIn()) router.replace("/login");
-  }, [loading, router]);
+    if (!loading && !tokenStorage.getAccess()) {
+      router.replace("/login");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   useEffect(() => {
     if (!loading && user?.roles?.includes("ADMIN")) router.replace("/admin");
-  }, [loading, user, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, user]);
 
   // Close mobile drawer on route change
   useEffect(() => { setMobileOpen(false); }, [pathname]);

@@ -59,7 +59,8 @@ async function request<T>(
       } catch { /* fall through */ }
     }
     tokenStorage.clear();
-    if (typeof window !== "undefined") window.location.href = "/login";
+    // Throw only — let the caller (ProfileContext) handle the redirect so
+    // React state is updated cleanly before navigation happens.
     throw new Error("Session expired");
   }
 

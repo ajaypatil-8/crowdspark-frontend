@@ -95,12 +95,9 @@ export default function OAuthCallbackPage() {
   const router = useRouter();
   const [state,    setState]    = useState<State>("loading");
   const [errorMsg, setErrorMsg] = useState("");
-  const [mounted,  setMounted]  = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
-
+  // Run once on mount — reads URL params, stores tokens, then navigates.
+  // window.location.search is only available on the client so no SSR guard needed.
   useEffect(() => {
-    if (!mounted) return;
     const params  = new URLSearchParams(window.location.search);
     const access  = params.get("token");
     const refresh = params.get("refresh");
@@ -113,19 +110,22 @@ export default function OAuthCallbackPage() {
     }
 
     if (access && refresh) {
+      // Store synchronously before navigation so ProfileContext finds them on mount
       tokenStorage.set(access, refresh);
-      router.replace("/dashboard");
+      // Use window.location for a hard navigation so the dashboard layout
+      // mounts fresh (not a client-side Next.js transition) and always picks
+      // up the new tokens from localStorage.
+      window.location.replace("/dashboard");
     } else {
       setErrorMsg("No tokens received from server. Please try again.");
       setState("error");
     }
-  }, [router, mounted]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const pageBg  = isDark ? "#06050a" : "#f3f2ee";
   const cardBg  = isDark ? "rgba(10,8,18,0.90)" : "rgba(255,255,255,0.90)";
   const cardBdr = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
-
-  if (!mounted) return null;
 
   return (
     <div style={{

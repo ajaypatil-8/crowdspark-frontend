@@ -4,7 +4,6 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
 
-// ── Shared ambient canvas (same orb system as login/register) ────────────────
 function AmbientCanvas({ isDark }: { isDark: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -19,7 +18,6 @@ function AmbientCanvas({ isDark }: { isDark: boolean }) {
     };
     resize();
     window.addEventListener("resize", resize);
-
     type Orb = { x:number; y:number; r:number; vx:number; vy:number; hue:number; a:number };
     const orbs: Orb[] = [
       { x:0.18, y:0.20, r:0.36, vx: 0.00025, vy: 0.00018, hue:22,  a: isDark?0.09:0.055 },
@@ -29,7 +27,6 @@ function AmbientCanvas({ isDark }: { isDark: boolean }) {
     ];
     const W = () => canvas.offsetWidth, H = () => canvas.offsetHeight;
     let frame = 0;
-
     const tick = () => {
       raf = requestAnimationFrame(tick); frame++;
       const w = W(), h = H();
@@ -45,7 +42,6 @@ function AmbientCanvas({ isDark }: { isDark: boolean }) {
         ctx.fillStyle=g;
         ctx.beginPath(); ctx.arc(gx,gy,gr,0,Math.PI*2); ctx.fill();
       });
-      // scan line
       const sy=((frame*0.3)%(h+60))-30;
       const sl=ctx.createLinearGradient(0,sy-1,0,sy+1);
       sl.addColorStop(0,"transparent");
@@ -59,7 +55,6 @@ function AmbientCanvas({ isDark }: { isDark: boolean }) {
   return <canvas ref={ref} style={{ position:"absolute", inset:0, width:"100%", height:"100%", pointerEvents:"none" }}/>;
 }
 
-// ── Forge Input ──────────────────────────────────────────────────────────────
 function ForgeInput({ label, type="text", value, onChange, autoComplete, isDark, disabled }: {
   label:string; type?:string; value:string; onChange:(v:string)=>void;
   autoComplete?:string; isDark:boolean; disabled?:boolean;
@@ -105,17 +100,11 @@ function ForgeInput({ label, type="text", value, onChange, autoComplete, isDark,
           cursor: disabled ? "not-allowed" : "text",
         }}
       />
-      {focused && !disabled && (
-        <div style={{ position:"absolute", bottom:0, left:0, right:0, height:2.5, borderRadius:"0 0 14px 14px", overflow:"hidden", pointerEvents:"none" }}>
-          <div style={{ height:"100%", width:"55%", background:"linear-gradient(90deg,transparent,#ff6b00,#ffcc00,#ff6b00,transparent)", animation:"fpLaser 1.1s ease-in-out infinite" }}/>
-        </div>
-      )}
     </div>
   );
 }
 
-// ── Email Sent success state ─────────────────────────────────────────────────
-function SentState({ email, isDark, onRetry }: { email:string; isDark:boolean; onRetry:()=>void }) {
+function SuccessState({ email, isDark }: { email: string; isDark:boolean }) {
   return (
     <motion.div
       initial={{ opacity:0, scale:0.9, y:16 }}
@@ -123,7 +112,6 @@ function SentState({ email, isDark, onRetry }: { email:string; isDark:boolean; o
       transition={{ duration:0.5, ease:[0.22,1,0.36,1] }}
       style={{ display:"flex", flexDirection:"column", alignItems:"center", textAlign:"center", padding:"8px 0 4px" }}
     >
-      {/* Pulsing ring stack */}
       <div style={{ position:"relative", width:88, height:88, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:26 }}>
         {[1,2,3].map(i=>(
           <motion.div key={i}
@@ -145,18 +133,17 @@ function SentState({ email, isDark, onRetry }: { email:string; isDark:boolean; o
             boxShadow:"0 0 36px rgba(255,107,0,0.22)",
           }}
         >
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#ff8800" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ff8800" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
             <polyline points="22,6 12,13 2,6"/>
           </svg>
         </motion.div>
       </div>
-
       <motion.h2
         initial={{ y:12, opacity:0 }} animate={{ y:0, opacity:1 }} transition={{ delay:0.25 }}
         style={{ fontFamily:"Syne, sans-serif", fontWeight:900, fontSize:24, color:"var(--text)", letterSpacing:"-0.03em", margin:"0 0 10px", lineHeight:1.1 }}
       >
-        Check your inbox
+        Check your email
       </motion.h2>
       <motion.div
         initial={{ scaleX:0, originX:"center" }} animate={{ scaleX:1 }}
@@ -165,82 +152,72 @@ function SentState({ email, isDark, onRetry }: { email:string; isDark:boolean; o
       />
       <motion.p
         initial={{ y:8, opacity:0 }} animate={{ y:0, opacity:1 }} transition={{ delay:0.32 }}
-        style={{ fontFamily:"DM Sans, sans-serif", fontSize:14, color:isDark?"rgba(255,255,255,0.48)":"rgba(0,0,0,0.48)", margin:"0 0 6px", lineHeight:1.65 }}
+        style={{ fontFamily:"DM Sans, sans-serif", fontSize:14, color:isDark?"rgba(255,255,255,0.48)":"rgba(0,0,0,0.48)", margin:"0 0 28px", lineHeight:1.65 }}
       >
-        We sent a password reset link to
+        We sent a reset link to <strong style={{ color:"var(--text)" }}>{email}</strong>. Check your inbox and follow the link to reset your password.
       </motion.p>
-      <motion.p
-        initial={{ y:8, opacity:0 }} animate={{ y:0, opacity:1 }} transition={{ delay:0.38 }}
-        style={{ fontFamily:"Syne, sans-serif", fontWeight:700, fontSize:14.5, color:"#ff8800", margin:"0 0 28px", wordBreak:"break-all" }}
-      >
-        {email}
-      </motion.p>
-
-      <motion.div initial={{ y:8, opacity:0 }} animate={{ y:0, opacity:1 }} transition={{ delay:0.45 }}
-        style={{ width:"100%", display:"flex", flexDirection:"column", gap:10 }}
-      >
-        <p style={{ fontFamily:"DM Sans, sans-serif", fontSize:12.5, color:isDark?"rgba(255,255,255,0.28)":"rgba(0,0,0,0.32)", margin:0 }}>
-          Didn&#39;t receive it? Check spam or{" "}
-          <button onClick={onRetry}
-            style={{ background:"none", border:"none", cursor:"pointer", color:"#ff8800", fontFamily:"DM Sans, sans-serif", fontSize:12.5, fontWeight:700, padding:0 }}>
-            try again
-          </button>
-        </p>
+      <motion.div initial={{ y:8, opacity:0 }} animate={{ y:0, opacity:1 }} transition={{ delay:0.45 }} style={{ width:"100%" }}>
         <Link href="/login"
-          style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
-            paddingTop:14, paddingBottom:14, paddingLeft:20, paddingRight:20,
-            borderRadius:14, border:`1.5px solid ${isDark?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.1)"}`,
-            background:"none", color:"var(--text)", fontFamily:"Syne, sans-serif", fontWeight:700, fontSize:14,
-            textDecoration:"none", transition:"border-color 0.2s",
+          style={{
+            display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+            paddingTop:15, paddingBottom:15, paddingLeft:20, paddingRight:20,
+            borderRadius:14, border:"none", textDecoration:"none",
+            background:"linear-gradient(135deg,#ff5500 0%,#ff8800 50%,#ffcc00 100%)",
+            color:"#fff", fontFamily:"Syne, sans-serif", fontWeight:800, fontSize:15,
+            boxShadow:"0 0 32px rgba(255,100,0,0.4)",
           }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 12H5M12 19l-7-7 7-7"/>
-          </svg>
           Back to sign in
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
         </Link>
       </motion.div>
     </motion.div>
   );
 }
 
-// ── Main ─────────────────────────────────────────────────────────────────────
 export default function ForgotPasswordPage() {
   const { isDark } = useTheme();
+
   const [email,   setEmail]   = useState("");
   const [loading, setLoading] = useState(false);
-  const [sent,    setSent]    = useState(false);
+  const [done,    setDone]    = useState(false);
   const [error,   setError]   = useState<string|null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
 
+  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const canSubmit = !loading && isValidEmail;
+
   const handleSubmit = useCallback(async (e: FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!canSubmit) return;
     setError(null); setLoading(true);
     try {
-      // POST /auth/forgot-password  — backend endpoint when ready
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/crowdspark"}/auth/forgot-password`, {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim() }),
       });
-      if (!res.ok && res.status !== 200) {
-        // still show success — never confirm if email exists (security)
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data?.message || "Something went wrong. Please try again.");
+      } else {
+        setDone(true);
       }
-      setSent(true);
     } catch {
-      // show success regardless to avoid email enumeration
-      setSent(true);
-    } finally { setLoading(false); }
-  }, [email]);
+      setError("Network error. Please check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, [canSubmit, email]);
 
   const pageBg  = isDark ? "#06050a" : "#f3f2ee";
   const cardBg  = isDark ? "rgba(10,8,18,0.88)" : "rgba(255,255,255,0.88)";
   const cardBdr = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
   const mutedClr= isDark ? "rgba(255,255,255,0.4)"  : "rgba(0,0,0,0.42)";
-  const canSubmit = !loading && email.includes("@");
 
   if (!mounted) return null;
 
@@ -250,10 +227,8 @@ export default function ForgotPasswordPage() {
       display:"flex", alignItems:"center", justifyContent:"center",
       position:"relative", overflow:"hidden",
     }}>
-      {/* Ambient canvas */}
       <AmbientCanvas isDark={isDark}/>
 
-      {/* Grid overlay */}
       <svg style={{ position:"absolute", inset:0, width:"100%", height:"100%", pointerEvents:"none", opacity:isDark?0.028:0.016 }}>
         <defs>
           <pattern id="fpg" x="0" y="0" width="52" height="52" patternUnits="userSpaceOnUse">
@@ -263,11 +238,9 @@ export default function ForgotPasswordPage() {
         <rect width="100%" height="100%" fill="url(#fpg)"/>
       </svg>
 
-      {/* Edge fades */}
       <div style={{ position:"absolute", top:0, left:0, right:0, height:200, background:`linear-gradient(to bottom,${isDark?"rgba(6,5,10,0.55)":"rgba(243,242,238,0.55)"} 0%,transparent 100%)`, pointerEvents:"none" }}/>
       <div style={{ position:"absolute", bottom:0, left:0, right:0, height:200, background:`linear-gradient(to top,${isDark?"rgba(6,5,10,0.55)":"rgba(243,242,238,0.55)"} 0%,transparent 100%)`, pointerEvents:"none" }}/>
 
-      {/* Logo */}
       <motion.div
         initial={{ opacity:0, y:-22 }} animate={{ opacity:1, y:0 }}
         transition={{ duration:0.6, ease:"easeOut" }}
@@ -289,7 +262,6 @@ export default function ForgotPasswordPage() {
         </Link>
       </motion.div>
 
-      {/* ─── Card ─── */}
       <motion.div
         initial={{ opacity:0, y:38, scale:0.91 }}
         animate={{ opacity:1, y:0, scale:1 }}
@@ -309,31 +281,21 @@ export default function ForgotPasswordPage() {
           overflow:"hidden",
         }}
       >
-        {/* Top accent line */}
         <div style={{
           position:"absolute", top:0, left:"7%", right:"7%", height:2.5,
           background:"linear-gradient(90deg,transparent,rgba(255,90,0,0.85) 28%,rgba(255,220,0,1) 50%,rgba(255,90,0,0.85) 72%,transparent)",
         }}/>
-        {/* Inner glow */}
         <div style={{ position:"absolute", top:-55, left:"50%", transform:"translateX(-50%)", width:300, height:110, background:"radial-gradient(ellipse,rgba(255,107,0,0.1) 0%,transparent 70%)", pointerEvents:"none" }}/>
-        {/* Corner deco */}
         <div style={{ position:"absolute", top:12, right:12, width:60, height:60, borderTop:`1.5px solid ${isDark?"rgba(255,136,0,0.12)":"rgba(255,136,0,0.18)"}`, borderRight:`1.5px solid ${isDark?"rgba(255,136,0,0.12)":"rgba(255,136,0,0.18)"}`, borderRadius:"0 12px 0 0", pointerEvents:"none" }}/>
         <div style={{ position:"absolute", bottom:12, left:12, width:60, height:60, borderBottom:`1.5px solid ${isDark?"rgba(96,165,250,0.1)":"rgba(96,165,250,0.15)"}`, borderLeft:`1.5px solid ${isDark?"rgba(96,165,250,0.1)":"rgba(96,165,250,0.15)"}`, borderRadius:"0 0 0 12px", pointerEvents:"none" }}/>
 
         <AnimatePresence mode="wait">
-          {sent ? (
-            <motion.div key="sent"
-              initial={{ opacity:0, x:30 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x:-30 }}
-              transition={{ duration:0.4, ease:"easeOut" }}
-            >
-              <SentState email={email} isDark={isDark} onRetry={()=>{ setSent(false); setEmail(""); }}/>
+          {done ? (
+            <motion.div key="done" initial={{ opacity:0, x:30 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x:-30 }} transition={{ duration:0.4 }}>
+              <SuccessState email={email} isDark={isDark}/>
             </motion.div>
           ) : (
-            <motion.div key="form"
-              initial={{ opacity:0, x:-30 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x:30 }}
-              transition={{ duration:0.4, ease:"easeOut" }}
-            >
-              {/* Back link */}
+            <motion.div key="form" initial={{ opacity:0, x:-30 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x:30 }} transition={{ duration:0.4 }}>
               <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.1 }} style={{ marginBottom:28 }}>
                 <Link href="/login"
                   style={{ display:"inline-flex", alignItems:"center", gap:7, color:mutedClr, fontFamily:"DM Sans, sans-serif", fontSize:13, textDecoration:"none", fontWeight:500 }}
@@ -345,9 +307,7 @@ export default function ForgotPasswordPage() {
                 </Link>
               </motion.div>
 
-              {/* Heading */}
               <motion.div initial={{ opacity:0, y:18 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.15, duration:0.5 }} style={{ marginBottom:30 }}>
-                {/* Icon */}
                 <motion.div
                   initial={{ scale:0 }} animate={{ scale:1 }}
                   transition={{ type:"spring", stiffness:220, damping:16, delay:0.2 }}
@@ -360,28 +320,26 @@ export default function ForgotPasswordPage() {
                   }}
                 >
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ff8800" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2"/>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
                   </svg>
                 </motion.div>
-
                 <h1 style={{
                   fontFamily:"Syne, sans-serif", fontWeight:900,
-                  fontSize:"clamp(26px,3.5vw,36px)",
+                  fontSize:"clamp(24px,3.5vw,34px)",
                   color:"var(--text)", letterSpacing:"-0.03em",
                   margin:"0 0 8px", lineHeight:1.06,
-                }}>Reset password</h1>
+                }}>Forgot password?</h1>
                 <motion.div
                   initial={{ scaleX:0, originX:"left" }} animate={{ scaleX:1 }}
                   transition={{ delay:0.4, duration:0.5, ease:"easeOut" }}
                   style={{ width:48, height:3.5, borderRadius:2, background:"linear-gradient(90deg,#ff5500,#ffcc00)", marginBottom:12, boxShadow:"0 0 16px rgba(255,107,0,0.58)" }}
                 />
                 <p style={{ fontFamily:"DM Sans, sans-serif", fontSize:14, color:mutedClr, margin:0, lineHeight:1.6 }}>
-                  Enter your email and we&#39;ll send you a reset link.
+                  Enter your email address and we&apos;ll send you a link to reset your password.
                 </p>
               </motion.div>
 
-              {/* Error */}
               <AnimatePresence>
                 {error && (
                   <motion.div
@@ -402,8 +360,7 @@ export default function ForgotPasswordPage() {
                 )}
               </AnimatePresence>
 
-              {/* Form */}
-              <form onSubmit={handleSubmit} style={{ display:"flex", flexDirection:"column", gap:16 }}>
+              <form onSubmit={handleSubmit} style={{ display:"flex", flexDirection:"column", gap:20 }}>
                 <motion.div initial={{ opacity:0, x:-14 }} animate={{ opacity:1, x:0 }} transition={{ delay:0.28, duration:0.4 }}>
                   <ForgeInput
                     label="Email address"
@@ -416,7 +373,7 @@ export default function ForgotPasswordPage() {
                   />
                 </motion.div>
 
-                <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.36, duration:0.4 }}>
+                <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.35, duration:0.4 }}>
                   <motion.button
                     type="submit" disabled={!canSubmit}
                     whileHover={canSubmit?{ scale:1.025, boxShadow:"0 0 48px rgba(255,100,0,0.54)" }:{}}
@@ -437,17 +394,16 @@ export default function ForgotPasswordPage() {
                       display:"flex", alignItems:"center", justifyContent:"center", gap:9,
                     }}
                   >
-                    {canSubmit && <span style={{ position:"absolute", inset:0, background:"linear-gradient(105deg,transparent 25%,rgba(255,255,255,0.22) 50%,transparent 75%)", animation:"fpShimmer 2.2s ease-in-out infinite" }}/>}
                     {loading ? (
                       <>
                         <span style={{ width:16, height:16, borderRadius:"50%", border:"2px solid rgba(255,255,255,0.3)", borderTopColor:"#fff", animation:"fpSpin .65s linear infinite", flexShrink:0 }}/>
-                        <span style={{ position:"relative" }}>Sending link…</span>
+                        <span>Sending reset link...</span>
                       </>
                     ) : (
-                      <span style={{ position:"relative", display:"flex", alignItems:"center", gap:8 }}>
+                      <span style={{ display:"flex", alignItems:"center", gap:8 }}>
                         Send reset link
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                          <path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/>
                         </svg>
                       </span>
                     )}
@@ -455,10 +411,12 @@ export default function ForgotPasswordPage() {
                 </motion.div>
               </form>
 
-              <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.5 }}
-                style={{ marginTop:24, textAlign:"center", color:mutedClr, fontFamily:"DM Sans, sans-serif", fontSize:14 }}>
-                Remember it after all?{" "}
-                <Link href="/login" style={{ color:"#ff8800", fontWeight:700, textDecoration:"none" }}>Sign in →</Link>
+              <motion.p
+                initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.5 }}
+                style={{ fontFamily:"DM Sans, sans-serif", fontSize:13, color:mutedClr, textAlign:"center", margin:"20px 0 0" }}
+              >
+                Remember your password?{" "}
+                <Link href="/login" style={{ color:"#ff8800", textDecoration:"none", fontWeight:600 }}>Sign in</Link>
               </motion.p>
             </motion.div>
           )}
@@ -466,9 +424,7 @@ export default function ForgotPasswordPage() {
       </motion.div>
 
       <style>{`
-        @keyframes fpShimmer { 0%{transform:translateX(-100%)} 60%{transform:translateX(220%)} 100%{transform:translateX(220%)} }
-        @keyframes fpSpin    { to{transform:rotate(360deg)} }
-        @keyframes fpLaser   { 0%{transform:translateX(-200%)} 100%{transform:translateX(400%)} }
+        @keyframes fpSpin { to{transform:rotate(360deg)} }
       `}</style>
     </div>
   );

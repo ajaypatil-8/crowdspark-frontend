@@ -9,7 +9,7 @@ import {
   ArrowLeft, BarChart2, DollarSign, Users, Clock, TrendingUp,
   Gift, ExternalLink, AlertTriangle, RefreshCcw, Zap,
   CheckCircle2, XCircle, Eye, Calendar, Target,
-  ChevronRight, Edit3, Share2, Sparkles,
+  ChevronRight, Edit3, Share2, Sparkles, Rocket, Plus,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { projectApi, exploreApi, type ProjectFullDetailsResponse } from "@/lib/api";
@@ -258,7 +258,7 @@ export default function CampaignAnalyticsPage() {
     if (!id || isNaN(id)) { router.push("/dashboard/my-campaigns"); return; }
     setLoading(true); setError(null);
     try {
-      const data = await exploreApi.getById(id);
+      const data = await exploreApi.getFullDetails(id);
       setProject(data as any);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load campaign");

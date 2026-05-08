@@ -17,7 +17,7 @@ type KycStatus = "NOT_SUBMITTED" | "PENDING_SUBMISSION" | "PENDING_APPROVAL" | "
 
 const NAV_LINKS = [
   { label: "Explore",      href: "/explore"  },
-  { label: "How it works", href: "/#how"     },
+  { label: "How it works", href: "/how-it-works" },
   { label: "Creators",     href: "/creators" },
   { label: "Pricing",      href: "/pricing"  },
 ];

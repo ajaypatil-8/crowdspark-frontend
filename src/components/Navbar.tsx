@@ -475,7 +475,9 @@ export default function Navbar() {
 
   if (pathname === "/login" || pathname === "/register") return null;
 
-  const glassBg  = scrolled ? (isDark ? "rgba(6,6,10,0.94)" : "rgba(255,255,255,0.94)") : (isDark ? "rgba(6,6,10,0.65)" : "rgba(255,255,255,0.62)");
+  const glassBg  = scrolled
+    ? (isDark ? "linear-gradient(180deg,#08080f 0%,#050509 100%)" : "linear-gradient(180deg,#ffffff 0%,#f7f7fb 100%)")
+    : (isDark ? "linear-gradient(180deg,#0b0b14 0%,#06060b 100%)" : "linear-gradient(180deg,#ffffff 0%,#f9f9fc 100%)");
   const bdr      = isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.07)";
   const shadow   = scrolled ? "0 8px 44px rgba(0,0,0,0.42),0 0 0 1px rgba(255,120,0,0.14),inset 0 1px 0 rgba(255,255,255,0.07)" : "0 4px 28px rgba(0,0,0,0.18),inset 0 1px 0 rgba(255,255,255,0.06)";
   const mobileBdr = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
@@ -490,7 +492,7 @@ export default function Navbar() {
       <div ref={navRef} style={{ position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)", zIndex: 1000, width: "min(920px,calc(100vw - 32px))" }}>
 
         {/* Pill bar — overflow:hidden ONLY here, not on wrapper */}
-        <div style={{ borderRadius: 9999, overflow: "hidden", background: glassBg, backdropFilter: "blur(28px) saturate(200%)", WebkitBackdropFilter: "blur(28px) saturate(200%)", border: bdr, boxShadow: shadow, transition: "background 0.3s, box-shadow 0.3s", paddingLeft: 8, paddingRight: 8, position: "relative" }}>
+        <div style={{ borderRadius: 9999, overflow: "hidden", background: glassBg, backdropFilter: "none", WebkitBackdropFilter: "none", border: bdr, boxShadow: shadow, transition: "background 0.3s, box-shadow 0.3s", paddingLeft: 8, paddingRight: 8, position: "relative", isolation: "isolate" }}>
 
           {/* Accent line */}
           <div style={{ position: "absolute", top: 0, left: "12%", right: "12%", height: 1.5, background: "linear-gradient(90deg,transparent,rgba(255,120,0,0.8) 30%,rgba(255,220,0,1) 50%,rgba(255,120,0,0.8) 70%,transparent)", opacity: scrolled ? 1 : 0.5, transition: "opacity 0.3s", pointerEvents: "none" }} />
@@ -576,7 +578,7 @@ export default function Navbar() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -12, scale: 0.97 }}
               transition={{ type: "spring", stiffness: 300, damping: 28 }}
-              style={{ marginTop: 10, borderRadius: 22, background: isDark ? "rgba(6,6,10,0.96)" : "rgba(255,255,255,0.96)", backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", border: `1px solid ${mobileBdr}`, boxShadow: "0 12px 48px rgba(0,0,0,0.32)", paddingTop: 14, paddingBottom: 20, paddingLeft: 16, paddingRight: 16, display: "flex", flexDirection: "column", gap: 2 }}
+              style={{ marginTop: 10, borderRadius: 22, background: isDark ? "#08080f" : "#ffffff", backdropFilter: "none", WebkitBackdropFilter: "none", border: `1px solid ${mobileBdr}`, boxShadow: "0 12px 48px rgba(0,0,0,0.32)", paddingTop: 14, paddingBottom: 20, paddingLeft: 16, paddingRight: 16, display: "flex", flexDirection: "column", gap: 2 }}
             >
               <div style={{ height: 1.5, borderRadius: 1, marginBottom: 10, background: "linear-gradient(90deg,transparent,rgba(255,120,0,0.75),rgba(255,220,0,0.95),rgba(255,120,0,0.75),transparent)" }} />
               {NAV_LINKS.map((l, i) => (

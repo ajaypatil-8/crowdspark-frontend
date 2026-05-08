@@ -464,6 +464,7 @@ export default function HomePage() {
       <div ref={followerRef} className="cursor-follower" aria-hidden />
 
       {/* Ambient background */}
+      <div className="page-gradient" aria-hidden />
       <div className="dot-grid" aria-hidden />
       <div className="lp-orb-1" aria-hidden />
       <div className="lp-orb-2" aria-hidden />
@@ -899,7 +900,7 @@ export default function HomePage() {
         .lp-cta-bg-orb { position:absolute; border-radius:50%; pointer-events:none; }
         .lp-cta-bg-orb-a { width:500px; height:500px; background:radial-gradient(circle,rgba(0,245,212,0.07) 0%,transparent 70%); top:50%; left:50%; transform:translate(-50%,-50%); }
         .lp-cta-bg-orb-b { width:200px; height:200px; background:rgba(255,107,0,0.06); filter:blur(60px); top:-60px; right:-60px; }
-        .lp-cta-noise { position:absolute; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"); opacity:.4; mix-blend-mode:overlay; pointer-events:none; }
+        .lp-cta-noise { position:absolute; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"); opacity:.08; mix-blend-mode:overlay; pointer-events:none; }
         .lp-cta-overline { position:relative; margin-bottom:18px; }
         .lp-cta-h2 { font-family:"Syne",sans-serif; font-weight:800; font-size:clamp(30px,4vw,54px); color:var(--text); letter-spacing:-0.025em; line-height:1.08; margin:0 0 20px; position:relative; }
         .lp-cta-accent { color:var(--accent); text-shadow:0 0 50px var(--accent-glow); }

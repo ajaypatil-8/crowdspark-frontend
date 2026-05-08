@@ -23,8 +23,9 @@ export default function MainLayout({
         <main
           id="main-content"
           style={{
-            paddingTop: 64,
+            paddingTop: 0,
             flex: 1,
+            background: "var(--bg)",
           }}
         >
           {children}

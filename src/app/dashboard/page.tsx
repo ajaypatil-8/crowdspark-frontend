@@ -5,9 +5,9 @@ import Link from "next/link";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useProfile } from "@/contexts/ProfileContext";
 import {
-  backerApi, projectApi, exploreApi,
+  backerApi, projectApi,
   type BackedProjectResponse, type BackerStatsResponse,
-  type ProjectFeedResponse,
+  type CreatorProjectResponse,
 } from "@/lib/api";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -315,22 +315,27 @@ function HeroWelcome({ user, isCreator, isDark }: { user: any; isCreator: boolea
 export default function DashboardOverviewPage() {
   const { user, loading } = useProfile();
   const { isDark } = useTheme();
-  const [stats, setStats]     = useState<BackerStatsResponse | null>(null);
-  const [backed, setBacked]   = useState<BackedProjectResponse[]>([]);
-  const [mounted, setMounted] = useState(false);
+  const [stats, setStats]         = useState<BackerStatsResponse | null>(null);
+  const [backed, setBacked]       = useState<BackedProjectResponse[]>([]);
+  const [myCampaigns, setMyCampaigns] = useState<CreatorProjectResponse[]>([]);
+  const [mounted, setMounted]     = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
 
   const load = useCallback(async () => {
     try {
-      const [statsData, backedData] = await Promise.allSettled([
+      const isCreatorUser = user?.roles?.includes("CREATOR");
+      const calls: Promise<any>[] = [
         backerApi.stats(),
         backerApi.backedProjects(),
-      ]);
-      if (statsData.status === "fulfilled") setStats(statsData.value);
-      if (backedData.status === "fulfilled") setBacked(backedData.value ?? []);
+        ...(isCreatorUser ? [projectApi.myProjects()] : []),
+      ];
+      const results = await Promise.allSettled(calls);
+      if (results[0].status === "fulfilled") setStats(results[0].value);
+      if (results[1].status === "fulfilled") setBacked(results[1].value ?? []);
+      if (isCreatorUser && results[2]?.status === "fulfilled") setMyCampaigns(results[2].value ?? []);
     } catch {}
-  }, []);
+  }, [user]);
 
   useEffect(() => { if (!loading && user) load(); }, [loading, user, load]);
 
@@ -344,11 +349,18 @@ export default function DashboardOverviewPage() {
   const isCreator    = !!user?.roles?.includes("CREATOR");
   const recentBacked = backed.slice(0, 5);
 
+  // Live campaigns = creator campaigns with status APPROVED
+  const activeCampaignCount = isCreator
+    ? myCampaigns.filter(c => c.status === "APPROVED").length
+    : (stats?.activeCampaigns ?? 0);
+
   const statCards = [
-    { label: "Backed Projects",   value: stats?.totalBacked ?? backed.length,      icon: <Ic.Heart s={17} />,    color: "#ef4444", bg: "rgba(239,68,68,0.12)" },
-    { label: "Total Contributed", value: stats?.totalAmountBacked ?? 0,             icon: <Ic.Coins s={17} />,    color: "#ff8800", bg: "rgba(255,136,0,0.12)" },
-    { label: "Active Campaigns",  value: stats?.activeCampaigns ?? 0,               icon: <Ic.Trend s={17} />,    color: "#34d399", bg: "rgba(52,211,153,0.12)" },
-    { label: "Member Since",      value: new Date(user?.createdAt ?? Date.now()).getFullYear(), icon: <Ic.User s={17} />, color: "#60a5fa", bg: "rgba(96,165,250,0.12)" },
+    { label: "Backed Projects",   value: stats?.totalBacked ?? backed.length,  icon: <Ic.Heart s={17} />,  color: "#ef4444", bg: "rgba(239,68,68,0.12)" },
+    { label: "Total Contributed", value: stats?.totalAmountBacked ?? 0,         icon: <Ic.Coins s={17} />,  color: "#ff8800", bg: "rgba(255,136,0,0.12)" },
+    { label: isCreator ? "Live Campaigns" : "Active Campaigns",
+                                  value: activeCampaignCount,                   icon: <Ic.Trend s={17} />,  color: "#34d399", bg: "rgba(52,211,153,0.12)" },
+    { label: "Member Since",      value: new Date(user?.createdAt ?? Date.now()).getFullYear(),
+                                                                                 icon: <Ic.User s={17} />,   color: "#60a5fa", bg: "rgba(96,165,250,0.12)" },
   ];
 
   const quickActions = [
@@ -380,8 +392,68 @@ export default function DashboardOverviewPage() {
 
       {/* Main 2-col layout */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 28 }} className="cs-main-grid">
-        {/* Left: Backed Projects */}
+        {/* Left col */}
         <div>
+          {/* Creator live campaigns (shown only for creators) */}
+          {isCreator && myCampaigns.filter(c => c.status === "APPROVED").length > 0 && (
+            <div style={{ marginBottom: 32 }}>
+              <SectionHead title="Your Live Campaigns" href="/dashboard/my-campaigns" linkLabel="Manage all" delay={0.25} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {myCampaigns.filter(c => c.status === "APPROVED").slice(0, 3).map((c, i) => {
+                  const pct = Math.min(100, Math.round((c.currentAmount / c.goalAmount) * 100));
+                  return (
+                    <motion.div
+                      key={c.id}
+                      initial={{ opacity: 0, x: -16 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.4, delay: 0.3 + i * 0.06, ease: [0.22, 1, 0.36, 1] }}
+                      style={{
+                        display: "flex", gap: 14, alignItems: "center", padding: "14px 16px",
+                        borderRadius: 16,
+                        background: isDark ? "rgba(52,211,153,0.04)" : "rgba(52,211,153,0.03)",
+                        border: `1px solid ${isDark ? "rgba(52,211,153,0.15)" : "rgba(52,211,153,0.18)"}`,
+                      }}
+                    >
+                      <div style={{ width: 52, height: 52, borderRadius: 12, flexShrink: 0, overflow: "hidden", background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                        {c.thumbnailUrl
+                          ? <img src={c.thumbnailUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#ff6b00,#ffcc00)", display: "flex", alignItems: "center", justifyContent: "center" }}><Ic.Zap s={20} /></div>
+                        }
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 13.5, color: "var(--text)", margin: "0 0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title}</p>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
+                          <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11.5, fontWeight: 700, color: "#34d399" }}>
+                            ₹{c.currentAmount.toLocaleString("en-IN")} raised
+                          </span>
+                          <span style={{ width: 3, height: 3, borderRadius: "50%", background: "var(--text-muted)", flexShrink: 0 }} />
+                          <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: "var(--text-muted)" }}>
+                            of ₹{c.goalAmount.toLocaleString("en-IN")} goal
+                          </span>
+                          <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 4, fontFamily: "DM Sans, sans-serif", fontSize: 10.5, fontWeight: 700, color: "#34d399", background: "rgba(52,211,153,0.1)", padding: "2px 7px", borderRadius: 6 }}>
+                            <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#34d399", animation: "csPulse 1.5s ease-in-out infinite" }} />
+                            LIVE
+                          </span>
+                        </div>
+                        <div style={{ height: 4, borderRadius: 4, background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)", overflow: "hidden" }}>
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${pct}%` }}
+                            transition={{ duration: 0.8, delay: 0.5 + i * 0.08, ease: "easeOut" }}
+                            style={{ height: "100%", borderRadius: 4, background: "linear-gradient(90deg,#34d399,#059669)" }}
+                          />
+                        </div>
+                        <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10.5, color: "var(--text-muted)", margin: "4px 0 0" }}>{pct}% funded</p>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+              <style>{`@keyframes csPulse{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:1;transform:scale(1.6)}}`}</style>
+            </div>
+          )}
+
+          {/* Backed Projects */}
           <SectionHead title="Recent Backed Projects" href="/dashboard/backed" linkLabel="View all" delay={0.3} />
           {recentBacked.length === 0
             ? <Empty icon={<Ic.Heart />} title="No backed projects yet" sub="Back a campaign to see it here" cta="Explore projects" href="/explore" />

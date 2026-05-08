@@ -8,7 +8,7 @@ import { ProfileProvider, useProfile } from "@/contexts/ProfileContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import { authApi, tokenStorage } from "@/lib/api";
-import DashboardNotificationBell from "@/components/dashboard/DashboardNotificationBell";
+import NotificationBell from "@/components/NotificationBell";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const Icons = {
@@ -263,7 +263,7 @@ function DashboardInner({ children }: { children: ReactNode }) {
 
           {/* Right side */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto", flexShrink: 0 }}>
-            <div className="cs-bell"><DashboardNotificationBell /></div>
+            <div className="cs-bell"><NotificationBell isDark={isDark} /></div>
 
             {/* Avatar + dropdown */}
             <div ref={dropdownRef} style={{ position: "relative" }}>

@@ -143,6 +143,103 @@ function StepBar({ current, onJump }: { current: number; onJump: (i: number) => 
   );
 }
 
+function SideInfoCard({
+  title,
+  value,
+  sub,
+  tone,
+  isDark,
+}: {
+  title: string;
+  value: string;
+  sub: string;
+  tone: "orange" | "teal" | "violet";
+  isDark: boolean;
+}) {
+  const tones = {
+    orange: {
+      glow: "rgba(255,107,0,0.2)",
+      line: "linear-gradient(90deg,#ff6b00,#ffcc00)",
+      soft: "rgba(255,107,0,0.08)",
+      text: "#ff9300",
+    },
+    teal: {
+      glow: "rgba(0,245,212,0.2)",
+      line: "linear-gradient(90deg,#00f5d4,#41d1ff)",
+      soft: "rgba(0,245,212,0.08)",
+      text: "#22d3ee",
+    },
+    violet: {
+      glow: "rgba(167,139,250,0.2)",
+      line: "linear-gradient(90deg,#8b5cf6,#a78bfa)",
+      soft: "rgba(139,92,246,0.08)",
+      text: "#a78bfa",
+    },
+  } as const;
+
+  const selected = tones[tone];
+  const bdr = isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.08)";
+  const txt = isDark ? "#f5f5f5" : "#111";
+  const muted = isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)";
+
+  return (
+    <motion.div
+      whileHover={{ y: -3 }}
+      transition={{ duration: 0.2 }}
+      style={{
+        borderRadius: 16,
+        border: `1px solid ${bdr}`,
+        background: isDark ? "rgba(255,255,255,0.02)" : "#fff",
+        padding: "14px 14px 13px",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: selected.soft,
+          opacity: 0.55,
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 1.5,
+          background: selected.line,
+        }}
+      />
+      <p style={{ position: "relative", margin: "0 0 8px", fontFamily: "DM Sans, sans-serif", fontSize: 11.5, color: muted, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700 }}>
+        {title}
+      </p>
+      <p style={{ position: "relative", margin: "0 0 6px", fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 20, color: txt, letterSpacing: "-0.02em" }}>
+        {value}
+      </p>
+      <p style={{ position: "relative", margin: 0, fontFamily: "DM Sans, sans-serif", fontSize: 12, color: selected.text }}>
+        {sub}
+      </p>
+      <div
+        style={{
+          position: "absolute",
+          width: 56,
+          height: 56,
+          borderRadius: "50%",
+          right: -12,
+          bottom: -12,
+          background: selected.glow,
+          filter: "blur(14px)",
+          pointerEvents: "none",
+        }}
+      />
+    </motion.div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function CreateCampaignPage() {
   const { isDark } = useTheme();
@@ -224,10 +321,36 @@ export default function CreateCampaignPage() {
 
   // Progress pct
   const progressPct = Math.round(((step) / (STEPS.length - 1)) * 100);
+  const completionLabel = progressPct < 30 ? "Strong start" : progressPct < 70 ? "Good momentum" : "Almost launch-ready";
+  const mediaCount = media.media.length;
+  const rewardsCount = rewards.rewards.length;
+  const basicDone =
+    !!basic.title.trim() &&
+    !!basic.shortDescription.trim() &&
+    !!basic.location.trim() &&
+    !!basic.goalAmount &&
+    !!basic.deadline &&
+    basic.categoryIds.length > 0;
+  const storyDone = story.fullDescription.trim().length >= 50;
+  const mediaDone = !!media.media.find((m) => m.usage === "THUMBNAIL");
+  const readinessPoints = [basicDone, storyDone, mediaDone, step >= 3].filter(Boolean).length;
+  const readinessPct = Math.round((readinessPoints / 4) * 100);
 
   return (
     <div style={{ position: "relative", minHeight: "100vh", paddingBottom: 80 }}>
       <AmbientCanvas isDark={isDark} />
+      <div
+        aria-hidden
+        style={{
+          position: "fixed",
+          inset: 0,
+          pointerEvents: "none",
+          zIndex: 0,
+          background: isDark
+            ? "radial-gradient(circle at 12% 12%, rgba(255,107,0,0.12), transparent 35%), radial-gradient(circle at 82% 16%, rgba(0,245,212,0.12), transparent 35%), radial-gradient(circle at 50% 100%, rgba(139,92,246,0.1), transparent 40%)"
+            : "radial-gradient(circle at 12% 12%, rgba(255,107,0,0.08), transparent 35%), radial-gradient(circle at 82% 16%, rgba(0,168,130,0.08), transparent 35%), radial-gradient(circle at 50% 100%, rgba(139,92,246,0.07), transparent 40%)",
+        }}
+      />
 
       {/* ─── Success overlay ─────────────────────────────────────────── */}
       <AnimatePresence>
@@ -267,23 +390,28 @@ export default function CreateCampaignPage() {
         )}
       </AnimatePresence>
 
-      <div style={{ maxWidth: 800, margin: "0 auto", padding: "36px 20px 0", position: "relative", zIndex: 1 }}>
+      <div style={{ maxWidth: 1240, margin: "0 auto", padding: "36px 20px 0", position: "relative", zIndex: 1 }}>
 
         {/* ─── Header ─────────────────────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
-          style={{ marginBottom: 32 }}
+          style={{ marginBottom: 24 }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <div style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(255,107,0,0.1)", border: "1px solid rgba(255,107,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>🚀</div>
             <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11.5, color: muted, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600 }}>Campaign creation</span>
           </div>
           <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-            <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: "clamp(24px,3vw,36px)", color: txt, letterSpacing: "-0.03em", margin: 0, lineHeight: 1.1 }}>
+            <div>
+              <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: "clamp(24px,3vw,38px)", color: txt, letterSpacing: "-0.03em", margin: 0, lineHeight: 1.07 }}>
               Launch Your Campaign
-            </h1>
+              </h1>
+              <p style={{ margin: "8px 0 0", fontFamily: "DM Sans, sans-serif", fontSize: 14, color: muted }}>
+                Premium guided builder designed to maximize trust and conversions.
+              </p>
+            </div>
             {/* Overall progress mini-bar */}
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ width: 120, height: 4, borderRadius: 2, background: bdr, overflow: "hidden" }}>
@@ -298,8 +426,35 @@ export default function CreateCampaignPage() {
           </div>
         </motion.div>
 
-        {/* ─── Step bar ──────────────────────────────────────────────────── */}
-        <StepBar current={step} onJump={jumpTo} />
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.05 }}
+          style={{
+            marginBottom: 20,
+            borderRadius: 18,
+            border: `1px solid ${bdr}`,
+            background: isDark ? "rgba(12,12,12,0.72)" : "rgba(255,255,255,0.85)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            padding: "14px 16px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#ff8800", boxShadow: "0 0 14px rgba(255,136,0,0.5)" }} />
+              <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12.5, color: muted, fontWeight: 600 }}>
+                {completionLabel}
+              </span>
+            </div>
+            <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: muted }}>
+              Step {step + 1}/{STEPS.length}
+            </span>
+          </div>
+          <StepBar current={step} onJump={jumpTo} />
+        </motion.div>
+
+        <div style={{ display: "grid", gap: 20, gridTemplateColumns: "minmax(0,1fr)" }} className="cc-layout-grid">
 
         {/* ─── Main card ─────────────────────────────────────────────────── */}
         <motion.div
@@ -434,23 +589,83 @@ export default function CreateCampaignPage() {
           </div>
         </motion.div>
 
-        {/* ─── Tips panel ─────────────────────────────────────────────────── */}
+          <aside
+            style={{
+              display: "none",
+              position: "sticky",
+              top: 84,
+              alignSelf: "start",
+              borderRadius: 20,
+              border: `1px solid ${bdr}`,
+              background: isDark ? "rgba(10,10,10,0.82)" : "rgba(255,255,255,0.9)",
+              backdropFilter: "blur(18px)",
+              WebkitBackdropFilter: "blur(18px)",
+              overflow: "hidden",
+            }}
+            className="cc-side-panel"
+          >
+            <div style={{ padding: 18, borderBottom: `1px solid ${bdr}` }}>
+              <p style={{ margin: "0 0 8px", fontFamily: "DM Sans, sans-serif", fontSize: 11, color: muted, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>
+                Launch Readiness
+              </p>
+              <p style={{ margin: "0 0 10px", fontFamily: "Syne, sans-serif", fontSize: 24, color: txt, fontWeight: 900, letterSpacing: "-0.03em" }}>
+                {readinessPct}%
+              </p>
+              <div style={{ height: 6, borderRadius: 999, background: bdr, overflow: "hidden" }}>
+                <motion.div
+                  animate={{ width: `${readinessPct}%` }}
+                  transition={{ duration: 0.45, ease: "easeOut" }}
+                  style={{ height: "100%", borderRadius: 999, background: "linear-gradient(90deg,#ff6b00,#ffcc00)" }}
+                />
+              </div>
+            </div>
+
+            <div style={{ padding: 14, display: "grid", gap: 10 }}>
+              <SideInfoCard title="Media Assets" value={String(mediaCount)} sub={mediaDone ? "Thumbnail included" : "Add thumbnail to proceed"} tone="teal" isDark={isDark} />
+              <SideInfoCard title="Reward Tiers" value={String(rewardsCount)} sub={rewardsCount > 0 ? "Great conversion booster" : "Add at least one tier"} tone="violet" isDark={isDark} />
+              <SideInfoCard title="Current Stage" value={STEPS[step].short} sub={STEPS[step].label} tone="orange" isDark={isDark} />
+            </div>
+
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25 }}
+              style={{ margin: "2px 14px 14px", padding: "14px 14px", borderRadius: 14, background: isDark ? "rgba(255,107,0,0.05)" : "rgba(255,107,0,0.04)", border: "1px solid rgba(255,107,0,0.2)", display: "flex", alignItems: "flex-start", gap: 10 }}
+            >
+              <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>💡</span>
+              <div>
+                <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 12.5, color: "#ff8800", margin: "0 0 4px" }}>Pro tip</p>
+                <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12.5, color: muted, margin: 0, lineHeight: 1.6 }}>
+                  {step === 0 && "Campaigns with clear goals raise 3x more. Be specific about what each funding milestone unlocks."}
+                  {step === 1 && "The first 3 sentences decide if a backer reads on. Start with the problem and emotional hook."}
+                  {step === 2 && "High quality thumbnail and short teaser media substantially increases listing click-through rate."}
+                  {step === 3 && "Reward tiers improve conversion. Keep one entry tier affordable and one premium tier aspirational."}
+                  {step === 4 && "Final review: verify links, spelling, and funding details before submission to avoid review delays."}
+                </p>
+              </div>
+            </motion.div>
+          </aside>
+        </div>
+
+        {/* ─── Mobile/Tablet tips panel ─────────────────────────────────── */}
         <motion.div
           key={step}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.15 }}
           style={{ marginTop: 18, padding: "16px 22px", borderRadius: 16, background: isDark ? "rgba(255,107,0,0.04)" : "rgba(255,107,0,0.03)", border: "1px solid rgba(255,107,0,0.14)", display: "flex", alignItems: "flex-start", gap: 12 }}
+          className="cc-mobile-tip"
         >
           <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>💡</span>
           <div>
             <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 12.5, color: "#ff8800", margin: "0 0 4px" }}>Pro tip</p>
             <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: muted, margin: 0, lineHeight: 1.65 }}>
-              {step === 0 && "Campaigns with clear goals raise 3× more. Be specific about what ₹1,000, ₹10,000 and ₹1L means for your project."}
-              {step === 1 && "The first 3 sentences decide if a backer reads on. Open with a compelling problem statement, not an introduction."}
-              {step === 2 && "Campaigns with a high-quality thumbnail image see 60% more clicks. Use 16:9 ratio at minimum 1280×720px."}
-              {step === 3 && "Reward tiers increase conversions by 40%. Start with a ₹500 entry tier and have at least 3 tiers."}
-              {step === 4 && "Once submitted, your campaign goes to admin review (usually 24–48h). Make sure all links in your story work correctly."}
+              {step === 0 && "Campaigns with clear goals raise 3x more. Be specific about what each funding milestone unlocks."}
+              {step === 1 && "The first 3 sentences decide if a backer reads on. Start with the problem and emotional hook."}
+              {step === 2 && "High quality thumbnail and short teaser media substantially increases listing click-through rate."}
+              {step === 3 && "Reward tiers improve conversion. Keep one entry tier affordable and one premium tier aspirational."}
+              {step === 4 && "Final review: verify links, spelling, and funding details before submission to avoid review delays."}
             </p>
           </div>
         </motion.div>
@@ -460,6 +675,18 @@ export default function CreateCampaignPage() {
       <style>{`
         @keyframes cc10shimmer { 0%{transform:translateX(-100%)} 60%{transform:translateX(220%)} 100%{transform:translateX(220%)} }
         @keyframes cc10spin { to{transform:rotate(360deg)} }
+        @media (min-width: 1080px) {
+          .cc-layout-grid {
+            grid-template-columns: minmax(0, 1fr) 320px !important;
+            align-items: start;
+          }
+          .cc-side-panel {
+            display: block !important;
+          }
+          .cc-mobile-tip {
+            display: none !important;
+          }
+        }
       `}</style>
     </div>
   );

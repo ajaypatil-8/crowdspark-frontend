@@ -7,6 +7,7 @@ import { ToastProvider }   from "@/components/ui/Toast";
 import { ConfirmProvider }  from "@/components/ui/ConfirmDialog";
 import { RouteLoader }          from "@/components/ui/PageLoader";
 import { SkipToMain }       from "@/components/ui/Accessibility";
+import CustomCursor from "@/components/CustomCursor";
 
 // ─── Fonts ────────────────────────────────────────────────────────────────────
 const syne = Syne({
@@ -100,6 +101,9 @@ export default function RootLayout({
 
               {/* Route transition progress bar */}
               <RouteLoader />
+
+              {/* Global custom cursor for all routes */}
+              <CustomCursor />
 
               {/* Main content landmark for skip-link target */}
               <main id="main-content" style={{ display: "contents" }}>

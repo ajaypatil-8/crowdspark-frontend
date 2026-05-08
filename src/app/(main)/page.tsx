@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useCursor } from "@/hooks/usecursor";
 import { projectApi, type ProjectFeedResponse } from "@/lib/api";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -352,8 +351,6 @@ function HowStep({ num, title, desc, accent, last }: { num: string; title: strin
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
-  const { cursorRef, followerRef } = useCursor();
-
   const heroTextRef = useRef<HTMLDivElement>(null);
   const statsRef    = useRef<HTMLElement>(null);
   const catRef      = useRef<HTMLElement>(null);
@@ -459,10 +456,6 @@ export default function HomePage() {
 
   return (
     <div className="lp-root">
-      {/* Custom cursor */}
-      <div ref={cursorRef} className="cursor" aria-hidden />
-      <div ref={followerRef} className="cursor-follower" aria-hidden />
-
       {/* Ambient background */}
       <div className="page-gradient" aria-hidden />
       <div className="dot-grid" aria-hidden />

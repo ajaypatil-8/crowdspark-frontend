@@ -496,7 +496,36 @@ export default function MyCampaignsPage() {
   const visible = FILTERS.find(f => f.key === activeFilter)?.items ?? projects;
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg-page)" }}>
+    <div style={{ minHeight: "100vh", background: "var(--bg-page)", position: "relative" }}>
+      <div
+        aria-hidden
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: "none",
+          background: isDark
+            ? "radial-gradient(circle at 10% 14%, rgba(255,107,0,0.08), transparent 34%), radial-gradient(circle at 85% 12%, rgba(167,139,250,0.08), transparent 32%)"
+            : "radial-gradient(circle at 10% 14%, rgba(255,107,0,0.06), transparent 34%), radial-gradient(circle at 85% 12%, rgba(139,92,246,0.05), transparent 32%)",
+        }}
+      />
+      <motion.div
+        aria-hidden
+        animate={{ x: [0, 24, 0], y: [0, -14, 0] }}
+        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+        style={{
+          position: "absolute",
+          right: 38,
+          top: 24,
+          width: 150,
+          height: 150,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(255,136,0,0.15) 0%, transparent 70%)",
+          filter: "blur(10px)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
 
       {/* Toast */}
       <AnimatePresence>
@@ -535,7 +564,7 @@ export default function MyCampaignsPage() {
         )}
       </AnimatePresence>
 
-      <div ref={headerRef} style={{ padding: "40px 36px 60px", maxWidth: 1160, margin: "0 auto" }}>
+      <div ref={headerRef} style={{ padding: "40px 36px 60px", maxWidth: 1160, margin: "0 auto", position: "relative", zIndex: 1 }}>
 
         {/* ── Header ── */}
         <div className="mc-enter" style={{

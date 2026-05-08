@@ -334,7 +334,37 @@ export default function CampaignAnalyticsPage() {
   ] as const;
 
   return (
-    <div ref={containerRef} style={{ padding: "32px 36px 60px", maxWidth: 1160, margin: "0 auto" }}>
+    <div ref={containerRef} style={{ padding: "32px 36px 60px", maxWidth: 1160, margin: "0 auto", position: "relative" }}>
+      <div
+        aria-hidden
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: "none",
+          background: isDark
+            ? "radial-gradient(circle at 8% 15%, rgba(255,107,0,0.08), transparent 34%), radial-gradient(circle at 88% 12%, rgba(96,165,250,0.08), transparent 30%)"
+            : "radial-gradient(circle at 8% 15%, rgba(255,107,0,0.06), transparent 34%), radial-gradient(circle at 88% 12%, rgba(37,99,235,0.05), transparent 30%)",
+        }}
+      />
+      <motion.div
+        aria-hidden
+        animate={{ x: [0, -20, 0], y: [0, 14, 0] }}
+        transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
+        style={{
+          position: "absolute",
+          left: 28,
+          top: 20,
+          width: 150,
+          height: 150,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(96,165,250,0.16) 0%, transparent 70%)",
+          filter: "blur(10px)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+      <div style={{ position: "relative", zIndex: 1 }}>
 
       {/* ── Back + breadcrumb ── */}
       <div className="mca-enter" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 28 }}>
@@ -881,6 +911,7 @@ export default function CampaignAnalyticsPage() {
           div[style*="padding: 32px 36px"] { padding:20px 16px 48px!important; }
         }
       `}</style>
+      </div>
     </div>
   );
 }

@@ -507,8 +507,8 @@ function AccountInfo() {
     !s ? "—" : s.replace(/_/g, " ").toLowerCase().replace(/^\w/, c => c.toUpperCase());
 
   const rows: [string, string][] = [
-    ["User ID", `#${user.id}`], ["Username", `@${user.username}`], ["Email", user.email],
-    ["Phone", maskPhone(user.phoneNumber)], ["Roles", (user.roles ?? []).join(", ") || "None"],
+    ["Username", `@${user.username}`], ["Email", user.email],
+    ["Phone", maskPhone(user.phoneNumber)],
     ["Account", fmt(user.accountStatus)], ["KYC", fmt(user.kycStatus)],
     ["Member since", new Date(user.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })],
   ];
@@ -577,7 +577,54 @@ export default function SettingsPage() {
   const isCreator = user?.roles?.includes("CREATOR");
 
   return (
-    <div style={{ maxWidth: 740, margin: "0 auto", padding: "40px 28px 80px" }}>
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "40px 28px 80px", position: "relative" }}>
+      <div
+        aria-hidden
+        style={{
+          position: "fixed",
+          inset: 0,
+          pointerEvents: "none",
+          zIndex: 0,
+          background: isDark
+            ? "radial-gradient(circle at 8% 12%, rgba(255,107,0,0.09), transparent 34%), radial-gradient(circle at 88% 15%, rgba(0,245,212,0.08), transparent 33%), radial-gradient(circle at 50% 100%, rgba(167,139,250,0.08), transparent 40%)"
+            : "radial-gradient(circle at 8% 12%, rgba(255,107,0,0.06), transparent 34%), radial-gradient(circle at 88% 15%, rgba(0,168,130,0.06), transparent 33%), radial-gradient(circle at 50% 100%, rgba(167,139,250,0.05), transparent 40%)",
+        }}
+      />
+      <motion.div
+        aria-hidden
+        animate={{ x: [0, 26, 0], y: [0, -12, 0] }}
+        transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
+        style={{
+          position: "absolute",
+          top: 40,
+          right: 40,
+          width: 160,
+          height: 160,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(255,136,0,0.16) 0%, transparent 70%)",
+          filter: "blur(8px)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+      <motion.div
+        aria-hidden
+        animate={{ x: [0, -20, 0], y: [0, 16, 0] }}
+        transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
+        style={{
+          position: "absolute",
+          bottom: 10,
+          left: 10,
+          width: 150,
+          height: 150,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(167,139,250,0.14) 0%, transparent 70%)",
+          filter: "blur(8px)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+      <div style={{ position: "relative", zIndex: 1 }}>
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 32 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
           <div style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(255,136,0,0.1)", border: "1px solid rgba(255,136,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#ff8800" }}>
@@ -604,6 +651,7 @@ export default function SettingsPage() {
       <Section title="Danger Zone" icon={<IcWarn s={14} />} subtitle="Irreversible actions" accentColor="#ef4444">
         <DangerZone />
       </Section>
+      </div>
 
       <style>{`
         @keyframes stShimmer { 0%{transform:translateX(-100%)} 60%{transform:translateX(200%)} 100%{transform:translateX(200%)} }

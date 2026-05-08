@@ -128,7 +128,37 @@ export default function BackedPage() {
   if (!mounted) return null;
 
   return (
-    <div style={{ padding: "40px 32px 80px", maxWidth: 1160, margin: "0 auto" }}>
+    <div style={{ padding: "40px 32px 80px", maxWidth: 1160, margin: "0 auto", position: "relative" }}>
+      <div
+        aria-hidden
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: "none",
+          background: isDark
+            ? "radial-gradient(circle at 10% 14%, rgba(255,107,0,0.08), transparent 34%), radial-gradient(circle at 85% 12%, rgba(0,245,212,0.06), transparent 30%)"
+            : "radial-gradient(circle at 10% 14%, rgba(255,107,0,0.06), transparent 34%), radial-gradient(circle at 85% 12%, rgba(0,168,130,0.05), transparent 30%)",
+        }}
+      />
+      <motion.div
+        aria-hidden
+        animate={{ x: [0, 22, 0], y: [0, -14, 0] }}
+        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+        style={{
+          position: "absolute",
+          top: 24,
+          right: 24,
+          width: 140,
+          height: 140,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(255,136,0,0.14) 0%, transparent 70%)",
+          filter: "blur(9px)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+      <div style={{ position: "relative", zIndex: 1 }}>
 
       {/* ── Header ── */}
       <motion.div
@@ -333,6 +363,7 @@ export default function BackedPage() {
           .bk-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
+      </div>
     </div>
   );
 }

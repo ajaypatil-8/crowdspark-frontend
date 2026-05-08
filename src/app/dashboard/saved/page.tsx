@@ -217,7 +217,37 @@ export default function SavedPage() {
   const muted = isDark ? "rgba(255,255,255,0.42)" : "rgba(0,0,0,0.42)";
 
   return (
-    <div style={{ padding: "40px 32px 60px", maxWidth: 1160, margin: "0 auto" }}>
+    <div style={{ padding: "40px 32px 60px", maxWidth: 1160, margin: "0 auto", position: "relative" }}>
+      <div
+        aria-hidden
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: "none",
+          background: isDark
+            ? "radial-gradient(circle at 12% 15%, rgba(0,245,212,0.08), transparent 33%), radial-gradient(circle at 86% 12%, rgba(255,107,0,0.07), transparent 30%)"
+            : "radial-gradient(circle at 12% 15%, rgba(0,168,130,0.06), transparent 33%), radial-gradient(circle at 86% 12%, rgba(255,107,0,0.05), transparent 30%)",
+        }}
+      />
+      <motion.div
+        aria-hidden
+        animate={{ x: [0, -20, 0], y: [0, 12, 0] }}
+        transition={{ duration: 12.5, repeat: Infinity, ease: "easeInOut" }}
+        style={{
+          position: "absolute",
+          top: 16,
+          left: 20,
+          width: 140,
+          height: 140,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(0,212,184,0.16) 0%, transparent 70%)",
+          filter: "blur(9px)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+      <div style={{ position: "relative", zIndex: 1 }}>
 
       {/* ── Header ── */}
       <motion.div
@@ -286,6 +316,7 @@ export default function SavedPage() {
         @keyframes shimmer { 0%{transform:translateX(-100%)} 60%{transform:translateX(200%)} 100%{transform:translateX(200%)} }
         @keyframes svpulse { 0%,100%{opacity:.35} 50%{opacity:.85} }
       `}</style>
+      </div>
     </div>
   );
 }

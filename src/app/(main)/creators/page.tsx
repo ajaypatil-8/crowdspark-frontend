@@ -138,12 +138,46 @@ export default function CreatorsPage() {
   const secBg = isDark ? "#0c0c0c" : "#f4f4f2";
 
   return (
-    <div style={{ minHeight: "100vh", background: bg, overflowX: "hidden", paddingTop: 92 }}>
+    <div style={{ minHeight: "100vh", background: bg, overflowX: "hidden", paddingTop: 92, position: "relative" }}>
       {/* Ambient */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
         <div style={{ position: "absolute", top: "8%",  left: "3%",  width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle,rgba(255,107,0,0.07) 0%,transparent 65%)", filter: "blur(60px)" }}/>
         <div style={{ position: "absolute", bottom:"15%", right:"4%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle,rgba(167,139,250,0.07) 0%,transparent 65%)", filter: "blur(55px)" }}/>
       </div>
+      <motion.div
+        aria-hidden
+        animate={{ x: [0, 28, 0], y: [0, -14, 0] }}
+        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+        style={{
+          position: "absolute",
+          top: 24,
+          right: 26,
+          width: 160,
+          height: 160,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(255,136,0,0.15) 0%, transparent 70%)",
+          filter: "blur(9px)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+      <motion.div
+        aria-hidden
+        animate={{ x: [0, -24, 0], y: [0, 16, 0] }}
+        transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
+        style={{
+          position: "absolute",
+          bottom: 30,
+          left: 26,
+          width: 150,
+          height: 150,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(0,212,184,0.14) 0%, transparent 70%)",
+          filter: "blur(9px)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
 
       {/* ── Hero ── */}
       <section ref={heroRef} style={{ position: "relative", zIndex: 1, padding: "72px 24px 80px", textAlign: "center" }}>

@@ -101,7 +101,19 @@ function ExploreContent() {
   const muted = isDark ? "rgba(255,255,255,0.42)" : "rgba(0,0,0,0.42)";
 
   return (
-    <main style={{ background: "var(--bg)", minHeight: "100vh", paddingBottom: 80 }}>
+    <main style={{ background: "var(--bg)", minHeight: "100vh", paddingBottom: 80, position: "relative" }}>
+      <div
+        aria-hidden
+        style={{
+          position: "fixed",
+          inset: 0,
+          pointerEvents: "none",
+          zIndex: 0,
+          background: isDark
+            ? "radial-gradient(circle at 10% 14%, rgba(255,107,0,0.07), transparent 34%), radial-gradient(circle at 86% 12%, rgba(0,245,212,0.07), transparent 30%)"
+            : "radial-gradient(circle at 10% 14%, rgba(255,107,0,0.05), transparent 34%), radial-gradient(circle at 86% 12%, rgba(0,168,130,0.05), transparent 30%)",
+        }}
+      />
       {/* ── Hero ── */}
       <section
         style={{
@@ -110,6 +122,7 @@ function ExploreContent() {
           textAlign: "center",
           position: "relative",
           overflow: "hidden",
+          zIndex: 1,
         }}
       >
         <div
@@ -172,7 +185,7 @@ function ExploreContent() {
             style={{
               fontFamily: "'Syne', sans-serif",
               fontWeight: 800,
-              fontSize: "clamp(36px, 5vw, 56px)",
+              fontSize: "clamp(34px, 4.5vw, 50px)",
               color: "var(--text)",
               letterSpacing: "-0.04em",
               lineHeight: 1.1,
@@ -194,7 +207,7 @@ function ExploreContent() {
           <p
             style={{
               fontFamily: "'DM Sans', sans-serif",
-              fontSize: 16,
+              fontSize: 15,
               color: "var(--text-muted)",
               margin: "0 auto 28px",
               maxWidth: 500,
@@ -266,7 +279,7 @@ function ExploreContent() {
       </section>
 
       {/* ── Content ── */}
-      <div className="container">
+      <div className="container" style={{ position: "relative", zIndex: 1 }}>
         {/* ── Toolbar ── */}
         <div
           style={{
@@ -453,8 +466,8 @@ function ExploreContent() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-              gap: 24,
+              gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+              gap: 26,
             }}
           >
             {projects.map((project, i) => (

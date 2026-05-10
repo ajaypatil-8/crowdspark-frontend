@@ -672,8 +672,8 @@ export default function HowItWorksPage() {
 
         .hiw-hero h1 {
           max-width: 760px;
-          font-size: clamp(52px, 8vw, 108px);
-          line-height: 0.9;
+          font-size: clamp(44px, 6.4vw, 84px);
+          line-height: 0.95;
           font-weight: 900;
         }
 
@@ -933,7 +933,7 @@ export default function HowItWorksPage() {
         .hiw-section-heading h2,
         .hiw-launch-panel h2,
         .hiw-cta h2 {
-          font-size: clamp(36px, 5vw, 64px);
+          font-size: clamp(30px, 4.1vw, 52px);
           line-height: 1;
           font-weight: 900;
         }

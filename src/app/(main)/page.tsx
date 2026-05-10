@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { projectApi, type ProjectFeedResponse } from "@/lib/api";
+import { isLoggedIn, projectApi, type ProjectFeedResponse } from "@/lib/api";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -363,14 +363,30 @@ export default function HomePage() {
 
   const [activeTesti, setActiveTesti] = useState(0);
   const [campaigns,   setCampaigns]   = useState<ProjectFeedResponse[]>([]);
+  const [featured,    setFeatured]    = useState<ProjectFeedResponse[]>([]);
   const [loading,     setLoading]     = useState(true);
-  const [activeTab,   setActiveTab]   = useState(0);
+  const [loggedIn,    setLoggedIn]    = useState(false);
 
   useEffect(() => {
     projectApi.feed()
       .then(d => { setCampaigns(d || []); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    setLoggedIn(isLoggedIn());
+  }, []);
+
+  useEffect(() => {
+    if (campaigns.length === 0) {
+      setFeatured([]);
+      return;
+    }
+    const shuffled = [...campaigns]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, Math.min(3, campaigns.length));
+    setFeatured(shuffled);
+  }, [campaigns]);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -449,8 +465,8 @@ export default function HomePage() {
     return () => { ctx.revert(); clearInterval(t); };
   }, []);
 
-  const heroProject   = campaigns[0] ?? null;
-  const smallProjects = campaigns.slice(1, 3);
+  const heroProject   = featured[0] ?? null;
+  const smallProjects = featured.slice(1, 3);
   const trending      = campaigns.slice(3, 9);
   const showStatic    = !loading && trending.length === 0;
 
@@ -480,12 +496,14 @@ export default function HomePage() {
           {/* Actual campaign cards */}
           <div className="lp-showcase" ref={showcaseRef}>
             {/* Big card */}
-            <div className="showcase-enter">
+            <div className="showcase-enter lp-showcase-big">
               {loading ? <Skel h={388} /> : heroProject ? <HeroBigCard p={heroProject} idx={0} /> : (
                 <div style={{ height: 388, borderRadius: 22, background: "var(--card-bg)", border: "1px solid var(--card-border)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontFamily: "DM Sans,sans-serif", fontSize: 14, gap: 10 }}>
                   <span style={{ fontSize: 32 }}>🚀</span>
                   <span>Be the first to launch!</span>
-                  <Link href="/register" style={{ color: "#ff8800", textDecoration: "none", fontWeight: 600 }}>Create a campaign →</Link>
+                  <Link href={loggedIn ? "/dashboard/create-campaign" : "/register"} style={{ color: "#ff8800", textDecoration: "none", fontWeight: 600 }}>
+                    {loggedIn ? "Create a campaign →" : "Create free account →"}
+                  </Link>
                 </div>
               )}
             </div>
@@ -495,7 +513,10 @@ export default function HomePage() {
               {loading ? (
                 <><Skel h={138} /><Skel h={138} /></>
               ) : smallProjects.length >= 2 ? (
-                smallProjects.map((p, i) => <SmallCard key={p.id} p={p} idx={i + 1} />)
+                <>
+                  <div className="lp-showcase-s1"><SmallCard p={smallProjects[0]} idx={1} /></div>
+                  <div className="lp-showcase-s2"><SmallCard p={smallProjects[1]} idx={2} /></div>
+                </>
               ) : (
                 <div style={{ gridColumn: "1/-1", height: 138, borderRadius: 16, background: "var(--card-bg)", border: "1px solid var(--card-border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontFamily: "DM Sans,sans-serif", fontSize: 13 }}>
                   More campaigns coming soon…
@@ -536,9 +557,9 @@ export default function HomePage() {
 
           {/* CTA buttons */}
           <div className="lp-cta-row hero-enter">
-            <Link href="/register" className="btn-primary btn-cta lp-btn-hero">
+            <Link href={loggedIn ? "/dashboard" : "/register"} className="btn-primary btn-cta lp-btn-hero">
               <span className="btn-shimmer" />
-              <span style={{ position: "relative" }}>Start your campaign</span>
+              <span style={{ position: "relative" }}>{loggedIn ? "Open dashboard" : "Start your campaign"}</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" width="14" height="14" style={{ position: "relative" }}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </Link>
             <Link href="/explore" className="btn-outline lp-btn-ghost">
@@ -570,6 +591,23 @@ export default function HomePage() {
         <div className="lp-scroll-hint" aria-hidden>
           <span className="lp-scroll-label">scroll</span>
           <div className="lp-scroll-mouse"><div className="lp-scroll-dot" /></div>
+        </div>
+      </section>
+
+      {/* ════════════════ SOCIAL PROOF BAND ════════════════ */}
+      <section className="lp-proof-band" aria-label="Why back on CrowdSpark">
+        <div className="lp-section-inner lp-proof-band-inner">
+          {[
+            { k: "Avg funding speed", v: "21 days", d: "from launch to goal for top campaigns" },
+            { k: "Backer repeat rate", v: "64%", d: "support more than one campaign" },
+            { k: "Creator success support", v: "24x7", d: "live creator guidance and moderation" },
+          ].map((item, i) => (
+            <motion.div key={item.k} initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.45, delay: i * 0.08 }} className="lp-proof-item">
+              <p className="lp-proof-k">{item.k}</p>
+              <p className="lp-proof-v">{item.v}</p>
+              <p className="lp-proof-d">{item.d}</p>
+            </motion.div>
+          ))}
         </div>
       </section>
 
@@ -743,11 +781,20 @@ export default function HomePage() {
             <p className="lp-cta-sub">Join 1,200+ creators who have already made their vision a reality on CrowdSpark.</p>
 
             <div className="lp-cta-buttons">
-              <Link href="/register" className="btn-primary btn-cta lp-btn-hero">
-                <span className="btn-shimmer" />
-                <span style={{ position: "relative" }}>Create free account</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" width="14" height="14" style={{ position: "relative" }}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-              </Link>
+              {!loggedIn && (
+                <Link href="/register" className="btn-primary btn-cta lp-btn-hero">
+                  <span className="btn-shimmer" />
+                  <span style={{ position: "relative" }}>Create free account</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" width="14" height="14" style={{ position: "relative" }}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </Link>
+              )}
+              {loggedIn && (
+                <Link href="/dashboard" className="btn-primary btn-cta lp-btn-hero">
+                  <span className="btn-shimmer" />
+                  <span style={{ position: "relative" }}>Go to dashboard</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" width="14" height="14" style={{ position: "relative" }}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </Link>
+              )}
               <Link href="/explore" className="btn-outline lp-btn-ghost">Browse campaigns</Link>
             </div>
 
@@ -787,8 +834,11 @@ export default function HomePage() {
         .lp-hero-grid-overlay { position:absolute; inset:0; background-image:linear-gradient(rgba(0,245,212,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,212,0.04) 1px,transparent 1px); background-size:48px 48px; mask-image:radial-gradient(ellipse 70% 80% at 50% 50%,black,transparent); pointer-events:none; }
 
         /* Showcase cards */
-        .lp-showcase { width:430px; max-width:90%; display:flex; flex-direction:column; gap:10px; position:relative; z-index:5; }
-        .lp-showcase-small { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .lp-showcase { width:460px; max-width:92%; min-height:560px; position:relative; z-index:5; }
+        .lp-showcase-big { width:100%; max-width:360px; position:absolute; top:26px; left:28px; transform:rotate(-2.4deg); }
+        .lp-showcase-small { position:absolute; inset:0; display:block; }
+        .lp-showcase-s1 { width:220px; position:absolute; right:10px; top:30px; transform:rotate(4deg); }
+        .lp-showcase-s2 { width:240px; position:absolute; left:8px; bottom:46px; transform:rotate(-4.5deg); }
 
         /* Live pill */
         .lp-live-pill { display:inline-flex; align-items:center; gap:7px; padding:7px 16px; border-radius:999px; background:var(--card-bg); border:1px solid var(--card-border); box-shadow:0 4px 20px rgba(0,0,0,0.25); font-family:"DM Sans",sans-serif; font-size:12px; color:var(--text-muted); white-space:nowrap; }
@@ -885,6 +935,14 @@ export default function HomePage() {
         .lp-how-chips { display:flex; gap:10px; flex-wrap:wrap; }
         .lp-how-chip { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:999px; background:var(--card-bg); border:1px solid var(--border); font-family:"DM Sans",sans-serif; font-size:13px; color:var(--text-muted); }
 
+        /* ── Proof band ── */
+        .lp-proof-band { padding:48px 48px; border-top:1px solid var(--border); border-bottom:1px solid var(--border); background:var(--bg); position:relative; z-index:1; }
+        .lp-proof-band-inner { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+        .lp-proof-item { border-radius:18px; padding:18px 20px; background:var(--card-bg); border:1px solid var(--card-border); }
+        .lp-proof-k { margin:0 0 8px; font-family:"DM Sans",sans-serif; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.09em; color:var(--text-muted); }
+        .lp-proof-v { margin:0 0 6px; font-family:"Syne",sans-serif; font-size:26px; font-weight:800; letter-spacing:-0.03em; color:var(--text); }
+        .lp-proof-d { margin:0; font-family:"DM Sans",sans-serif; font-size:12.5px; color:var(--text-muted); line-height:1.7; }
+
         /* ── CTA ── */
         .lp-cta-section { padding:72px 48px 112px; position:relative; z-index:1; }
         .lp-cta-inner { max-width:820px; margin:0 auto; }
@@ -927,7 +985,12 @@ export default function HomePage() {
           .lp-hero-canvas{display:none;}
           .lp-stats{padding:48px 24px;}
           .lp-stats-inner{grid-template-columns:repeat(2,1fr);}
+          .lp-showcase,.lp-showcase-big,.lp-showcase-small,.lp-showcase-s1,.lp-showcase-s2{position:static !important; transform:none !important; width:100% !important; max-width:none !important; min-height:unset !important;}
+          .lp-showcase{display:grid; gap:10px;}
+          .lp-showcase-small{display:grid !important; grid-template-columns:1fr 1fr;}
           .lp-cats,.lp-features,.lp-projects,.lp-testi,.lp-how,.lp-cta-section{padding:60px 24px;}
+          .lp-proof-band{padding:44px 24px;}
+          .lp-proof-band-inner{grid-template-columns:1fr;}
           .lp-cat-grid{grid-template-columns:repeat(2,1fr);}
           .lp-how-grid{grid-template-columns:1fr;}
           .lp-how-connector{display:none;}

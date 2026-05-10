@@ -11,72 +11,72 @@ gsap.registerPlugin(ScrollTrigger);
 // ── Plans ─────────────────────────────────────────────────────────────────────
 const PLANS = [
   {
-    id:    "backer",
-    name:  "Backer",
-    badge: null,
+    id:    "basic-creator",
+    name:  "Basic Creator",
+    badge: "Free",
     priceM: 0,
     priceY: 0,
-    desc:  "Discover and support campaigns you believe in.",
-    color: "#60a5fa",
-    gradient: "linear-gradient(135deg,rgba(96,165,250,0.15),rgba(96,165,250,0.05))",
-    cta:   "Start backing",
+    desc:  "Perfect for first-time creators launching their first campaign.",
+    color: "#34d399",
+    gradient: "linear-gradient(135deg,rgba(52,211,153,0.15),rgba(52,211,153,0.05))",
+    cta:   "Start free",
     href:  "/register",
     features: [
-      { text: "Browse all campaigns",           yes: true  },
-      { text: "Back unlimited projects",         yes: true  },
-      { text: "UPI, cards & wallets",            yes: true  },
-      { text: "Live project updates",            yes: true  },
-      { text: "Backer-only posts & updates",     yes: true  },
-      { text: "Refund protection via escrow",    yes: true  },
-      { text: "Launch campaigns",                yes: false },
-      { text: "Analytics dashboard",             yes: false },
-      { text: "Priority support",                yes: false },
+      { text: "1 active campaign at a time",      yes: true  },
+      { text: "Creator verification flow",         yes: true  },
+      { text: "Basic campaign analytics",          yes: true  },
+      { text: "Standard payout cycle",             yes: true  },
+      { text: "Community support",                 yes: true  },
+      { text: "Custom reward tiers",               yes: true  },
+      { text: "Advanced AI optimization",          yes: false },
+      { text: "Priority support",                  yes: false },
+      { text: "Custom domain",                     yes: false },
     ],
   },
   {
-    id:    "creator",
-    name:  "Creator",
+    id:    "pro-creator",
+    name:  "Pro Creator",
     badge: "Most popular",
-    priceM: 499,
-    priceY: 399,
-    desc:  "Everything you need to launch and fund your idea.",
+    priceM: 699,
+    priceY: 559,
+    desc:  "For serious creators who want faster growth and deeper insights.",
     color: "#ff8800",
     gradient: "linear-gradient(135deg,rgba(255,136,0,0.18),rgba(255,200,0,0.08))",
-    cta:   "Become a Creator",
+    cta:   "Choose Pro",
     href:  "/register",
     features: [
-      { text: "Everything in Backer",            yes: true  },
-      { text: "Launch unlimited campaigns",      yes: true  },
-      { text: "KYC verification (24h)",          yes: true  },
-      { text: "Real-time analytics dashboard",   yes: true  },
-      { text: "Campaign page editor",            yes: true  },
-      { text: "GST-compliant invoicing",         yes: true  },
-      { text: "Backer CRM & messaging",          yes: true  },
-      { text: "AI copy assistant",               yes: false },
-      { text: "Priority support",                yes: false },
+      { text: "Everything in Basic Creator",      yes: true  },
+      { text: "Unlimited active campaigns",       yes: true  },
+      { text: "Advanced analytics dashboard",     yes: true  },
+      { text: "Backer CRM and segmentation",      yes: true  },
+      { text: "AI copy suggestions",              yes: true  },
+      { text: "Priority moderation review",       yes: true  },
+      { text: "Faster payout options",            yes: true  },
+      { text: "Dedicated success manager",        yes: false },
+      { text: "Custom API/webhooks",              yes: false },
     ],
   },
   {
-    id:    "pro",
-    name:  "Pro Creator",
-    badge: "Best value",
-    priceM: 999,
-    priceY: 799,
-    desc:  "Advanced tools for serious creators scaling fast.",
+    id:    "advanced-creator",
+    name:  "Advanced Creator",
+    badge: "Scale plan",
+    priceM: 1499,
+    priceY: 1199,
+    desc:  "For high-growth teams running multiple large campaigns.",
     color: "#a78bfa",
     gradient: "linear-gradient(135deg,rgba(167,139,250,0.18),rgba(167,139,250,0.06))",
-    cta:   "Go Pro",
+    cta:   "Go Advanced",
     href:  "/register",
     features: [
-      { text: "Everything in Creator",           yes: true  },
-      { text: "AI copy &amp; image assistant",   yes: true  },
-      { text: "A/B testing for campaign pages",  yes: true  },
-      { text: "Advanced conversion analytics",   yes: true  },
-      { text: "Custom domain for campaign",      yes: true  },
-      { text: "Early access to new features",    yes: true  },
-      { text: "Dedicated account manager",       yes: true  },
-      { text: "Priority 2-hour support",         yes: true  },
-      { text: "Reduced platform fee (3%)",       yes: true  },
+      { text: "Everything in Pro Creator",        yes: true  },
+      { text: "A/B experiments for campaign page",yes: true  },
+      { text: "AI copy and media optimizer",      yes: true  },
+      { text: "Custom campaign domain",           yes: true  },
+      { text: "Dedicated success manager",        yes: true  },
+      { text: "Priority 2-hour support SLA",      yes: true  },
+      { text: "Reduced platform fee",             yes: true  },
+      { text: "Team collaboration seats",         yes: true  },
+      { text: "API and webhook integrations",     yes: true  },
     ],
   },
 ];
@@ -84,12 +84,12 @@ const PLANS = [
 const COMPARE_ROWS = [
   { label: "Platform fee",       vals: ["5%",    "5%",   "3%"]   },
   { label: "Payment fee",        vals: ["2%",    "2%",   "1.5%"] },
-  { label: "Campaigns",          vals: ["—",     "∞",    "∞"]    },
-  { label: "Analytics",          vals: ["—",     "Basic","Advanced"] },
-  { label: "AI assistant",       vals: ["—",     "—",    "✓"]    },
+  { label: "Campaigns",          vals: ["1",     "∞",    "∞"]    },
+  { label: "Analytics",          vals: ["Basic", "Advanced","Advanced+"] },
+  { label: "AI assistant",       vals: ["—",     "✓",    "✓"]    },
   { label: "Custom domain",      vals: ["—",     "—",    "✓"]    },
   { label: "Dedicated manager",  vals: ["—",     "—",    "✓"]    },
-  { label: "Support SLA",        vals: ["Forum", "24h",  "2h"]   },
+  { label: "Support SLA",        vals: ["48h", "24h",  "2h"]   },
 ];
 
 const PRICING_FAQS = [
@@ -153,7 +153,7 @@ export default function PricingPage() {
   );
 
   return (
-    <div style={{ minHeight: "100vh", background: bg, overflowX: "hidden", paddingTop: 92 }}>
+    <div style={{ minHeight: "100vh", background: bg, overflowX: "hidden", paddingTop: 74 }}>
 
       {/* ── Ambient orbs ── */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
@@ -163,7 +163,7 @@ export default function PricingPage() {
       </div>
 
       {/* ── Hero ── */}
-      <section ref={heroRef} style={{ position: "relative", zIndex: 1, padding: "72px 24px 80px", textAlign: "center" }}>
+      <section ref={heroRef} style={{ position: "relative", zIndex: 1, padding: "28px 24px 34px", textAlign: "center" }}>
         <div style={{ maxWidth: 700, margin: "0 auto" }}>
           <div className="pr-hero-item" style={{ opacity: 0, display: "inline-flex", alignItems: "center", gap: 8, paddingTop: 5, paddingBottom: 5, paddingLeft: 6, paddingRight: 14, borderRadius: 999, background: "rgba(255,107,0,0.1)", border: "1px solid rgba(255,107,0,0.2)", marginBottom: 28 }}>
             <span style={{ width: 20, height: 20, borderRadius: "50%", background: "linear-gradient(135deg,#ff5500,#ffcc00)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}>₹</span>

@@ -9,6 +9,7 @@ import {
   Headphones, Zap, Shield,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
+import { contactApi } from "@/lib/api";
 
 const TOPICS = [
   "General enquiry",
@@ -45,6 +46,7 @@ export default function ContactPage() {
   const [topic,   setTopic]   = useState(TOPICS[0]);
   const [message, setMessage] = useState("");
   const [formState, setFormState] = useState<FormState>("idle");
+  const [formError, setFormError] = useState("");
   const [focusField, setFocusField] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,13 +63,24 @@ export default function ContactPage() {
     e.preventDefault();
     if (!name.trim() || !email.trim() || !message.trim()) return;
     setFormState("sending");
-    // Simulate API call — replace with real endpoint
-    await new Promise(r => setTimeout(r, 1600));
-    setFormState("success");
+    setFormError("");
+    try {
+      await contactApi.submit({
+        name: name.trim(),
+        email: email.trim(),
+        topic,
+        message: message.trim(),
+      });
+      setFormState("success");
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      setFormState("error");
+    }
   };
 
   const resetForm = () => {
     setName(""); setEmail(""); setTopic(TOPICS[0]); setMessage("");
+    setFormError("");
     setFormState("idle");
   };
 
@@ -98,7 +111,7 @@ export default function ContactPage() {
             <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 700, color: "#60a5fa", textTransform: "uppercase", letterSpacing: "0.08em" }}>Get in touch</span>
           </div>
           <h1 className="ct-hero-in" style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(36px,5.5vw,66px)", color: "var(--text)", letterSpacing: "-0.035em", lineHeight: 1.05, margin: "0 0 20px" }}>
-            We'd love to
+            We would love to
             <br />
             <span style={{ color: "var(--accent)", textShadow: "0 0 40px var(--accent-glow)" }}>hear from you.</span>
           </h1>
@@ -159,7 +172,7 @@ export default function ContactPage() {
                   </motion.div>
                   <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 26, color: "var(--text)", margin: "0 0 12px", letterSpacing: "-0.025em" }}>Message sent!</h3>
                   <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 15, color: "var(--text-muted)", lineHeight: 1.8, margin: "0 0 32px", maxWidth: 380, marginLeft: "auto", marginRight: "auto" }}>
-                    We've received your message and will get back to you within 24 hours.
+                    We have received your message and will get back to you within 24 hours.
                   </p>
                   <button onClick={resetForm} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 24px", borderRadius: 12, background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.3)", color: "#34d399", fontFamily: "DM Sans, sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer", transition: "all 0.15s" }}
                     onMouseEnter={e => { const el = e.currentTarget as HTMLButtonElement; el.style.background = "rgba(52,211,153,0.15)"; }}
@@ -239,6 +252,7 @@ export default function ContactPage() {
                       onChange={e => setMessage(e.target.value)}
                       placeholder="Describe your question or issue in detail…"
                       rows={5}
+                      maxLength={1000}
                       required
                       style={{ ...inputBase, resize: "vertical", minHeight: 120, borderColor: focusField === "msg" ? "var(--border-focus)" : bdr, boxShadow: focusField === "msg" ? "0 0 0 3px var(--accent-dim)" : "none" }}
                       onFocus={() => setFocusField("msg")}
@@ -254,7 +268,7 @@ export default function ContactPage() {
                   {formState === "error" && (
                     <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.2)", display: "flex", gap: 8, alignItems: "center", marginBottom: 18 }}>
                       <AlertTriangle size={14} color="#ef4444" />
-                      <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: "#ef4444" }}>Something went wrong. Please try again.</span>
+                      <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: "#ef4444" }}>{formError || "Something went wrong. Please try again."}</span>
                     </div>
                   )}
 

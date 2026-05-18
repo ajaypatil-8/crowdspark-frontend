@@ -8,12 +8,13 @@ export default function CustomCursor() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (window.matchMedia("(pointer: coarse)").matches) return;
+    if (!window.matchMedia("(any-pointer: fine)").matches) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const dot  = dotRef.current;
     const ring = ringRef.current;
     if (!dot || !ring) return;
+    document.documentElement.classList.add("cs-cursor-ready");
 
     let mx = -300, my = -300;
     let rx = -300, ry = -300;
@@ -124,6 +125,7 @@ export default function CustomCursor() {
     rafId = requestAnimationFrame(tick);
 
     return () => {
+      document.documentElement.classList.remove("cs-cursor-ready");
       cancelAnimationFrame(rafId);
       document.removeEventListener("mousemove",  onMove);
       document.removeEventListener("mouseover",  onOver);

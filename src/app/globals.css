@@ -158,10 +158,6 @@ body {
   body { background-image: none; }
 }
 
-@media (pointer: fine) {
-  body { cursor: none; }
-}
-
 ::selection {
   background: var(--accent-dim);
   color: var(--accent);
@@ -215,8 +211,10 @@ body {
 ════════════════════════════════════════════════════════════ */
 
 /* Hide native cursor on fine-pointer devices */
-@media (pointer: fine) {
-  body, a, button, [role="button"], input, select, textarea, label {
+@media (any-pointer: fine) {
+  html.cs-cursor-ready,
+  html.cs-cursor-ready body,
+  html.cs-cursor-ready body * {
     cursor: none !important;
   }
 }
@@ -291,10 +289,6 @@ body {
 }
 
 /* ── hide on touch / reduced-motion ─────────────────────── */
-@media (pointer: coarse) {
-  .cs-dot, .cs-ring { display: none !important; }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .cs-dot, .cs-ring { display: none !important; }
 }

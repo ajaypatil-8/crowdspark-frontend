@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ProfileProvider, useProfile } from "@/contexts/ProfileContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import ThemeToggle from "@/components/ThemeToggle";
-import { authApi, isLoggedIn } from "@/lib/api";
+import { authApi, isLoggedIn, type UserResponse } from "@/lib/api";
 
 const ACCENT = "#7c3aed";
 
@@ -15,6 +15,7 @@ const Ic = {
   Grid:    () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>),
   Folder:  () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>),
   File:    () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>),
+  Message: () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4z"/></svg>),
   Users:   () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>),
   Shield:  () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>),
   Home:    () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>),
@@ -29,6 +30,7 @@ const NAV = [
   { href: "/admin",          label: "Overview",   icon: <Ic.Grid />,   exact: true,  color: ACCENT },
   { href: "/admin/projects", label: "Projects",   icon: <Ic.Folder />, exact: false, color: "#f59e0b" },
   { href: "/admin/kyc",      label: "KYC Queue",  icon: <Ic.File />,   exact: false, color: "#34d399" },
+  { href: "/admin/messages", label: "Messages",   icon: <Ic.Message />, exact: false, color: "#ec4899" },
   { href: "/admin/users",    label: "Users",      icon: <Ic.Users />,  exact: false, color: "#60a5fa" },
 ];
 
@@ -56,8 +58,8 @@ function NavItem({ href, label, icon, active, isDark, color, onClick }: {
 }
 
 // ─── Admin Dropdown ───────────────────────────────────────────────────────────
-function AdminDropdown({ user, initials, isDark, handleLogout, onClose }: {
-  user: any; initials: string; isDark: boolean; handleLogout: () => void; onClose: () => void;
+function AdminDropdown({ user, isDark, handleLogout, onClose }: {
+  user: UserResponse | null; isDark: boolean; handleLogout: () => void; onClose: () => void;
 }) {
   const bdr = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
   const bg  = isDark ? "#161616" : "#ffffff";
@@ -104,9 +106,8 @@ function AdminDropdown({ user, initials, isDark, handleLogout, onClose }: {
 }
 
 // ─── Mobile Menu ──────────────────────────────────────────────────────────────
-function MobileMenu({ pathname, isDark, user, initials, handleLogout, onClose }: {
-  pathname: string; isDark: boolean; user: any; initials: string;
-  handleLogout: () => void; onClose: () => void;
+function MobileMenu({ pathname, isDark, onClose }: {
+  pathname: string; isDark: boolean; onClose: () => void;
 }) {
   const bdr = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
   const bg  = isDark ? "#111111" : "#ffffff";
@@ -155,12 +156,9 @@ function AdminInner({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { user, loading } = useProfile();
   const { isDark } = useTheme();
-  const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (!loading) {
@@ -168,8 +166,6 @@ function AdminInner({ children }: { children: ReactNode }) {
       if (user && !user.roles?.includes("ADMIN")) router.replace("/dashboard");
     }
   }, [loading, user, router]);
-
-  useEffect(() => { setMobileOpen(false); setDropdownOpen(false); }, [pathname]);
 
   useEffect(() => {
     if (!dropdownOpen) return;
@@ -187,7 +183,7 @@ function AdminInner({ children }: { children: ReactNode }) {
   const navBg  = isDark ? "rgba(10,10,10,0.9)" : "rgba(255,255,255,0.9)";
   const navBdr = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
 
-  if (!mounted || loading) return (
+  if (loading) return (
     <div style={{ minHeight: "100vh", background: pageBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
         style={{ width: 34, height: 34, borderRadius: "50%", border: `2px solid ${ACCENT}30`, borderTopColor: ACCENT }} />
@@ -255,7 +251,7 @@ function AdminInner({ children }: { children: ReactNode }) {
               </button>
               <AnimatePresence>
                 {dropdownOpen && (
-                  <AdminDropdown user={user} initials={initials} isDark={isDark} handleLogout={handleLogout} onClose={() => setDropdownOpen(false)} />
+                  <AdminDropdown user={user} isDark={isDark} handleLogout={handleLogout} onClose={() => setDropdownOpen(false)} />
                 )}
               </AnimatePresence>
             </div>
@@ -271,7 +267,7 @@ function AdminInner({ children }: { children: ReactNode }) {
 
       <AnimatePresence>
         {mobileOpen && (
-          <MobileMenu pathname={pathname} isDark={isDark} user={user} initials={initials} handleLogout={handleLogout} onClose={() => setMobileOpen(false)} />
+          <MobileMenu pathname={pathname} isDark={isDark} onClose={() => setMobileOpen(false)} />
         )}
       </AnimatePresence>
 

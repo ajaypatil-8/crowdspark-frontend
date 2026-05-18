@@ -218,31 +218,38 @@ function SmallCard({ p, idx }: { p: ProjectFeedResponse; idx: number }) {
     <Link href={`/projects/${p.id}`}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
-        display: "flex", gap: 12, textDecoration: "none", padding: "12px 14px", borderRadius: 16,
-        background: hov ? `${accent}0a` : "var(--card-bg)",
-        border: `1px solid ${hov ? accent + "45" : "var(--card-border)"}`,
+        display: "flex", gap: 14, textDecoration: "none", padding: "14px 16px",
+        borderRadius: 16, height: "100%",
+        background: hov ? `${accent}08` : "var(--card-bg)",
+        border: `1px solid ${hov ? accent + "50" : "var(--card-border)"}`,
         transition: "all 0.22s ease", cursor: "pointer",
+        willChange: "transform",
       }}
     >
       {/* Thumb */}
-      <div style={{ width: 54, height: 54, borderRadius: 12, flexShrink: 0, background: p.thumbnailUrl ? `url(${p.thumbnailUrl}) center/cover` : `${accent}22`, border: `1.5px solid ${accent}28`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+      <div style={{
+        width: 60, height: 60, borderRadius: 12, flexShrink: 0,
+        background: p.thumbnailUrl ? `url(${p.thumbnailUrl}) center/cover` : `${accent}22`,
+        border: `1.5px solid ${accent}28`,
+        display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
+      }}>
         {!p.thumbnailUrl && <span style={{ fontFamily: "Syne,sans-serif", fontWeight: 800, fontSize: 14, color: accent, opacity: 0.65 }}>{p.title.slice(0,2).toUpperCase()}</span>}
       </div>
 
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 3 }}>
-          <span style={{ fontFamily: "DM Sans,sans-serif", fontSize: 9.5, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: "0.1em" }}>{p.category}</span>
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
+          <span style={{ fontFamily: "DM Sans,sans-serif", fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: "0.1em" }}>{p.category}</span>
           {p.daysLeft <= 5 && p.daysLeft > 0 && (
             <span style={{ padding: "1px 6px", borderRadius: 999, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", fontFamily: "DM Sans,sans-serif", fontSize: 9, fontWeight: 700, color: "#ef4444" }}>ending soon</span>
           )}
         </div>
-        <div style={{ fontFamily: "Syne,sans-serif", fontWeight: 700, fontSize: 13, color: "var(--text)", marginBottom: 6, letterSpacing: "-0.015em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</div>
-        <div style={{ height: 3, borderRadius: 2, background: "var(--bg-ghost)", overflow: "hidden", marginBottom: 4 }}>
+        <div style={{ fontFamily: "Syne,sans-serif", fontWeight: 700, fontSize: 14, color: "var(--text)", marginBottom: 8, letterSpacing: "-0.015em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</div>
+        <div style={{ height: 3, borderRadius: 2, background: "var(--bg-ghost)", overflow: "hidden", marginBottom: 5 }}>
           <div style={{ height: "100%", width: `${pct}%`, borderRadius: 2, background: accent }} />
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <span style={{ fontFamily: "DM Sans,sans-serif", fontSize: 11, color: "var(--text-muted)" }}>{fmtAmount(p.currentAmount)}</span>
-          <span style={{ fontFamily: "Syne,sans-serif", fontWeight: 700, fontSize: 11, color: accent }}>{pct}%</span>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontFamily: "DM Sans,sans-serif", fontSize: 12, color: "var(--text-muted)" }}>{fmtAmount(p.currentAmount)}</span>
+          <span style={{ fontFamily: "Syne,sans-serif", fontWeight: 800, fontSize: 12, color: accent }}>{pct}%</span>
         </div>
       </div>
     </Link>
@@ -391,50 +398,45 @@ export default function HomePage() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Hero stagger entrance
+      // Hero stagger entrance — no blur (forces full repaint)
       gsap.fromTo(
         heroTextRef.current?.querySelectorAll(".hero-enter") ?? [],
-        { y: 60, opacity: 0, filter: "blur(8px)" },
-        { y: 0, opacity: 1, filter: "blur(0px)", duration: 1.1, stagger: 0.13, ease: "power3.out", delay: 0.4 }
+        { y: 40, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.9, stagger: 0.1, ease: "power3.out", delay: 0.3 }
       );
 
       // Showcase cards stagger
       gsap.fromTo(
         showcaseRef.current?.querySelectorAll(".showcase-enter") ?? [],
-        { x: 60, opacity: 0, scale: 0.95 },
-        { x: 0, opacity: 1, scale: 1, duration: 0.9, stagger: 0.12, ease: "power3.out", delay: 0.8 }
+        { x: 40, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.8, stagger: 0.1, ease: "power3.out", delay: 0.5 }
       );
 
-      // Parallax orbs
-      gsap.to(".lp-orb-1", { y: -120, scrollTrigger: { trigger: "body", start: "top top", end: "bottom top", scrub: 1.5 } });
-      gsap.to(".lp-orb-2", { y: -60,  scrollTrigger: { trigger: "body", start: "top top", end: "bottom top", scrub: 2 } });
-
-      // Stats
       gsap.fromTo(
         statsRef.current?.querySelectorAll(".stat-item") ?? [],
         { y: 40, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.7, stagger: 0.1, ease: "power2.out", scrollTrigger: { trigger: statsRef.current, start: "top 82%" } }
+        { y: 0, opacity: 1, duration: 0.7, stagger: 0.1, ease: "power2.out", scrollTrigger: { trigger: statsRef.current, start: "top 82%", once: true } }
       );
 
       // Categories
       gsap.fromTo(
         catRef.current?.querySelectorAll(".cat-pill") ?? [],
         { scale: 0.88, opacity: 0 },
-        { scale: 1, opacity: 1, duration: 0.5, stagger: 0.05, ease: "back.out(1.6)", scrollTrigger: { trigger: catRef.current, start: "top 80%" } }
+        { scale: 1, opacity: 1, duration: 0.5, stagger: 0.05, ease: "back.out(1.6)", scrollTrigger: { trigger: catRef.current, start: "top 80%", once: true } }
       );
 
       // Features
       gsap.fromTo(
         featRef.current?.querySelectorAll(".feat-card") ?? [],
         { y: 60, opacity: 0, scale: 0.95 },
-        { y: 0, opacity: 1, scale: 1, duration: 0.7, stagger: 0.08, ease: "back.out(1.4)", scrollTrigger: { trigger: featRef.current, start: "top 78%" } }
+        { y: 0, opacity: 1, scale: 1, duration: 0.7, stagger: 0.08, ease: "back.out(1.4)", scrollTrigger: { trigger: featRef.current, start: "top 78%", once: true } }
       );
 
       // Projects
       gsap.fromTo(
         projRef.current?.querySelectorAll(".proj-card") ?? [],
         { y: 50, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.65, stagger: 0.08, ease: "power2.out", scrollTrigger: { trigger: projRef.current, start: "top 78%" } }
+        { y: 0, opacity: 1, duration: 0.65, stagger: 0.08, ease: "power2.out", scrollTrigger: { trigger: projRef.current, start: "top 78%", once: true } }
       );
 
       // Progress bars
@@ -443,18 +445,17 @@ export default function HomePage() {
         ScrollTrigger.create({ trigger: bar, start: "top 90%", once: true, onEnter: () => gsap.to(bar, { width: `${Math.min(pct, 100)}%`, duration: 1.6, ease: "power2.out" }) });
       });
 
-      // How-it-works
       gsap.fromTo(
         howRef.current?.querySelectorAll(".how-step") ?? [],
         { y: 40, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.65, stagger: 0.12, ease: "power2.out", scrollTrigger: { trigger: howRef.current, start: "top 80%" } }
+        { y: 0, opacity: 1, duration: 0.65, stagger: 0.12, ease: "power2.out", scrollTrigger: { trigger: howRef.current, start: "top 80%", once: true } }
       );
 
       // Testimonials
-      gsap.fromTo(testiRef.current, { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power2.out", scrollTrigger: { trigger: testiRef.current, start: "top 82%" } });
+      gsap.fromTo(testiRef.current, { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power2.out", scrollTrigger: { trigger: testiRef.current, start: "top 82%", once: true } });
 
       // CTA
-      gsap.fromTo(ctaBanRef.current, { scale: 0.94, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.9, ease: "back.out(1.5)", scrollTrigger: { trigger: ctaBanRef.current, start: "top 85%" } });
+      gsap.fromTo(ctaBanRef.current, { scale: 0.94, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.9, ease: "back.out(1.5)", scrollTrigger: { trigger: ctaBanRef.current, start: "top 85%", once: true } });
 
       // Section labels
       gsap.utils.toArray<HTMLElement>(".sec-label").forEach(el =>
@@ -473,34 +474,31 @@ export default function HomePage() {
 
   return (
     <div className="lp-root">
-      {/* Ambient background */}
+      {/* Ambient background — position:absolute (NOT fixed) to avoid scroll repaint */}
       <div className="page-gradient" aria-hidden />
       <div className="dot-grid" aria-hidden />
       <div className="lp-orb-1" aria-hidden />
       <div className="lp-orb-2" aria-hidden />
-      <div className="lp-orb-3" aria-hidden />
 
       {/* ════════════════ HERO ════════════════ */}
       <section className="lp-hero" aria-label="Hero">
 
+        {/* ── Left: Hero Content ── */}
+        <div className="lp-hero-content" ref={heroTextRef}>
         {/* ── Right: Campaign Showcase ── */}
         <div className="lp-hero-canvas">
-          {/* Atmospheric glows */}
-          <div className="lp-canvas-orb lp-canvas-orb-a" />
-          <div className="lp-canvas-orb lp-canvas-orb-b" />
-          <div className="lp-canvas-orb lp-canvas-orb-c" />
           {/* Grid overlay */}
           <div className="lp-hero-grid-overlay" />
-          {/* Left fade */}
+          {/* Left edge fade */}
           <div className="lp-hero-canvas-fade" />
 
-          {/* Actual campaign cards */}
+          {/* 1 Big card left + 2 small cards stacked right */}
           <div className="lp-showcase" ref={showcaseRef}>
-            {/* Big card */}
+            {/* Big card — left column */}
             <div className="showcase-enter lp-showcase-big">
-              {loading ? <Skel h={388} /> : heroProject ? <HeroBigCard p={heroProject} idx={0} /> : (
-                <div style={{ height: 388, borderRadius: 22, background: "var(--card-bg)", border: "1px solid var(--card-border)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontFamily: "DM Sans,sans-serif", fontSize: 14, gap: 10 }}>
-                  <span style={{ fontSize: 32 }}>🚀</span>
+              {loading ? <Skel h={440} /> : heroProject ? <HeroBigCard p={heroProject} idx={0} /> : (
+                <div style={{ height: 440, borderRadius: 20, background: "var(--card-bg)", border: "1px solid var(--card-border)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontFamily: "DM Sans,sans-serif", fontSize: 14, gap: 10 }}>
+                  <span style={{ fontSize: 36 }}>🚀</span>
                   <span>Be the first to launch!</span>
                   <Link href={loggedIn ? "/dashboard/create-campaign" : "/register"} style={{ color: "#ff8800", textDecoration: "none", fontWeight: 600 }}>
                     {loggedIn ? "Create a campaign →" : "Create free account →"}
@@ -509,36 +507,31 @@ export default function HomePage() {
               )}
             </div>
 
-            {/* Two small cards */}
-            <div className="lp-showcase-small showcase-enter">
-              {loading ? (
-                <><Skel h={138} /><Skel h={138} /></>
-              ) : smallProjects.length >= 2 ? (
-                <>
-                  <div className="lp-showcase-s1"><SmallCard p={smallProjects[0]} idx={1} /></div>
-                  <div className="lp-showcase-s2"><SmallCard p={smallProjects[1]} idx={2} /></div>
-                </>
-              ) : (
-                <div style={{ gridColumn: "1/-1", height: 138, borderRadius: 16, background: "var(--card-bg)", border: "1px solid var(--card-border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontFamily: "DM Sans,sans-serif", fontSize: 13 }}>
-                  More campaigns coming soon…
-                </div>
-              )}
-            </div>
-
-            {/* Live status pill */}
-            <div className="showcase-enter" style={{ display: "flex", justifyContent: "center" }}>
-              <div className="lp-live-pill">
-                <span className="lp-live-dot" />
-                <span>{campaigns.length > 0 ? `${campaigns.length} live campaigns` : "Live now"}</span>
-                <span style={{ color: "var(--border)", margin: "0 4px" }}>·</span>
-                <span style={{ color: "#34d399", fontWeight: 700 }}>{campaigns.filter(c => c.fundedPercentage >= 90).length} near goal</span>
+            {/* Right column: 2 small cards stacked */}
+            <div className="lp-showcase-small">
+              <div className="showcase-enter lp-showcase-s1">
+                {loading ? <Skel h={206} /> : smallProjects[0] ? <SmallCard p={smallProjects[0]} idx={1} /> : (
+                  <div style={{ height: 206, borderRadius: 16, background: "var(--card-bg)", border: "1px solid var(--card-border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontFamily: "DM Sans,sans-serif", fontSize: 13 }}>Coming soon…</div>
+                )}
+              </div>
+              <div className="showcase-enter lp-showcase-s2">
+                {loading ? <Skel h={206} /> : smallProjects[1] ? <SmallCard p={smallProjects[1]} idx={2} /> : (
+                  <div style={{ height: 206, borderRadius: 16, background: "var(--card-bg)", border: "1px solid var(--card-border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontFamily: "DM Sans,sans-serif", fontSize: 13 }}>Coming soon…</div>
+                )}
               </div>
             </div>
           </div>
-        </div>
 
-        {/* ── Left: Hero Content ── */}
-        <div className="lp-hero-content" ref={heroTextRef}>
+          {/* Live status pill */}
+          <div className="showcase-enter" style={{ display: "flex", justifyContent: "center", width: "100%", maxWidth: 580 }}>
+            <div className="lp-live-pill">
+              <span className="lp-live-dot" />
+              <span>{campaigns.length > 0 ? `${campaigns.length} live campaigns` : "Live now"}</span>
+              <span style={{ color: "var(--border)", margin: "0 4px" }}>·</span>
+              <span style={{ color: "#34d399", fontWeight: 700 }}>{campaigns.filter(c => c.fundedPercentage >= 90).length} near goal</span>
+            </div>
+          </div>
+        </div>
           {/* Live badge */}
           <div className="lp-badge hero-enter">
             <span className="lp-badge-pill"><span className="lp-badge-dot" />Live now</span>
@@ -594,8 +587,6 @@ export default function HomePage() {
           <div className="lp-scroll-mouse"><div className="lp-scroll-dot" /></div>
         </div>
       </section>
-
-      {/* ════════════════ SOCIAL PROOF BAND ════════════════ */}
       <section className="lp-proof-band" aria-label="Why back on CrowdSpark">
         <div className="lp-section-inner lp-proof-band-inner">
           {[
@@ -612,7 +603,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ════════════════ STATS ════════════════ */}
+      {/* ════════════════ SOCIAL PROOF BAND ════════════════ */}
       <section ref={statsRef} className="lp-stats" aria-label="Platform statistics">
         <div className="lp-stats-inner">
           {STATS.map((s, i) => (
@@ -816,30 +807,25 @@ export default function HomePage() {
         /* ── Root ── */
         .lp-root { min-height:100vh; background:var(--bg); overflow-x:hidden; position:relative; }
 
-        /* ── Ambient orbs ── */
-        .lp-orb-1 { position:fixed; width:700px; height:700px; border-radius:50%; background:radial-gradient(circle,rgba(0,245,212,0.055) 0%,transparent 70%); filter:blur(80px); top:-200px; right:-200px; pointer-events:none; z-index:0; }
-        .lp-orb-2 { position:fixed; width:500px; height:500px; border-radius:50%; background:radial-gradient(circle,rgba(100,30,220,0.045) 0%,transparent 70%); filter:blur(80px); bottom:-100px; left:-100px; pointer-events:none; z-index:0; }
-        .lp-orb-3 { position:fixed; width:300px; height:300px; border-radius:50%; background:radial-gradient(circle,rgba(255,107,0,0.04) 0%,transparent 70%); filter:blur(60px); top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:0; }
+        /* ── Ambient orbs — position:absolute (NOT fixed) avoids scroll repaint ── */
+        .lp-orb-1 { position:absolute; width:600px; height:600px; border-radius:50%; background:radial-gradient(circle,rgba(0,245,212,0.06) 0%,transparent 70%); filter:blur(60px); top:-150px; right:-150px; pointer-events:none; z-index:0; }
+        .lp-orb-2 { position:absolute; width:400px; height:400px; border-radius:50%; background:radial-gradient(circle,rgba(100,30,220,0.05) 0%,transparent 70%); filter:blur(60px); bottom:300px; left:-80px; pointer-events:none; z-index:0; }
 
         /* ── Hero ── */
-        .lp-hero { position:relative; min-height:100vh; display:flex; align-items:center; padding:120px 0 80px 56px; overflow:hidden; z-index:1; }
-        .lp-hero-content { flex:0 0 50%; max-width:540px; position:relative; z-index:3; }
+        .lp-hero { position:relative; min-height:100vh; display:flex; align-items:center; padding:120px 56px 80px; gap:40px; overflow:hidden; z-index:1; }
+        .lp-hero-content { flex:0 0 48%; max-width:520px; position:relative; z-index:3; }
 
         /* Hero canvas */
-        .lp-hero-canvas { flex:0 0 50%; position:absolute; right:0; top:0; bottom:0; height:100%; display:flex; align-items:center; justify-content:center; overflow:hidden; z-index:2; }
-        .lp-hero-canvas-fade { position:absolute; top:0; bottom:0; left:0; width:130px; background:linear-gradient(to right,var(--bg),transparent); z-index:10; pointer-events:none; }
-        .lp-canvas-orb { position:absolute; border-radius:50%; pointer-events:none; }
-        .lp-canvas-orb-a { width:360px; height:360px; background:radial-gradient(circle,rgba(0,245,212,0.12) 0%,transparent 70%); filter:blur(40px); animation:lp-float-a 7s ease-in-out infinite; }
-        .lp-canvas-orb-b { width:220px; height:220px; background:radial-gradient(circle,rgba(255,107,0,0.09) 0%,transparent 70%); filter:blur(30px); top:20%; right:15%; animation:lp-float-b 9s ease-in-out infinite; }
-        .lp-canvas-orb-c { width:160px; height:160px; background:radial-gradient(circle,rgba(167,139,250,0.11) 0%,transparent 70%); filter:blur(24px); bottom:20%; left:20%; animation:lp-float-c 6s ease-in-out infinite 2s; }
-        .lp-hero-grid-overlay { position:absolute; inset:0; background-image:linear-gradient(rgba(0,245,212,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,212,0.04) 1px,transparent 1px); background-size:48px 48px; mask-image:radial-gradient(ellipse 70% 80% at 50% 50%,black,transparent); pointer-events:none; }
+        .lp-hero-canvas { flex:1; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; z-index:2; padding-top:16px; }
+        .lp-hero-canvas-fade { position:absolute; top:0; bottom:0; left:0; width:70px; background:linear-gradient(to right,var(--bg),transparent); z-index:10; pointer-events:none; }
+        .lp-hero-grid-overlay { position:absolute; inset:0; background-image:linear-gradient(rgba(0,245,212,0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,212,0.035) 1px,transparent 1px); background-size:48px 48px; mask-image:radial-gradient(ellipse 75% 85% at 55% 50%,black,transparent); pointer-events:none; }
 
-        /* Showcase cards */
-        .lp-showcase { width:460px; max-width:92%; min-height:560px; position:relative; z-index:5; }
-        .lp-showcase-big { width:100%; max-width:360px; position:absolute; top:26px; left:28px; transform:rotate(-2.4deg); }
-        .lp-showcase-small { position:absolute; inset:0; display:block; }
-        .lp-showcase-s1 { width:220px; position:absolute; right:10px; top:30px; transform:rotate(4deg); }
-        .lp-showcase-s2 { width:240px; position:absolute; left:8px; bottom:46px; transform:rotate(-4.5deg); }
+        /* Showcase — 1 big card left + 2 small stacked right */
+        .lp-showcase { display:grid; grid-template-columns:1fr 1fr; gap:14px; width:100%; max-width:580px; align-items:stretch; }
+        .lp-showcase-big { grid-column:1; grid-row:1; }
+        .lp-showcase-small { grid-column:2; grid-row:1; display:flex; flex-direction:column; gap:14px; }
+        .lp-showcase-s1 { flex:1; }
+        .lp-showcase-s2 { flex:1; }
 
         /* Live pill */
         .lp-live-pill { display:inline-flex; align-items:center; gap:7px; padding:7px 16px; border-radius:999px; background:var(--card-bg); border:1px solid var(--card-border); box-shadow:0 4px 20px rgba(0,0,0,0.25); font-family:"DM Sans",sans-serif; font-size:12px; color:var(--text-muted); white-space:nowrap; }
@@ -963,14 +949,11 @@ export default function HomePage() {
         .lp-trust-badge svg { color:var(--accent); flex-shrink:0; }
 
         /* ── Keyframes ── */
-        @keyframes lp-float-a { 0%,100%{transform:translateY(0) scale(1);} 50%{transform:translateY(-22px) scale(1.04);} }
-        @keyframes lp-float-b { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-16px);} }
-        @keyframes lp-float-c { 0%,100%{transform:translateY(0) scale(1);} 50%{transform:translateY(-12px) scale(1.02);} }
         @keyframes lp-pulse { 0%,100%{opacity:.5;} 50%{opacity:1;} }
-        @keyframes lp-scroll-fade { from{opacity:.2;} to{opacity:.6;} }
+        @keyframes lp-scroll-fade { from{opacity:.15;} to{opacity:.5;} }
         @keyframes lp-scroll-dot { 0%{transform:translateY(0);opacity:1;} 100%{transform:translateY(10px);opacity:0;} }
-        @keyframes lp-fade-in { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
-        @keyframes lp-skeleton { 0%,100%{opacity:.6;} 50%{opacity:1;} }
+        @keyframes lp-fade-in { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
+        @keyframes lp-skeleton { 0%,100%{opacity:.5;} 50%{opacity:.8;} }
 
         /* ── Responsive ── */
         @media(max-width:1100px){
@@ -979,16 +962,16 @@ export default function HomePage() {
           .lp-proj-grid{grid-template-columns:repeat(2,1fr);}
           .lp-testi-inner{grid-template-columns:1fr;}
           .lp-feat-header{flex-direction:column; align-items:flex-start;}
+          .lp-hero{padding:100px 36px 80px; gap:28px;}
+          .lp-showcase{max-width:100%;}
         }
         @media(max-width:900px){
-          .lp-hero{padding:100px 24px 60px;}
-          .lp-hero-content{flex:1; max-width:100%;}
-          .lp-hero-canvas{display:none;}
+          .lp-hero{padding:90px 24px 60px; flex-direction:column; min-height:unset; align-items:flex-start; gap:36px;}
+          .lp-hero-content{flex:none; max-width:100%;}
+          .lp-hero-canvas{width:100%;}
+          .lp-showcase{max-width:100%;}
           .lp-stats{padding:48px 24px;}
           .lp-stats-inner{grid-template-columns:repeat(2,1fr);}
-          .lp-showcase,.lp-showcase-big,.lp-showcase-small,.lp-showcase-s1,.lp-showcase-s2{position:static !important; transform:none !important; width:100% !important; max-width:none !important; min-height:unset !important;}
-          .lp-showcase{display:grid; gap:10px;}
-          .lp-showcase-small{display:grid !important; grid-template-columns:1fr 1fr;}
           .lp-cats,.lp-features,.lp-projects,.lp-testi,.lp-how,.lp-cta-section{padding:60px 24px;}
           .lp-proof-band{padding:44px 24px;}
           .lp-proof-band-inner{grid-template-columns:1fr;}
@@ -1005,6 +988,8 @@ export default function HomePage() {
           .lp-cat-grid{grid-template-columns:repeat(2,1fr);}
           .lp-trust-row{gap:12px;}
           .lp-how-chips{gap:8px;}
+          .lp-showcase{grid-template-columns:1fr;}
+          .lp-showcase-small{flex-direction:row;}
         }
       `}</style>
     </div>

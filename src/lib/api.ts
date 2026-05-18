@@ -583,6 +583,40 @@ export const backerApi = {
   stats: () =>
     request<BackerStatsResponse>("/api/backer/stats"),
 };
+
+// ─── Contact Messages API ────────────────────────────────────────────────────
+
+export type ContactMessageStatus = "NEW" | "READ" | "REPLIED";
+
+export interface ContactMessageRequest {
+  name: string;
+  email: string;
+  topic: string;
+  message: string;
+}
+
+export interface ContactMessageResponse {
+  id: number;
+  name: string;
+  email: string;
+  topic: string;
+  message: string;
+  status: ContactMessageStatus;
+  createdAt: string;
+  readAt: string | null;
+  repliedAt: string | null;
+  replySubject: string | null;
+  replyMessage: string | null;
+  repliedByName: string | null;
+}
+
+export const contactApi = {
+  submit: (data: ContactMessageRequest) =>
+    request<ContactMessageResponse>("/api/contact/messages", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+};
 // ─── Email Verification API ───────────────────────────────────────────────────
 
 export const emailVerifyApi = {
@@ -656,4 +690,19 @@ export const adminApi = {
 
   activateUser: (id: number) =>
     request<void>(`/admin/users/${id}/activate`, { method: "PUT" }),
+
+  // Contact messages
+  contactMessages: () =>
+    request<ContactMessageResponse[]>("/admin/contact-messages"),
+
+  markContactMessageRead: (id: number) =>
+    request<ContactMessageResponse>(`/admin/contact-messages/${id}/read`, {
+      method: "PUT",
+    }),
+
+  replyContactMessage: (id: number, subject: string, message: string) =>
+    request<ContactMessageResponse>(`/admin/contact-messages/${id}/reply`, {
+      method: "PUT",
+      body: JSON.stringify({ subject, message }),
+    }),
 };

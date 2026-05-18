@@ -210,123 +210,93 @@ body {
 }
 
 /* ════════════════════════════════════════════════════════════
-   CUSTOM CURSOR
+   CUSTOM CURSOR — premium minimal, bug-free, 60fps
+   Replace the entire old cursor block in globals.css with this.
 ════════════════════════════════════════════════════════════ */
-.cursor {
-  position: fixed;
-  width: 10px;
-  height: 10px;
-  background: linear-gradient(135deg, var(--cta), var(--cta-2));
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 10002;
-  top: 0; left: 0;
-  will-change: transform;
-  transform: translate(-50%, -50%);
-  opacity: 0;
-  box-shadow: 0 0 24px rgba(255, 136, 0, 0.5);
-  transition: opacity 0.22s ease, transform 0.18s ease;
-}
 
-.cursor.is-visible {
-  opacity: 1;
-}
-
-.cursor.is-hovering {
-  transform: translate(-50%, -50%) scale(1.35) !important;
-}
-
-.cursor.is-pressed {
-  transform: translate(-50%, -50%) scale(0.88) !important;
-}
-
-.cursor-follower {
-  position: fixed;
-  width: 34px;
-  height: 34px;
-  border: 1.5px solid var(--accent-glow);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 10001;
-  top: 0; left: 0;
-  will-change: transform;
-  transform: translate(-50%, -50%);
-  opacity: 0;
-  background:
-    radial-gradient(circle at center, var(--accent-dim) 0%, transparent 68%);
-  transition: opacity 0.28s ease, transform 0.24s ease, width 0.24s ease, height 0.24s ease, border-color 0.24s ease;
-}
-
-.cursor-follower.is-visible {
-  opacity: 1;
-}
-
-.cursor-follower.is-hovering {
-  width: 56px;
-  height: 56px;
-  border-color: rgba(255, 136, 0, 0.72);
-}
-
-.cursor-follower.is-pressed {
-  transform: translate(-50%, -50%) scale(0.93) !important;
-}
-
-.cursor-aura {
-  position: fixed;
-  width: 78px;
-  height: 78px;
-  top: 0;
-  left: 0;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 10000;
-  opacity: 0;
-  will-change: transform, opacity;
-  filter: blur(2px);
-  background:
-    radial-gradient(circle at center, rgba(255, 136, 0, 0.24) 0%, rgba(0, 245, 212, 0.16) 34%, transparent 72%);
-  transition: opacity 0.34s ease, transform 0.3s ease;
-}
-
-.cursor-aura.is-visible {
-  opacity: 1;
-}
-
-.cursor-aura.is-hovering {
-  transform: translate(-50%, -50%) scale(1.18) !important;
-  opacity: 0.82;
-}
-
-@keyframes cursorOrbit {
-  0% { rotate: 0deg; }
-  100% { rotate: 360deg; }
-}
-
-.cursor-follower::after {
-  content: "";
-  position: absolute;
-  inset: -8px;
-  border-radius: 50%;
-  border: 1px dashed rgba(255, 204, 0, 0.24);
-  animation: cursorOrbit 10s linear infinite;
-  opacity: 0.75;
-}
-
-@media (max-width: 1024px) {
-  .cursor-aura {
-    width: 64px;
-    height: 64px;
+/* Hide native cursor on fine-pointer devices */
+@media (pointer: fine) {
+  body, a, button, [role="button"], input, select, textarea, label {
+    cursor: none !important;
   }
 }
 
+/* ── shared base ─────────────────────────────────────────── */
+.cs-dot,
+.cs-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 99999;
+  border-radius: 50%;
+  opacity: 0;
+  will-change: transform, opacity;
+  /* CRITICAL: NO transform rule here — JS owns transform 100% */
+  /* Centering: use negative margin so JS only needs translate(x,y) */
+  transition: opacity 0.2s ease;
+}
+
+/* ── dot: 7×7, tracks instantly ──────────────────────────── */
+.cs-dot {
+  width: 7px;
+  height: 7px;
+  /* offset = -(size / 2) */
+  margin-top:  -3.5px;
+  margin-left: -3.5px;
+  background: var(--cta, #ff6b00);
+  box-shadow:
+    0 0 6px  2px rgba(255, 107, 0, 0.65),
+    0 0 14px 3px rgba(255, 107, 0, 0.28);
+}
+
+/* ── ring: 30×30, lerp-follows ───────────────────────────── */
+.cs-ring {
+  width: 30px;
+  height: 30px;
+  /* offset = -(size / 2) */
+  margin-top:  -15px;
+  margin-left: -15px;
+  border: 1.5px solid rgba(255, 107, 0, 0.5);
+  background:  rgba(255, 107, 0, 0.06);
+  /* color changes animate smoothly, but transform stays in JS */
+  transition:
+    opacity        0.2s  ease,
+    border-color   0.2s  ease,
+    background     0.2s  ease;
+}
+
+/* Hover state — toggled via data-hover="1" attribute from JS */
+.cs-ring[data-hover="1"] {
+  border-color: rgba(255, 107, 0, 0.82);
+  background:   rgba(255, 107, 0, 0.13);
+}
+
+/* Light theme tweaks */
+[data-theme="light"] .cs-dot {
+  background: var(--cta, #ff5500);
+  box-shadow:
+    0 0 5px  2px rgba(255, 85, 0, 0.55),
+    0 0 12px 3px rgba(255, 85, 0, 0.22);
+}
+
+[data-theme="light"] .cs-ring {
+  border-color: rgba(255, 85, 0, 0.48);
+  background:   rgba(255, 85, 0, 0.05);
+}
+
+[data-theme="light"] .cs-ring[data-hover="1"] {
+  border-color: rgba(255, 85, 0, 0.78);
+  background:   rgba(255, 85, 0, 0.10);
+}
+
+/* ── hide on touch / reduced-motion ─────────────────────── */
 @media (pointer: coarse) {
-  .cursor, .cursor-follower, .cursor-aura { display: none; }
+  .cs-dot, .cs-ring { display: none !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cursor, .cursor-follower, .cursor-aura {
-    display: none;
-  }
+  .cs-dot, .cs-ring { display: none !important; }
 }
 
 /* ════════════════════════════════════════════════════════════

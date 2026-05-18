@@ -2,137 +2,143 @@
 
 import { useEffect, useRef } from "react";
 
-/**
- * CustomCursor — renders the dot + follower ring cursor.
- * Drop inside RootLayout body, outside ThemeProvider is fine.
- * Hides on touch/coarse-pointer devices via CSS.
- */
 export default function CustomCursor() {
-  const dotRef = useRef<HTMLDivElement>(null);
-  const followerRef = useRef<HTMLDivElement>(null);
-  const auraRef = useRef<HTMLDivElement>(null);
+  const dotRef  = useRef<HTMLDivElement>(null);
+  const ringRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (
-      window.matchMedia("(pointer: coarse)").matches ||
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
-      return;
-    }
+    if (window.matchMedia("(pointer: coarse)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    const dot = dotRef.current;
-    const follower = followerRef.current;
-    const aura = auraRef.current;
-    if (!dot || !follower || !aura) return;
+    const dot  = dotRef.current;
+    const ring = ringRef.current;
+    if (!dot || !ring) return;
 
-    let mx = -100;
-    let my = -100;
-    let fx = -100;
-    let fy = -100;
-    let ax = -100;
-    let ay = -100;
+    let mx = -300, my = -300;
+    let rx = -300, ry = -300;
+    let dotTargetS  = 1, ringTargetS = 1;
+    let dotCurS     = 1, ringCurS    = 1;
     let rafId: number;
-    let isVisible = false;
+    let visible    = false;
+    let isHovering = false;
+    let isPressed  = false;
+
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+    const show = () => {
+      if (visible) return;
+      dot.style.opacity  = "1";
+      ring.style.opacity = "1";
+      visible = true;
+    };
+
+    const hide = () => {
+      dot.style.opacity  = "0";
+      ring.style.opacity = "0";
+      visible = false;
+      mx = -300; my = -300;
+    };
+
+    const syncScales = () => {
+      if (isPressed) {
+        dotTargetS  = 0.6;
+        ringTargetS = 0.8;
+      } else if (isHovering) {
+        dotTargetS  = 1.8;
+        ringTargetS = 1.5;
+      } else {
+        dotTargetS  = 1;
+        ringTargetS = 1;
+      }
+    };
+
+    const INTERACTIVE =
+      "a, button, [role='button'], input, textarea, select, label, summary, [data-cursor='hover']";
 
     const onMove = (e: MouseEvent) => {
       mx = e.clientX;
       my = e.clientY;
-      if (!isVisible) {
-        dot.classList.add("is-visible");
-        follower.classList.add("is-visible");
-        aura.classList.add("is-visible");
-        isVisible = true;
-      }
+      show();
     };
 
-    const setHoverState = (active: boolean) => {
-      dot.classList.toggle("is-hovering", active);
-      follower.classList.toggle("is-hovering", active);
-      aura.classList.toggle("is-hovering", active);
+    const onOver = (e: Event) => {
+      const hit = (e.target as HTMLElement | null)?.closest(INTERACTIVE);
+      isHovering = Boolean(hit);
+      ring.dataset.hover = isHovering ? "1" : "0";
+      syncScales();
     };
 
-    const onPointerOver = (e: Event) => {
-      const target = e.target as HTMLElement | null;
-      const interactive = target?.closest(
-        "a, button, [role='button'], input, textarea, select, label, summary, [data-cursor='hover']"
-      );
-      setHoverState(Boolean(interactive));
+    const onOut = (e: Event) => {
+      const rel = (e as MouseEvent).relatedTarget as HTMLElement | null;
+      isHovering = Boolean(rel?.closest(INTERACTIVE));
+      ring.dataset.hover = isHovering ? "1" : "0";
+      syncScales();
     };
 
-    const onPointerOut = (e: Event) => {
-      const related = (e as MouseEvent).relatedTarget as HTMLElement | null;
-      if (!related) {
-        setHoverState(false);
-        return;
-      }
-      const interactive = related.closest(
-        "a, button, [role='button'], input, textarea, select, label, summary, [data-cursor='hover']"
-      );
-      setHoverState(Boolean(interactive));
+    // Only left-click triggers press animation — right-click is ignored entirely
+    const onDown = (e: MouseEvent) => {
+      if (e.button !== 0) return;
+      isPressed = true;
+      syncScales();
     };
 
-    const onPointerDown = () => {
-      dot.classList.add("is-pressed");
-      follower.classList.add("is-pressed");
+    const onUp = () => {
+      isPressed = false;
+      syncScales();
     };
 
-    const onPointerUp = () => {
-      dot.classList.remove("is-pressed");
-      follower.classList.remove("is-pressed");
+    const onLeave = () => {
+      isHovering = false;
+      isPressed  = false;
+      hide();
+      syncScales();
     };
 
-    const onLeaveWindow = () => {
-      dot.classList.remove("is-visible");
-      follower.classList.remove("is-visible");
-      aura.classList.remove("is-visible");
-      setHoverState(false);
-      isVisible = false;
-    };
+    const RING_SPEED  = 0.18;
+    const SCALE_SPEED = 0.20;
 
     const tick = () => {
       rafId = requestAnimationFrame(tick);
 
-      // dot tracks instantly
-      dot.style.transform = `translate(calc(${mx}px - 50%), calc(${my}px - 50%))`;
+      dot.style.transform =
+        `translate(${mx}px,${my}px) scale(${dotCurS.toFixed(3)})`;
 
-      // follower lags behind
-      fx += (mx - fx) * 0.16;
-      fy += (my - fy) * 0.16;
-      follower.style.transform = `translate(calc(${fx}px - 50%), calc(${fy}px - 50%))`;
+      rx = lerp(rx, mx, RING_SPEED);
+      ry = lerp(ry, my, RING_SPEED);
+      ring.style.transform =
+        `translate(${rx.toFixed(2)}px,${ry.toFixed(2)}px) scale(${ringCurS.toFixed(3)})`;
 
-      // aura lags even more for cinematic trail
-      ax += (mx - ax) * 0.08;
-      ay += (my - ay) * 0.08;
-      aura.style.transform = `translate(calc(${ax}px - 50%), calc(${ay}px - 50%))`;
+      dotCurS  = lerp(dotCurS,  dotTargetS,  SCALE_SPEED);
+      ringCurS = lerp(ringCurS, ringTargetS, SCALE_SPEED);
     };
 
-    document.addEventListener("mousemove", onMove, { passive: true });
-    document.addEventListener("mouseover", onPointerOver, { passive: true });
-    document.addEventListener("mouseout", onPointerOut, { passive: true });
-    document.addEventListener("mousedown", onPointerDown, { passive: true });
-    document.addEventListener("mouseup", onPointerUp, { passive: true });
-    document.addEventListener("mouseleave", onLeaveWindow, { passive: true });
-    window.addEventListener("blur", onLeaveWindow);
-    tick();
+    document.addEventListener("mousemove",  onMove, { passive: true });
+    document.addEventListener("mouseover",  onOver, { passive: true });
+    document.addEventListener("mouseout",   onOut,  { passive: true });
+    document.addEventListener("mousedown",  onDown, { passive: true });
+    document.addEventListener("mouseup",    onUp,   { passive: true });
+    document.addEventListener("mouseleave", onLeave);
+    window.addEventListener("blur",         onLeave);
+
+    rafId = requestAnimationFrame(tick);
 
     return () => {
       cancelAnimationFrame(rafId);
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseover", onPointerOver);
-      document.removeEventListener("mouseout", onPointerOut);
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("mouseup", onPointerUp);
-      document.removeEventListener("mouseleave", onLeaveWindow);
-      window.removeEventListener("blur", onLeaveWindow);
+      document.removeEventListener("mousemove",  onMove);
+      document.removeEventListener("mouseover",  onOver);
+      document.removeEventListener("mouseout",   onOut);
+      document.removeEventListener("mousedown",  onDown);
+      document.removeEventListener("mouseup",    onUp);
+      document.removeEventListener("mouseleave", onLeave);
+      window.removeEventListener("blur",         onLeave);
     };
   }, []);
 
   return (
     <>
-      <div ref={auraRef} className="cursor-aura" />
-      <div ref={dotRef} className="cursor" />
-      <div ref={followerRef} className="cursor-follower" />
+      <div ref={dotRef}  className="cs-dot"  aria-hidden="true" />
+      <div ref={ringRef} className="cs-ring" aria-hidden="true" />
     </>
   );
 }

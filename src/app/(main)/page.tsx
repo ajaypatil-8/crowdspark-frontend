@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import gsap from "gsap";
@@ -65,6 +65,36 @@ function fmtAmount(n: number) {
   return `₹${n}`;
 }
 
+function staticToProject(project: typeof STATIC_PROJECTS[number], index: number): ProjectFeedResponse {
+  return {
+    id: project.id,
+    title: project.title,
+    shortDescription: project.desc,
+    thumbnailUrl: null,
+    previewVideoUrl: null,
+    category: project.cat,
+    goalAmount: Math.max(1, Math.round((project.pct >= 100 ? 1 : 100 / project.pct) * Number(project.raised.replace(/[^\d.]/g, "")) * 100000)),
+    currentAmount: Number(project.raised.replace(/[^\d.]/g, "")) * 100000,
+    fundedPercentage: project.pct,
+    daysLeft: project.days,
+    backersCount: project.backers,
+    creator: {
+      id: index,
+      username: project.title.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, ""),
+      profileImage: null,
+      about: project.desc,
+      joinedAt: new Date().toISOString(),
+      totalProjects: 1,
+      totalBackers: project.backers,
+    },
+  };
+}
+
+function seededRank(project: ProjectFeedResponse, index: number, seed: number) {
+  const key = project.id * 997 + project.title.length * 37 + index * 131 + seed;
+  return Math.sin(key) - Math.floor(Math.sin(key));
+}
+
 // ─── ANIMATED COUNTER ─────────────────────────────────────────────────────────
 
 function AnimatedCounter({ target, suffix = "" }: { target: string; suffix?: string }) {
@@ -114,17 +144,18 @@ function HeroBigCard({ p, idx }: { p: ProjectFeedResponse; idx: number }) {
   const accent = getAccent(idx);
   const pct = Math.min(Math.round(p.fundedPercentage), 100);
   const [hov, setHov] = useState(false);
+  const href = p.id > 0 ? `/projects/${p.id}` : "/explore";
 
   return (
-    <Link href={`/projects/${p.id}`}
+    <Link href={href}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
         display: "block", textDecoration: "none", borderRadius: 22,
-        background: "var(--card-bg)",
+        background: "linear-gradient(180deg,var(--card-bg),var(--card-bg-2))",
         border: `1px solid ${hov ? accent + "60" : "var(--card-border)"}`,
         overflow: "hidden",
         transition: "all 0.32s cubic-bezier(0.22,1,0.36,1)",
-        boxShadow: hov ? `0 28px 70px rgba(0,0,0,0.45), 0 0 0 1px ${accent}28` : "0 4px 24px rgba(0,0,0,0.2)",
+        boxShadow: hov ? `0 34px 90px rgba(0,0,0,0.5), 0 0 0 1px ${accent}28` : "0 18px 58px rgba(0,0,0,0.28)",
         transform: hov ? "translateY(-4px)" : "none",
         position: "relative",
       }}
@@ -137,7 +168,7 @@ function HeroBigCard({ p, idx }: { p: ProjectFeedResponse; idx: number }) {
         height: 210, position: "relative", overflow: "hidden",
         background: p.thumbnailUrl
           ? `url(${p.thumbnailUrl}) center/cover no-repeat`
-          : `radial-gradient(ellipse at 25% 40%, ${accent}25 0%, transparent 55%), radial-gradient(ellipse at 80% 70%, ${accent}10 0%, transparent 50%)`,
+          : `linear-gradient(135deg, ${accent}24, rgba(255,107,0,0.14)), radial-gradient(ellipse at 25% 40%, ${accent}30 0%, transparent 55%), radial-gradient(ellipse at 80% 70%, rgba(255,204,0,0.16) 0%, transparent 50%)`,
       }}>
         {!p.thumbnailUrl && (
           <>
@@ -213,16 +244,18 @@ function SmallCard({ p, idx }: { p: ProjectFeedResponse; idx: number }) {
   const accent = getAccent(idx);
   const pct = Math.min(Math.round(p.fundedPercentage), 100);
   const [hov, setHov] = useState(false);
+  const href = p.id > 0 ? `/projects/${p.id}` : "/explore";
 
   return (
-    <Link href={`/projects/${p.id}`}
+    <Link href={href}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
         display: "flex", gap: 14, textDecoration: "none", padding: "14px 16px",
         borderRadius: 16, height: "100%",
-        background: hov ? `${accent}08` : "var(--card-bg)",
+        background: hov ? `${accent}0c` : "linear-gradient(180deg,var(--card-bg),var(--card-bg-2))",
         border: `1px solid ${hov ? accent + "50" : "var(--card-border)"}`,
         transition: "all 0.22s ease", cursor: "pointer",
+        boxShadow: hov ? `0 18px 48px rgba(0,0,0,0.28), 0 0 0 1px ${accent}20` : "0 10px 28px rgba(0,0,0,0.12)",
         willChange: "transform",
       }}
     >
@@ -371,9 +404,9 @@ export default function HomePage() {
 
   const [activeTesti, setActiveTesti] = useState(0);
   const [campaigns,   setCampaigns]   = useState<ProjectFeedResponse[]>([]);
-  const [featured,    setFeatured]    = useState<ProjectFeedResponse[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [loggedIn,    setLoggedIn]    = useState(false);
+  const [heroSeed,    setHeroSeed]    = useState(1);
 
   useEffect(() => {
     projectApi.feed()
@@ -382,19 +415,20 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    setLoggedIn(isLoggedIn());
+    const id = requestAnimationFrame(() => {
+      setLoggedIn(isLoggedIn());
+      setHeroSeed(Date.now());
+    });
+    return () => cancelAnimationFrame(id);
   }, []);
 
-  useEffect(() => {
-    if (campaigns.length === 0) {
-      setFeatured([]);
-      return;
-    }
-    const shuffled = [...campaigns]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, Math.min(3, campaigns.length));
-    setFeatured(shuffled);
-  }, [campaigns]);
+  const featured = useMemo(() => {
+    const fallback = STATIC_PROJECTS.map(staticToProject);
+    const pool = campaigns.length >= 3 ? campaigns : [...campaigns, ...fallback];
+    return [...pool]
+      .sort((a, b) => seededRank(a, pool.indexOf(a), heroSeed) - seededRank(b, pool.indexOf(b), heroSeed))
+      .slice(0, 3);
+  }, [campaigns, heroSeed]);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -467,10 +501,12 @@ export default function HomePage() {
     return () => { ctx.revert(); clearInterval(t); };
   }, []);
 
-  const heroProject   = featured[0] ?? null;
-  const smallProjects = featured.slice(1, 3);
+  const heroProject   = featured[0] ?? staticToProject(STATIC_PROJECTS[0], 0);
+  const smallProjects = [
+    featured[1] ?? staticToProject(STATIC_PROJECTS[1], 1),
+    featured[2] ?? staticToProject(STATIC_PROJECTS[2], 2),
+  ];
   const trending      = campaigns.slice(3, 9);
-  const showStatic    = !loading && trending.length === 0;
 
   return (
     <div className="lp-root">
@@ -482,57 +518,7 @@ export default function HomePage() {
 
       {/* ════════════════ HERO ════════════════ */}
       <section className="lp-hero" aria-label="Hero">
-
-        {/* ── Left: Hero Content ── */}
         <div className="lp-hero-content" ref={heroTextRef}>
-        {/* ── Right: Campaign Showcase ── */}
-        <div className="lp-hero-canvas">
-          {/* Grid overlay */}
-          <div className="lp-hero-grid-overlay" />
-          {/* Left edge fade */}
-          <div className="lp-hero-canvas-fade" />
-
-          {/* 1 Big card left + 2 small cards stacked right */}
-          <div className="lp-showcase" ref={showcaseRef}>
-            {/* Big card — left column */}
-            <div className="showcase-enter lp-showcase-big">
-              {loading ? <Skel h={440} /> : heroProject ? <HeroBigCard p={heroProject} idx={0} /> : (
-                <div style={{ height: 440, borderRadius: 20, background: "var(--card-bg)", border: "1px solid var(--card-border)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontFamily: "DM Sans,sans-serif", fontSize: 14, gap: 10 }}>
-                  <span style={{ fontSize: 36 }}>🚀</span>
-                  <span>Be the first to launch!</span>
-                  <Link href={loggedIn ? "/dashboard/create-campaign" : "/register"} style={{ color: "#ff8800", textDecoration: "none", fontWeight: 600 }}>
-                    {loggedIn ? "Create a campaign →" : "Create free account →"}
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            {/* Right column: 2 small cards stacked */}
-            <div className="lp-showcase-small">
-              <div className="showcase-enter lp-showcase-s1">
-                {loading ? <Skel h={206} /> : smallProjects[0] ? <SmallCard p={smallProjects[0]} idx={1} /> : (
-                  <div style={{ height: 206, borderRadius: 16, background: "var(--card-bg)", border: "1px solid var(--card-border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontFamily: "DM Sans,sans-serif", fontSize: 13 }}>Coming soon…</div>
-                )}
-              </div>
-              <div className="showcase-enter lp-showcase-s2">
-                {loading ? <Skel h={206} /> : smallProjects[1] ? <SmallCard p={smallProjects[1]} idx={2} /> : (
-                  <div style={{ height: 206, borderRadius: 16, background: "var(--card-bg)", border: "1px solid var(--card-border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontFamily: "DM Sans,sans-serif", fontSize: 13 }}>Coming soon…</div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Live status pill */}
-          <div className="showcase-enter" style={{ display: "flex", justifyContent: "center", width: "100%", maxWidth: 580 }}>
-            <div className="lp-live-pill">
-              <span className="lp-live-dot" />
-              <span>{campaigns.length > 0 ? `${campaigns.length} live campaigns` : "Live now"}</span>
-              <span style={{ color: "var(--border)", margin: "0 4px" }}>·</span>
-              <span style={{ color: "#34d399", fontWeight: 700 }}>{campaigns.filter(c => c.fundedPercentage >= 90).length} near goal</span>
-            </div>
-          </div>
-        </div>
-          {/* Live badge */}
           <div className="lp-badge hero-enter">
             <span className="lp-badge-pill"><span className="lp-badge-dot" />Live now</span>
             <span className="lp-badge-text">1,240+ campaigns funded</span>
@@ -578,6 +564,53 @@ export default function HomePage() {
                 {t}
               </span>
             ))}
+          </div>
+        </div>
+
+        <div className="lp-hero-canvas" ref={showcaseRef}>
+          <div className="lp-hero-grid-overlay" />
+          <div className="lp-hero-beam lp-hero-beam-a" />
+          <div className="lp-hero-beam lp-hero-beam-b" />
+          <div className="lp-showcase-shell">
+            <div className="showcase-enter lp-showcase-topbar">
+              <span className="lp-window-dot" />
+              <span className="lp-window-dot lp-window-dot-amber" />
+              <span className="lp-window-dot lp-window-dot-green" />
+              <strong>Campaigns live now</strong>
+            </div>
+
+            <div className="lp-showcase">
+              <div className="showcase-enter lp-showcase-big">
+                {loading ? <Skel h={440} /> : <HeroBigCard p={heroProject} idx={0} />}
+              </div>
+
+              <div className="lp-showcase-small">
+                <div className="showcase-enter lp-showcase-s1">
+                  {loading ? <Skel h={206} /> : <SmallCard p={smallProjects[0]} idx={1} />}
+                </div>
+                <div className="showcase-enter lp-showcase-s2">
+                  {loading ? <Skel h={206} /> : <SmallCard p={smallProjects[1]} idx={2} />}
+                </div>
+              </div>
+            </div>
+
+            <div className="showcase-enter lp-live-pill-wrap">
+              <div className="lp-live-pill">
+                <span className="lp-live-dot" />
+                <span>{campaigns.length > 0 ? `${campaigns.length} live campaigns` : "Fresh campaigns"}</span>
+                <span style={{ color: "var(--border)", margin: "0 4px" }}>·</span>
+                <span style={{ color: "#34d399", fontWeight: 700 }}>{campaigns.filter(c => c.fundedPercentage >= 90).length || 3} near goal</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="showcase-enter lp-float-card lp-float-card-a">
+            <span>Backers joining</span>
+            <strong>+286 today</strong>
+          </div>
+          <div className="showcase-enter lp-float-card lp-float-card-b">
+            <span>Momentum</span>
+            <strong>Live funding pulse</strong>
           </div>
         </div>
 
@@ -700,7 +733,7 @@ export default function HomePage() {
               <h2 className="lp-h2">Real results,<br />real people</h2>
             </div>
             <p style={{ fontFamily: "DM Sans,sans-serif", fontSize: 14, color: "var(--text-muted)", lineHeight: 1.75, maxWidth: 300, marginBottom: 28 }}>
-              Over 1,200 creators have launched on CrowdSpark. Here's what a few of them have to say.
+              Over 1,200 creators have launched on CrowdSpark. Here is what a few of them have to say.
             </p>
             <div style={{ display: "flex", gap: 8 }}>
               {TESTIMONIALS.map((_, i) => (
@@ -812,24 +845,41 @@ export default function HomePage() {
         .lp-orb-2 { position:absolute; width:400px; height:400px; border-radius:50%; background:radial-gradient(circle,rgba(100,30,220,0.05) 0%,transparent 70%); filter:blur(60px); bottom:300px; left:-80px; pointer-events:none; z-index:0; }
 
         /* ── Hero ── */
-        .lp-hero { position:relative; min-height:100vh; display:flex; align-items:center; padding:120px 56px 80px; gap:40px; overflow:hidden; z-index:1; }
-        .lp-hero-content { flex:0 0 48%; max-width:520px; position:relative; z-index:3; }
+        .lp-hero { position:relative; min-height:100vh; width:min(1280px,100%); margin:0 auto; display:grid; grid-template-columns:minmax(420px,.9fr) minmax(520px,1.1fr); align-items:center; padding:120px 56px 80px; gap:54px; overflow:hidden; z-index:1; }
+        .lp-hero-content { max-width:560px; position:relative; z-index:3; }
 
         /* Hero canvas */
-        .lp-hero-canvas { flex:1; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; z-index:2; padding-top:16px; }
+        .lp-hero-canvas { position:relative; min-height:590px; display:flex; align-items:center; justify-content:center; z-index:2; padding:28px 0; perspective:1100px; }
         .lp-hero-canvas-fade { position:absolute; top:0; bottom:0; left:0; width:70px; background:linear-gradient(to right,var(--bg),transparent); z-index:10; pointer-events:none; }
-        .lp-hero-grid-overlay { position:absolute; inset:0; background-image:linear-gradient(rgba(0,245,212,0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,212,0.035) 1px,transparent 1px); background-size:48px 48px; mask-image:radial-gradient(ellipse 75% 85% at 55% 50%,black,transparent); pointer-events:none; }
+        .lp-hero-grid-overlay { position:absolute; inset:2%; background-image:linear-gradient(rgba(0,245,212,0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,212,0.035) 1px,transparent 1px); background-size:46px 46px; mask-image:radial-gradient(ellipse 75% 85% at 55% 50%,black,transparent); pointer-events:none; opacity:.9; }
+        .lp-hero-beam { position:absolute; width:280px; height:2px; border-radius:999px; background:linear-gradient(90deg,transparent,rgba(255,107,0,.72),rgba(0,245,212,.72),transparent); filter:drop-shadow(0 0 16px rgba(0,245,212,.32)); pointer-events:none; opacity:.7; }
+        .lp-hero-beam-a { top:13%; right:10%; transform:rotate(-14deg); animation:lp-beam-a 6s ease-in-out infinite; }
+        .lp-hero-beam-b { bottom:16%; left:4%; transform:rotate(18deg); animation:lp-beam-b 7s ease-in-out infinite; }
+        .lp-showcase-shell { position:relative; width:min(620px,100%); padding:14px; border-radius:30px; background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.025)); border:1px solid var(--card-border); box-shadow:0 32px 110px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.08); transform:rotateY(-4deg) rotateX(2deg); }
+        .lp-showcase-shell::before { content:""; position:absolute; inset:-1px; border-radius:inherit; background:linear-gradient(135deg,rgba(255,107,0,.5),rgba(0,245,212,.38),rgba(167,139,250,.34)); opacity:.28; z-index:-1; }
+        .lp-showcase-shell::after { content:""; position:absolute; inset:36px -20px -24px 40px; border-radius:34px; background:linear-gradient(135deg,rgba(255,107,0,.12),rgba(0,245,212,.10)); z-index:-2; transform:rotate(5deg); }
+        .lp-showcase-topbar { height:38px; display:flex; align-items:center; gap:8px; padding:0 12px; margin-bottom:12px; border-radius:16px; background:rgba(0,0,0,.18); border:1px solid var(--card-border); color:var(--text-muted); font-family:"DM Sans",sans-serif; font-size:12px; }
+        .lp-showcase-topbar strong { margin-left:auto; color:var(--text-sub); font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; }
+        .lp-window-dot { width:8px; height:8px; border-radius:50%; background:#ef4444; box-shadow:0 0 12px rgba(239,68,68,.45); }
+        .lp-window-dot-amber { background:#f59e0b; box-shadow:0 0 12px rgba(245,158,11,.45); }
+        .lp-window-dot-green { background:#34d399; box-shadow:0 0 12px rgba(52,211,153,.45); }
 
         /* Showcase — 1 big card left + 2 small stacked right */
-        .lp-showcase { display:grid; grid-template-columns:1fr 1fr; gap:14px; width:100%; max-width:580px; align-items:stretch; }
-        .lp-showcase-big { grid-column:1; grid-row:1; }
+        .lp-showcase { display:grid; grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr); gap:14px; width:100%; align-items:stretch; }
+        .lp-showcase-big { grid-column:1; grid-row:1; animation:lp-card-float-a 5.8s ease-in-out infinite; }
         .lp-showcase-small { grid-column:2; grid-row:1; display:flex; flex-direction:column; gap:14px; }
-        .lp-showcase-s1 { flex:1; }
-        .lp-showcase-s2 { flex:1; }
+        .lp-showcase-s1 { flex:1; animation:lp-card-float-b 6.2s ease-in-out infinite; }
+        .lp-showcase-s2 { flex:1; animation:lp-card-float-c 6.8s ease-in-out infinite; }
 
         /* Live pill */
-        .lp-live-pill { display:inline-flex; align-items:center; gap:7px; padding:7px 16px; border-radius:999px; background:var(--card-bg); border:1px solid var(--card-border); box-shadow:0 4px 20px rgba(0,0,0,0.25); font-family:"DM Sans",sans-serif; font-size:12px; color:var(--text-muted); white-space:nowrap; }
+        .lp-live-pill-wrap { display:flex; justify-content:center; width:100%; padding-top:14px; }
+        .lp-live-pill { display:inline-flex; align-items:center; gap:7px; padding:8px 16px; border-radius:999px; background:var(--card-bg); border:1px solid var(--card-border); box-shadow:0 4px 20px rgba(0,0,0,0.25); font-family:"DM Sans",sans-serif; font-size:12px; color:var(--text-muted); white-space:nowrap; }
         .lp-live-dot { width:7px; height:7px; border-radius:50%; background:#34d399; animation:lp-pulse 1.4s ease-in-out infinite; box-shadow:0 0 8px rgba(52,211,153,0.5); flex-shrink:0; }
+        .lp-float-card { position:absolute; z-index:4; display:flex; flex-direction:column; gap:4px; padding:13px 15px; border-radius:18px; background:var(--card-bg); border:1px solid var(--card-border); box-shadow:0 18px 48px rgba(0,0,0,.28); backdrop-filter:blur(14px); font-family:"DM Sans",sans-serif; pointer-events:none; }
+        .lp-float-card span { color:var(--text-muted); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; }
+        .lp-float-card strong { color:var(--text); font-family:"Syne",sans-serif; font-size:15px; letter-spacing:-.02em; }
+        .lp-float-card-a { top:58px; left:4px; animation:lp-float-note-a 5.4s ease-in-out infinite; }
+        .lp-float-card-b { right:0; bottom:70px; animation:lp-float-note-b 6.1s ease-in-out infinite; }
 
         /* Badge */
         .lp-badge { display:inline-flex; align-items:center; gap:10px; padding:5px 14px 5px 5px; border-radius:999px; border:1px solid var(--border); background:rgba(255,107,0,0.06); margin-bottom:28px; }
@@ -838,11 +888,11 @@ export default function HomePage() {
         .lp-badge-text { font-size:13px; color:var(--text-muted); font-family:"DM Sans",sans-serif; }
 
         /* H1 */
-        .lp-h1 { font-family:"Syne",sans-serif; font-weight:800; font-size:clamp(38px,4.8vw,72px); line-height:1.04; letter-spacing:-0.03em; color:var(--text); margin:0 0 22px; }
+        .lp-h1 { font-family:"Syne",sans-serif; font-weight:800; font-size:clamp(48px,5.9vw,92px); line-height:.94; letter-spacing:0; color:var(--text); margin:0 0 24px; }
         .lp-h1-gradient { background:linear-gradient(135deg,#ff6b00,#ffcc00); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
         .lp-h1-accent { color:var(--accent); text-shadow:0 0 50px var(--accent-glow); }
 
-        .lp-sub { font-size:clamp(14px,1.5vw,17px); color:var(--text-muted); font-family:"DM Sans",sans-serif; line-height:1.82; max-width:400px; margin:0 0 40px; }
+        .lp-sub { font-size:clamp(15px,1.5vw,18px); color:var(--text-muted); font-family:"DM Sans",sans-serif; line-height:1.82; max-width:470px; margin:0 0 40px; }
         .lp-cta-row { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:36px; align-items:center; }
         .lp-btn-hero { display:inline-flex; align-items:center; gap:8px; padding:14px 30px; font-size:14.5px; border-radius:12px; }
         .lp-btn-ghost { display:inline-flex; align-items:center; gap:8px; padding:14px 24px; font-size:14.5px; border-radius:12px; text-decoration:none; }
@@ -954,6 +1004,13 @@ export default function HomePage() {
         @keyframes lp-scroll-dot { 0%{transform:translateY(0);opacity:1;} 100%{transform:translateY(10px);opacity:0;} }
         @keyframes lp-fade-in { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
         @keyframes lp-skeleton { 0%,100%{opacity:.5;} 50%{opacity:.8;} }
+        @keyframes lp-card-float-a { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
+        @keyframes lp-card-float-b { 0%,100%{transform:translateY(0);} 50%{transform:translateY(7px);} }
+        @keyframes lp-card-float-c { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-5px);} }
+        @keyframes lp-float-note-a { 0%,100%{transform:translate(0,0);} 50%{transform:translate(10px,-9px);} }
+        @keyframes lp-float-note-b { 0%,100%{transform:translate(0,0);} 50%{transform:translate(-10px,8px);} }
+        @keyframes lp-beam-a { 0%,100%{opacity:.35; transform:rotate(-14deg) translateX(0);} 50%{opacity:.85; transform:rotate(-14deg) translateX(-24px);} }
+        @keyframes lp-beam-b { 0%,100%{opacity:.28; transform:rotate(18deg) translateX(0);} 50%{opacity:.72; transform:rotate(18deg) translateX(20px);} }
 
         /* ── Responsive ── */
         @media(max-width:1100px){
@@ -962,13 +1019,16 @@ export default function HomePage() {
           .lp-proj-grid{grid-template-columns:repeat(2,1fr);}
           .lp-testi-inner{grid-template-columns:1fr;}
           .lp-feat-header{flex-direction:column; align-items:flex-start;}
-          .lp-hero{padding:100px 36px 80px; gap:28px;}
+          .lp-hero{grid-template-columns:minmax(360px,.9fr) minmax(460px,1.1fr); padding:100px 36px 80px; gap:28px;}
           .lp-showcase{max-width:100%;}
+          .lp-float-card-a{left:-4px;}
+          .lp-float-card-b{right:-8px;}
         }
         @media(max-width:900px){
-          .lp-hero{padding:90px 24px 60px; flex-direction:column; min-height:unset; align-items:flex-start; gap:36px;}
-          .lp-hero-content{flex:none; max-width:100%;}
-          .lp-hero-canvas{width:100%;}
+          .lp-hero{grid-template-columns:1fr; padding:96px 24px 60px; min-height:unset; gap:36px;}
+          .lp-hero-content{max-width:100%;}
+          .lp-hero-canvas{width:100%; min-height:520px;}
+          .lp-showcase-shell{transform:none;}
           .lp-showcase{max-width:100%;}
           .lp-stats{padding:48px 24px;}
           .lp-stats-inner{grid-template-columns:repeat(2,1fr);}
@@ -989,7 +1049,9 @@ export default function HomePage() {
           .lp-trust-row{gap:12px;}
           .lp-how-chips{gap:8px;}
           .lp-showcase{grid-template-columns:1fr;}
-          .lp-showcase-small{flex-direction:row;}
+          .lp-showcase-small{grid-column:1; grid-row:auto; flex-direction:column;}
+          .lp-hero-canvas{min-height:unset; padding-bottom:70px;}
+          .lp-float-card{display:none;}
         }
       `}</style>
     </div>

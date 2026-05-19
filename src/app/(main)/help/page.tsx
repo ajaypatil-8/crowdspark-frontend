@@ -7,7 +7,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   Rocket, Users, Shield, DollarSign, Settings,
   BookOpen, MessageSquare, ArrowRight, ExternalLink,
-  Zap, CheckCircle2, Clock, Star,
+  Zap, CheckCircle2, Clock, Star, ChevronRight,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 

@@ -55,11 +55,11 @@ function ExploreContent() {
   const fetchProjects = useCallback(async () => {
     setLoading(true);
     try {
+      const combinedKeyword = [search, category].filter(Boolean).join(" ") || undefined;
       const res = await exploreApi.search({
         page: page - 1,
         size: PAGE_SIZE,
-        keyword: search || undefined,
-        category: category || undefined,
+        keyword: combinedKeyword,
         sort: sort || undefined,
       });
       setProjects(res.content ?? []);

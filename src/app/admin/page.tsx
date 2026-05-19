@@ -87,7 +87,7 @@ function StatCard({ label, value, icon, color, bg, index, href }: {
 // ─── KYC Row ──────────────────────────────────────────────────────────────────
 function KycRow({ kyc, index, isDark }: { kyc: KycStatusResponse; index: number; isDark: boolean }) {
   const bdr = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)";
-  const initials = (kyc as any).name?.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase() ?? "KY";
+  const initials = kyc.username?.slice(0, 2).toUpperCase() ?? "KY";
   return (
     <motion.div
       initial={{ opacity: 0, x: -12 }}
@@ -100,7 +100,7 @@ function KycRow({ kyc, index, isDark }: { kyc: KycStatusResponse; index: number;
       <div style={{ width: 38, height: 38, borderRadius: 12, background: `linear-gradient(135deg,${ACCENT},#a855f7)`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 13, flexShrink: 0 }}>{initials}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 13, color: "var(--text)", margin: "0 0 2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {kyc.bankAccountHolderName || "Applicant"}
+          {kyc.username || "Applicant"}
         </p>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11.5, color: "var(--text-muted)" }}>{kyc.panNumber}</span>

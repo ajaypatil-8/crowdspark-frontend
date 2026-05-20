@@ -96,7 +96,7 @@ export default function BackedPage() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
   const [mounted, setMounted]   = useState(false);
-  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  const [hoveredRow, setHoveredRow] = useState<string | number | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
 

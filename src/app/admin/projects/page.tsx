@@ -143,11 +143,11 @@ function DetailModal({ detail, projects, onClose, onApprove, onReject, actionId 
               )}
 
               {/* Story snippet */}
-              {detail.story && (
+              {detail.fullDescription && (
                 <div style={{ padding: "13px 16px", borderRadius: 12, background: isDark ? "rgba(255,255,255,0.025)" : "rgba(0,0,0,0.025)", border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}` }}>
                   <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", margin: "0 0 7px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Campaign story</p>
                   <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: "var(--text)", lineHeight: 1.7, margin: 0, display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                    {detail.story}
+                    {detail.fullDescription}
                   </p>
                 </div>
               )}

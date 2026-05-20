@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -424,7 +424,7 @@ function FilterTab({
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-export default function MyCampaignsPage() {
+function MyCampaignsPageInner() {
   const { isDark } = useTheme();
   const { loading: profileLoading } = useProfile();
   const searchParams = useSearchParams();
@@ -785,5 +785,14 @@ export default function MyCampaignsPage() {
         @media(max-width:768px)  { div[style*="padding: 40px 36px"]{ padding:28px 16px 48px!important; } }
       `}</style>
     </div>
+  );
+}
+
+// ─── Suspense wrapper (required for useSearchParams in Next.js) ───────────────
+export default function MyCampaignsPage() {
+  return (
+    <Suspense fallback={null}>
+      <MyCampaignsPageInner />
+    </Suspense>
   );
 }

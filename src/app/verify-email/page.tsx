@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -249,8 +249,8 @@ function ErrorState({ message, isDark, onRequest }: { message:string; isDark:boo
   );
 }
 
-// ── Main ─────────────────────────────────────────────────────────────────────
-export default function VerifyEmailPage() {
+// ── Inner (uses useSearchParams — must be inside Suspense) ───────────────────
+function VerifyEmailPageInner() {
   const { isDark } = useTheme();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -373,5 +373,14 @@ export default function VerifyEmailPage() {
         @keyframes veShimmer { 0%{transform:translateX(-100%)} 60%{transform:translateX(220%)} 100%{transform:translateX(220%)} }
       `}</style>
     </div>
+  );
+}
+
+// ── Default export with Suspense (required for useSearchParams in Next.js) ────
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={null}>
+      <VerifyEmailPageInner />
+    </Suspense>
   );
 }

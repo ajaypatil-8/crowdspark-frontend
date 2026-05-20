@@ -160,7 +160,7 @@ export default function NotificationBell({ isDark }: { isDark: boolean }) {
   const [mounted, setMounted] = useState(false);
   const [loggedIn,setLoggedIn]= useState(false);
   const [rect,    setRect]    = useState<DOMRect | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval>>();
+  const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   useEffect(() => { setMounted(true); setLoggedIn(isLoggedIn()); }, []);
 

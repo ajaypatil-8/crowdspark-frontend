@@ -706,3 +706,75 @@ export const adminApi = {
       body: JSON.stringify({ subject, message }),
     }),
 };
+
+
+// src/lib/api.ts
+// PASTE THESE ADDITIONS at the bottom of your existing api.ts file
+
+// ─── Payment types ────────────────────────────────────────────────────────────
+
+export interface PaymentOrderRequest {
+  projectId: number;
+  amount: number;
+  rewardTierId?: number | null;
+  message?: string | null;
+}
+
+export interface PaymentOrderResponse {
+  razorpayOrderId: string;  // Razorpay order id → pass to checkout as `order_id`
+  amountInPaise: number;    // amount in paise  → pass to checkout as `amount`
+  currency: string;         // "INR"
+  razorpayKeyId: string;    // your key id      → pass to checkout as `key`
+  donationId: number;       // our internal donation id (PENDING)
+  projectTitle: string;     // for checkout description
+}
+
+export interface PaymentVerifyRequest {
+  donationId: number;
+  razorpayPaymentId: string;
+  razorpayOrderId: string;
+  razorpaySignature: string;
+}
+
+// ─── Payment API ──────────────────────────────────────────────────────────────
+
+export const paymentApi = {
+  /**
+   * Step 1: Create a Razorpay order + PENDING donation.
+   * Call this when the user clicks "Back this project".
+   */
+  createOrder: (data: PaymentOrderRequest) =>
+    request<PaymentOrderResponse>("/api/payment/create-order", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  /**
+   * Step 2: Verify payment after Razorpay checkout completes.
+   * Call this inside the Razorpay handler() callback.
+   */
+  verify: (data: PaymentVerifyRequest) =>
+    request<DonationResponse>("/api/payment/verify", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+};
+
+// ─── DonationResponse type (add if not already in your api.ts) ───────────────
+
+export interface DonationResponse {
+  id: number;
+  projectId: number;
+  projectTitle: string;
+  projectThumbnailUrl: string | null;
+  backerId: number;
+  backerUsername: string;
+  amount: number;
+  paymentStatus: "PENDING" | "SUCCESS" | "FAILED";
+  transactionId: string | null;
+  message: string | null;
+  rewardTierId: number | null;
+  rewardTierTitle: string | null;
+  createdAt: string;
+  paidAt: string | null;
+}

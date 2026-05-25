@@ -1,8 +1,19 @@
+// src/components/BackProjectModal.tsx
+// FULL REPLACEMENT — Razorpay payment gateway integrated
+
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Gift, CheckCircle, Trophy, AlertCircle, IndianRupee } from "lucide-react";
+import { X, Gift, CheckCircle, Trophy, AlertCircle, IndianRupee, Loader2 } from "lucide-react";
 import type { RewardTierResponse } from "@/lib/api";
+import { paymentApi } from "@/lib/api";
+
+// Extend Window to include Razorpay checkout script
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 interface Props {
   open: boolean;
@@ -16,6 +27,18 @@ interface Props {
   onSuccess?: () => void;
 }
 
+/** Dynamically load the Razorpay checkout.js script (only once) */
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window.Razorpay !== "undefined") { resolve(true); return; }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload  = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
 export default function BackProjectModal({
   open, onClose, projectId, projectTitle, rewards, isDark,
   goalAmount = 0, currentAmount = 0, onSuccess,
@@ -26,6 +49,12 @@ export default function BackProjectModal({
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
   const [done, setDone]       = useState(false);
+  const [step, setStep]       = useState<"form" | "processing" | "verifying">("form");
+
+  // Preload Razorpay script when modal opens
+  useEffect(() => {
+    if (open) loadRazorpayScript();
+  }, [open]);
 
   const bdr     = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
   const bg      = isDark ? "#0c0c0c" : "#ffffff";
@@ -37,7 +66,7 @@ export default function BackProjectModal({
 
   const remaining   = Math.max(goalAmount - currentAmount, 0);
   const goalReached = remaining <= 0;
-  const pct = Math.min(((currentAmount / goalAmount) * 100) || 0, 100);
+  const pct         = Math.min(((currentAmount / goalAmount) * 100) || 0, 100);
 
   const minAmount = selectedReward
     ? rewards.find(r => r.id === selectedReward)?.minimumAmount ?? 1
@@ -52,27 +81,104 @@ export default function BackProjectModal({
   async function handleSubmit() {
     const amt = parseFloat(amount);
     if (!amt || amt < minAmount) { setError(`Minimum amount is ₹${minAmount}`); return; }
-    if (amt > remaining) { setError(`Maximum is ₹${remaining.toFixed(0)}`); return; }
-    setLoading(true); setError(null);
+    if (amt > remaining)          { setError(`Maximum is ₹${remaining.toFixed(0)}`); return; }
+
+    setLoading(true);
+    setError(null);
+    setStep("processing");
+
     try {
-      const { tokenStorage } = await import("@/lib/api");
-      const token = tokenStorage.getAccess();
-      if (!token) throw new Error("Please login to back this project");
-      const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/crowdspark";
-      const res = await fetch(`${BASE}/api/donations`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ projectId, amount: amt, rewardTierId: selectedReward ?? null, message: message.trim() || null }),
+      // ── STEP 1: Load Razorpay script ─────────────────────────────────────
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) throw new Error("Failed to load payment gateway. Check your internet connection.");
+
+      // ── STEP 2: Create Razorpay order on our backend ─────────────────────
+      const orderData = await paymentApi.createOrder({
+        projectId,
+        amount: amt,
+        rewardTierId: selectedReward ?? null,
+        message: message.trim() || null,
       });
-      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || "Donation failed"); }
-      setDone(true); onSuccess?.();
+
+      // ── STEP 3: Open Razorpay checkout modal ─────────────────────────────
+      await new Promise<void>((resolve, reject) => {
+        const options = {
+          key:         orderData.razorpayKeyId,
+          amount:      orderData.amountInPaise,
+          currency:    orderData.currency,
+          name:        "CrowdSpark",
+          description: orderData.projectTitle,
+          order_id:    orderData.razorpayOrderId,
+          image:       "/logo.png", // optional: your logo
+
+          handler: async (response: {
+            razorpay_payment_id: string;
+            razorpay_order_id:   string;
+            razorpay_signature:  string;
+          }) => {
+            // ── STEP 4: Verify signature on our backend ───────────────────
+            setStep("verifying");
+            try {
+              await paymentApi.verify({
+                donationId:        orderData.donationId,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpayOrderId:   response.razorpay_order_id,
+                razorpaySignature: response.razorpay_signature,
+              });
+              resolve();
+            } catch (e: any) {
+              reject(new Error(e.message ?? "Payment verification failed"));
+            }
+          },
+
+          modal: {
+            ondismiss: () => {
+              // User closed checkout without paying — treat as soft cancel
+              reject(new Error("DISMISSED"));
+            },
+          },
+
+          prefill: {
+            // These get autofilled from user's Razorpay account
+          },
+
+          theme: {
+            color: "#ff5c00",
+          },
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.on("payment.failed", (resp: any) => {
+          reject(new Error(resp.error?.description ?? "Payment failed"));
+        });
+        rzp.open();
+      });
+
+      // ── STEP 5: Payment confirmed ─────────────────────────────────────────
+      setDone(true);
+      onSuccess?.();
+
     } catch (e: any) {
-      setError(e.message ?? "Something went wrong");
-    } finally { setLoading(false); }
+      if (e.message === "DISMISSED") {
+        // User closed modal — silent reset
+        setStep("form");
+      } else {
+        setError(e.message ?? "Something went wrong");
+        setStep("form");
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleClose() {
-    setDone(false); setError(null); setAmount(""); setMessage(""); setSelectedReward(null);
+    if (loading) return; // don't close while payment is in flight
+    setDone(false);
+    setError(null);
+    setAmount("");
+    setMessage("");
+    setSelectedReward(null);
+    setStep("form");
     onClose();
   }
 
@@ -103,24 +209,27 @@ export default function BackProjectModal({
               position: "relative",
             }}
           >
-            {/* Close */}
-            <motion.button
-              whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-              onClick={handleClose}
-              style={{
-                position: "absolute", top: 20, right: 20,
-                width: 34, height: 34, borderRadius: "50%",
-                background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.06)",
-                border: `1px solid ${bdr}`, color: muted,
-                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-              }}
-            >
-              <X size={15} />
-            </motion.button>
+            {/* Close button */}
+            {!loading && (
+              <motion.button
+                whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                onClick={handleClose}
+                style={{
+                  position: "absolute", top: 20, right: 20,
+                  width: 34, height: 34, borderRadius: "50%",
+                  background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.06)",
+                  border: `1px solid ${bdr}`, color: muted,
+                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                }}
+              >
+                <X size={15} />
+              </motion.button>
+            )}
 
             {/* ── Goal reached ── */}
             {goalReached ? (
-              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} style={{ textAlign: "center", padding: "28px 0" }}>
+              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+                style={{ textAlign: "center", padding: "28px 0" }}>
                 <div style={{ width: 72, height: 72, borderRadius: 22, background: "linear-gradient(135deg,rgba(255,180,0,0.2),rgba(255,107,0,0.2))", border: "1px solid rgba(255,180,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
                   <Trophy size={32} color="#ffb300" />
                 </div>
@@ -128,14 +237,29 @@ export default function BackProjectModal({
                 <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: muted, lineHeight: 1.7, margin: "0 0 28px" }}>
                   <strong style={{ color: txt }}>{projectTitle}</strong> has already hit its funding goal. No more contributions needed. 🎉
                 </p>
-                <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={handleClose} style={{ padding: "13px 32px", borderRadius: 12, background: `linear-gradient(135deg,${accent},#ff9900)`, color: "#fff", border: "none", fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 15, cursor: "pointer", boxShadow: "0 4px 18px rgba(255,92,0,0.35)" }}>
+                <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={handleClose}
+                  style={{ padding: "13px 32px", borderRadius: 12, background: `linear-gradient(135deg,${accent},#ff9900)`, color: "#fff", border: "none", fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 15, cursor: "pointer" }}>
                   Close
                 </motion.button>
               </motion.div>
 
+            /* ── Processing / Verifying overlay ── */
+            ) : step === "processing" || step === "verifying" ? (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                style={{ textAlign: "center", padding: "48px 0" }}>
+                <Loader2 size={40} color={accent} style={{ animation: "spin 1s linear infinite", margin: "0 auto 20px" }} />
+                <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 18, color: txt, margin: "0 0 8px" }}>
+                  {step === "verifying" ? "Verifying payment…" : "Opening payment gateway…"}
+                </h3>
+                <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: muted }}>
+                  {step === "verifying" ? "Confirming your payment. Please wait." : "A Razorpay window will appear shortly."}
+                </p>
+              </motion.div>
+
             /* ── Success ── */
             ) : done ? (
-              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "28px 0" }}>
+              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                style={{ textAlign: "center", padding: "28px 0" }}>
                 <motion.div
                   initial={{ scale: 0 }} animate={{ scale: 1 }}
                   transition={{ type: "spring", damping: 14, stiffness: 250, delay: 0.1 }}
@@ -144,10 +268,14 @@ export default function BackProjectModal({
                   <CheckCircle size={34} color="#22c55e" />
                 </motion.div>
                 <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 24, color: txt, margin: "0 0 10px" }}>You're a backer!</h2>
-                <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: muted, lineHeight: 1.7, margin: "0 0 28px" }}>
-                  Thank you for backing <strong style={{ color: txt }}>{projectTitle}</strong>. Your support means the world!
+                <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: muted, lineHeight: 1.7, margin: "0 0 4px" }}>
+                  Thank you for backing <strong style={{ color: txt }}>{projectTitle}</strong>.
                 </p>
-                <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={handleClose} style={{ padding: "13px 32px", borderRadius: 12, background: `linear-gradient(135deg,${accent},#ff9900)`, color: "#fff", border: "none", fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 15, cursor: "pointer", boxShadow: "0 4px 18px rgba(255,92,0,0.35)" }}>
+                <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: muted, lineHeight: 1.7, margin: "0 0 28px" }}>
+                  Your payment of <strong style={{ color: txt }}>₹{parseFloat(amount).toLocaleString("en-IN")}</strong> was confirmed.
+                </p>
+                <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={handleClose}
+                  style={{ padding: "13px 32px", borderRadius: 12, background: `linear-gradient(135deg,${accent},#ff9900)`, color: "#fff", border: "none", fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 15, cursor: "pointer", boxShadow: "0 4px 18px rgba(255,92,0,0.35)" }}>
                   Awesome!
                 </motion.button>
               </motion.div>
@@ -189,28 +317,19 @@ export default function BackProjectModal({
                       {rewards.map(r => {
                         const sel = selectedReward === r.id;
                         return (
-                          <motion.button
-                            key={r.id}
+                          <motion.button key={r.id}
                             whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
                             onClick={() => {
                               setSelectedReward(sel ? null : r.id);
                               if (!sel) setAmount(String(Math.min(r.minimumAmount, remaining)));
                             }}
-                            style={{
-                              textAlign: "left", padding: "14px 16px", borderRadius: 14,
-                              border: `1.5px solid ${sel ? accent : bdr}`,
-                              background: sel ? `${accent}0e` : inputBg,
-                              cursor: "pointer", transition: "all 0.18s",
-                              boxShadow: sel ? `0 0 0 3px ${accent}18` : "none",
-                            }}
+                            style={{ textAlign: "left", padding: "14px 16px", borderRadius: 14, border: `1.5px solid ${sel ? accent : bdr}`, background: sel ? `${accent}0e` : inputBg, cursor: "pointer", transition: "all 0.18s", boxShadow: sel ? `0 0 0 3px ${accent}18` : "none" }}
                           >
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: r.description ? 6 : 0 }}>
                               <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 14, color: txt }}>{r.title}</span>
                               <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 14, color: accent, background: `${accent}14`, padding: "3px 10px", borderRadius: 8 }}>₹{r.minimumAmount}+</span>
                             </div>
-                            {r.description && (
-                              <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12.5, color: muted, margin: 0, lineHeight: 1.55 }}>{r.description}</p>
-                            )}
+                            {r.description && <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12.5, color: muted, margin: 0, lineHeight: 1.55 }}>{r.description}</p>}
                           </motion.button>
                         );
                       })}
@@ -218,7 +337,7 @@ export default function BackProjectModal({
                   </div>
                 )}
 
-                {/* Amount */}
+                {/* Amount input */}
                 <div style={{ marginBottom: 16 }}>
                   <label style={{ fontFamily: "DM Mono, monospace", fontSize: 10.5, color: muted, display: "block", marginBottom: 8, letterSpacing: "0.1em", textTransform: "uppercase" }}>
                     Your Pledge Amount
@@ -231,14 +350,7 @@ export default function BackProjectModal({
                       type="number" min={minAmount} max={remaining}
                       value={amount} onChange={e => handleAmountChange(e.target.value)}
                       placeholder={String(minAmount)}
-                      style={{
-                        width: "100%", boxSizing: "border-box",
-                        padding: "14px 16px 14px 38px",
-                        borderRadius: 12, border: `1.5px solid ${bdr}`,
-                        background: inputBg, color: txt,
-                        fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 17,
-                        outline: "none", transition: "border-color 0.2s",
-                      }}
+                      style={{ width: "100%", boxSizing: "border-box", padding: "14px 16px 14px 38px", borderRadius: 12, border: `1.5px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 17, outline: "none", transition: "border-color 0.2s" }}
                       onFocus={e => (e.target.style.borderColor = `${accent}60`)}
                       onBlur={e => (e.target.style.borderColor = bdr)}
                     />
@@ -257,14 +369,7 @@ export default function BackProjectModal({
                   <textarea
                     value={message} onChange={e => setMessage(e.target.value)}
                     maxLength={500} rows={3} placeholder="Share your support…"
-                    style={{
-                      width: "100%", boxSizing: "border-box",
-                      padding: "12px 14px", borderRadius: 12,
-                      border: `1.5px solid ${bdr}`,
-                      background: inputBg, color: txt,
-                      fontFamily: "DM Sans, sans-serif", fontSize: 14,
-                      outline: "none", resize: "vertical", transition: "border-color 0.2s",
-                    }}
+                    style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "DM Sans, sans-serif", fontSize: 14, outline: "none", resize: "vertical", transition: "border-color 0.2s" }}
                     onFocus={e => (e.target.style.borderColor = `${accent}60`)}
                     onBlur={e => (e.target.style.borderColor = bdr)}
                   />
@@ -282,19 +387,12 @@ export default function BackProjectModal({
                   )}
                 </AnimatePresence>
 
-                {/* Submit */}
+                {/* Submit button */}
                 <motion.button
                   whileHover={{ scale: loading ? 1 : 1.02, boxShadow: loading ? "none" : `0 8px 28px ${accent}45` }}
                   whileTap={{ scale: loading ? 1 : 0.97 }}
                   onClick={handleSubmit} disabled={loading}
-                  style={{
-                    width: "100%", padding: "15px", borderRadius: 14,
-                    background: loading ? `${accent}55` : `linear-gradient(135deg,${accent},#ff8c00)`,
-                    border: "none", color: "#fff",
-                    fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 16,
-                    cursor: loading ? "not-allowed" : "pointer",
-                    letterSpacing: "0.01em", transition: "background 0.2s",
-                  }}
+                  style={{ width: "100%", padding: "15px", borderRadius: 14, background: loading ? `${accent}55` : `linear-gradient(135deg,${accent},#ff8c00)`, border: "none", color: "#fff", fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 16, cursor: loading ? "not-allowed" : "pointer", letterSpacing: "0.01em", transition: "background 0.2s" }}
                 >
                   {loading ? (
                     <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
@@ -302,19 +400,27 @@ export default function BackProjectModal({
                       Processing…
                     </span>
                   ) : (
-                    `Back with ₹${amount || "…"}`
+                    `Pay ₹${amount || "…"} via Razorpay`
                   )}
                 </motion.button>
 
-                <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: muted, textAlign: "center", margin: "12px 0 0", lineHeight: 1.5 }}>
-                  Secure contribution · No hidden fees
-                </p>
+                {/* Trust badges */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginTop: 12 }}>
+                  <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: muted }}>🔒 Secured by Razorpay</span>
+                  <span style={{ color: muted, fontSize: 11 }}>·</span>
+                  <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: muted }}>SSL encrypted</span>
+                  <span style={{ color: muted, fontSize: 11 }}>·</span>
+                  <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: muted }}>No hidden fees</span>
+                </div>
               </>
             )}
           </motion.div>
         </motion.div>
       )}
-      <style>{`@keyframes bspin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`
+        @keyframes bspin { to { transform: rotate(360deg) } }
+        @keyframes spin   { to { transform: rotate(360deg) } }
+      `}</style>
     </AnimatePresence>
   );
 }

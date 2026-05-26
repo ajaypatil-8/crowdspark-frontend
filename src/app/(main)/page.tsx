@@ -685,11 +685,11 @@ export default function HomePage() {
 
           <div className="lp-proj-grid">
             {loading ? (
-              [0,1,2,3,4,5].map(i => <Skel key={i} h={290} r={20} />)
+              [0,1,2,3,4,5].map(i => <Skel key={`skel-${i}`} h={290} r={20} />)
             ) : trending.length > 0 ? (
-              trending.map((p, i) => <TrendCard key={p.id} p={p} idx={i + 3} />)
+              trending.map((p, i) => <TrendCard key={`trend-${p.id}`} p={p} idx={i + 3} />)
             ) : (
-              STATIC_PROJECTS.map((s, i) => <TrendCard key={i} idx={i} accent={s.clr} />)
+              STATIC_PROJECTS.map((s, i) => <TrendCard key={`static-${i}`} idx={i} accent={s.clr} />)
             )}
           </div>
         </div>

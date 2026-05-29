@@ -778,3 +778,56 @@ export interface DonationResponse {
   createdAt: string;
   paidAt: string | null;
 }
+
+
+// src/lib/api.ts — paste at the bottom
+
+// ─── Campaign Update types ────────────────────────────────────────────────────
+
+export interface CampaignUpdateResponse {
+  id: number;
+  projectId: number;
+  projectTitle: string;
+  authorId: number;
+  authorUsername: string;
+  authorProfileImage: string | null;
+  title: string;
+  content: string;
+  imageUrl: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface CampaignUpdateRequest {
+  title: string;
+  content: string;
+  imageUrl?: string | null;
+}
+
+// ─── Campaign Update API ──────────────────────────────────────────────────────
+
+export const campaignUpdateApi = {
+  /** Public: get all updates for a project */
+  getUpdates: (projectId: number) =>
+    request<CampaignUpdateResponse[]>(`/api/projects/${projectId}/updates`),
+
+  /** Creator: post a new update */
+  createUpdate: (projectId: number, data: CampaignUpdateRequest) =>
+    request<CampaignUpdateResponse>(`/api/projects/${projectId}/updates`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  /** Creator: edit an existing update */
+  editUpdate: (projectId: number, updateId: number, data: CampaignUpdateRequest) =>
+    request<CampaignUpdateResponse>(`/api/projects/${projectId}/updates/${updateId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  /** Creator: delete an update */
+  deleteUpdate: (projectId: number, updateId: number) =>
+    request<void>(`/api/projects/${projectId}/updates/${updateId}`, {
+      method: "DELETE",
+    }),
+};

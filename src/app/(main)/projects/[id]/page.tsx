@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
-  campaignUpdateApi, exploreApi, isLoggedIn,
+  campaignUpdateApi, exploreApi, isLoggedIn, savedApi,
   type CampaignUpdateResponse, type ProjectFullDetailsResponse, type RewardTierResponse,
 } from "@/lib/api";
 import ProjectGallery from "@/components/ProjectGallery";
@@ -15,12 +15,13 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   ChevronRight, BookOpen, Gift, Bell, Clock, Users,
   Share2, Bookmark, BookmarkCheck, AlertTriangle,
-  TrendingUp, Calendar, ArrowLeft,
+  TrendingUp, Calendar, ArrowLeft, MessageSquare ,
 } from "lucide-react";
+import CommentsTab from "@/components/CommentsTab";
 
 if (typeof window !== "undefined") gsap.registerPlugin(ScrollTrigger);
 
-type ProjectTab = "story" | "rewards" | "updates";
+type ProjectTab = "story" | "rewards" | "updates" | "comments";
 type ProjectDetails = ProjectFullDetailsResponse & { backersCount?: number };
 
 const fmt = (n: number) =>
@@ -168,12 +169,13 @@ export default function ProjectDetailPage() {
   const [loading, setLoading]  = useState(true);
   const [error,   setError]    = useState<string | null>(null);
   const [modal,   setModal]    = useState(false);
-  const [activeTab, setActiveTab] = useState<ProjectTab>("story");
+ const [activeTab, setActiveTab] = useState<ProjectTab>("story");
   const [myUsername, setMyUsername] = useState<string | null>(null);
   const [toast,   setToast]    = useState<string | null>(null);
   const [saved,   setSaved]    = useState(false);
   const [updates, setUpdates] = useState<CampaignUpdateResponse[]>([]);
   const [updatesLoading, setUpdatesLoading] = useState(false);
+  const [myUserId, setMyUserId] = useState<number | null>(null);
 
 
   const mainRef     = useRef<HTMLDivElement>(null);
@@ -193,13 +195,19 @@ export default function ProjectDetailPage() {
         const [proj] = await Promise.all([
           exploreApi.getFullDetails(id),
           loggedIn()
-            ? auth.me().then(u => setMyUsername(u.username)).catch(() => {})
-            : Promise.resolve(),
+  ? auth.me().then(u => {
+      setMyUsername(u.username);
+      setMyUserId (u.id);
+    }).catch(() => {})
+  : Promise.resolve(),
         ]);
         setProject(proj);
         try {
-          const s = JSON.parse(localStorage.getItem("cs_saved_projects") ?? "[]") as number[];
-          setSaved(s.includes(proj.id));
+          if (myUsername) {  // only check if user is logged in
+  savedApi.checkSaved(Number(id))
+    .then(data => setSaved(data.saved))
+    .catch(() => {});
+}
         } catch { /* ignore */ }
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : "Project not found");
@@ -411,6 +419,8 @@ export default function ProjectDetailPage() {
               <TabBtn id="story"   active={activeTab === "story"}   label="Story"   icon={<BookOpen size={14}/>}  onClick={setActiveTab} {...{txt,muted,card}} />
               <TabBtn id="rewards" active={activeTab === "rewards"} label="Rewards" icon={<Gift size={14}/>}      onClick={setActiveTab} {...{txt,muted,card}} />
               <TabBtn id="updates" active={activeTab === "updates"} label="Updates" icon={<Bell size={14}/>}      onClick={setActiveTab} {...{txt,muted,card}} />
+              <TabBtn id ="comments" active={activeTab === "comments"} label="Q&A" icon={< MessageSquare size={14}/>} onClick={setActiveTab} {...{txt,muted,card,card2,bdr}} />
+
             </div>
 
             {/* Tab content */}
@@ -646,6 +656,16 @@ export default function ProjectDetailPage() {
             </AnimatePresence>
           </div>
 
+         {activeTab === "comments" && (
+  <CommentsTab
+    projectId={project.id}
+    creatorId={project.creator.id}
+    isDark={isDark}
+    myUserId={myUserId}
+  />
+)}
+
+
           {/* ═══ RIGHT SIDEBAR ═══ */}
           <div className="sidebar-card" style={{ position: "sticky", top: 96, display: "flex", flexDirection: "column", gap: 14 }}>
 
@@ -752,16 +772,12 @@ export default function ProjectDetailPage() {
                   icon: saved ? <BookmarkCheck size={14} color={accent} /> : <Bookmark size={14} />,
                   action: () => {
                     try {
-                      const key = "cs_saved_projects";
-                      const list = JSON.parse(localStorage.getItem(key) ?? "[]") as number[];
-                      if (saved) {
-                        localStorage.setItem(key, JSON.stringify(list.filter(x => x !== project!.id)));
-                        setSaved(false); showToast("Removed from saved");
-                      } else {
-                        if (!list.includes(project!.id)) list.push(project!.id);
-                        localStorage.setItem(key, JSON.stringify(list));
-                        setSaved(true); showToast("Project saved!");
-                      }
+                      savedApi.toggle(project.id)
+                        .then(data => {
+                          setSaved(data.saved);
+                          showToast(data.saved ? "Project saved! ✓" : "Removed from saved");
+                        })
+                        .catch(() => showToast("Please sign in to save projects"));
                     } catch { showToast("Could not save"); }
                   },
                 },

@@ -1,9 +1,12 @@
 "use client";
+// src/app/dashboard/saved/page.tsx
+// FULL REPLACEMENT — now uses backend API instead of localStorage
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
-import { projectApi, ProjectFeedResponse } from "@/lib/api";
+import { savedApi, type ProjectFeedResponse } from "@/lib/api";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const IcBookmark = ({ s = 16, filled = false }: { s?: number; filled?: boolean }) => (
@@ -32,46 +35,50 @@ const IcClock = ({ s = 12 }: { s?: number }) => (
   </svg>
 );
 
-const LS_KEY = "cs_saved_projects";
-
-function getSavedIds(): number[] {
-  try { return JSON.parse(localStorage.getItem(LS_KEY) ?? "[]") as number[]; }
-  catch { return []; }
-}
-function removeSaved(id: number) {
-  const list = getSavedIds().filter(x => x !== id);
-  localStorage.setItem(LS_KEY, JSON.stringify(list));
-}
 function fmt(n: number) {
   if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
-  if (n >= 1000) return `₹${(n / 1000).toFixed(1)}K`;
+  if (n >= 1000)   return `₹${(n / 1000).toFixed(1)}K`;
   return `₹${n}`;
 }
 
-// ─── Premium Project Card ─────────────────────────────────────────────────────
-function ProjectCard({ project, onRemove, isDark, index }: { project: ProjectFeedResponse; onRemove: (id: number) => void; isDark: boolean; index: number }) {
-  const [hovered, setHovered] = useState(false);
+// ─── Project Card ─────────────────────────────────────────────────────────────
+function ProjectCard({
+  project, onRemove, isDark, index,
+}: {
+  project: ProjectFeedResponse;
+  onRemove: (id: number) => void;
+  isDark: boolean;
+  index: number;
+}) {
+  const [hovered,  setHovered]  = useState(false);
   const [removing, setRemoving] = useState(false);
-  const bdr = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
-  const pct = Math.min(100, Math.round((project.currentAmount / project.goalAmount) * 100));
+  const bdr     = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
+  const txt     = isDark ? "#f0f0f0" : "#0a0a0a";
+  const muted   = isDark ? "rgba(255,255,255,0.42)" : "rgba(0,0,0,0.42)";
+  const accent  = "#ff5c00";
+  const pct     = Math.min(100, Math.round((project.currentAmount / project.goalAmount) * 100));
   const urgency = project.daysLeft <= 5;
 
   const handleRemove = () => {
     setRemoving(true);
+    // Optimistic UI: remove card after 300ms fade
     setTimeout(() => onRemove(project.id), 300);
+    // Call API (fire-and-forget — if it fails the next page load will re-sync)
+    savedApi.unsave(project.id).catch(() => {});
   };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: removing ? 0 : 1, y: removing ? -10 : 0, scale: removing ? 0.95 : 1 }}
-      transition={{ duration: removing ? 0.25 : 0.4, delay: removing ? 0 : index * 0.07, ease: "easeOut" }}
+      transition={{ duration: removing ? 0.25 : 0.4, delay: removing ? 0 : index * 0.07 }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
         background: isDark ? "rgba(255,255,255,0.03)" : "#ffffff",
         border: `1px solid ${hovered ? (isDark ? "rgba(255,136,0,0.3)" : "rgba(255,107,0,0.2)") : bdr}`,
-        borderRadius: 20, overflow: "hidden", display: "flex", flexDirection: "column",
+        borderRadius: 20, overflow: "hidden",
+        display: "flex", flexDirection: "column",
         boxShadow: hovered
           ? (isDark ? "0 8px 40px rgba(255,107,0,0.12)" : "0 8px 40px rgba(0,0,0,0.12)")
           : (isDark ? "none" : "0 2px 16px rgba(0,0,0,0.05)"),
@@ -81,242 +88,273 @@ function ProjectCard({ project, onRemove, isDark, index }: { project: ProjectFee
       }}
     >
       {/* Thumbnail */}
-      <Link href={`/projects/${project.id}`} style={{ display: "block", position: "relative", paddingTop: "58%", background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)", flexShrink: 0, overflow: "hidden" }}>
+      <div style={{ position: "relative", height: 180, overflow: "hidden",
+        background: isDark ? "#1a1a1a" : "#f0f0f0" }}>
         {project.thumbnailUrl ? (
-          <img src={project.thumbnailUrl} alt={project.title} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.4s ease", transform: hovered ? "scale(1.04)" : "scale(1)" }} />
+          <img src={project.thumbnailUrl} alt={project.title}
+            style={{ width: "100%", height: "100%", objectFit: "cover",
+              transition: "transform 0.4s ease",
+              transform: hovered ? "scale(1.04)" : "scale(1)" }} />
         ) : (
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36 }}>🎯</div>
-        )}
-        {/* Overlay on hover */}
-        <div style={{ position: "absolute", inset: 0, background: hovered ? "rgba(0,0,0,0.15)" : "transparent", transition: "background 0.25s" }} />
-
-        {/* Category badge */}
-        <div style={{ position: "absolute", top: 12, left: 12, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(8px)", borderRadius: 8, padding: "3px 10px", fontSize: 10.5, color: "#fff", fontFamily: "DM Sans, sans-serif", fontWeight: 600, border: "1px solid rgba(255,255,255,0.1)" }}>
-          {project.category}
-        </div>
-
-        {/* Urgency badge */}
-        {urgency && (
-          <div style={{ position: "absolute", top: 12, right: 12, display: "flex", alignItems: "center", gap: 4, background: "rgba(239,68,68,0.85)", backdropFilter: "blur(8px)", borderRadius: 8, padding: "3px 9px", fontSize: 10, color: "#fff", fontFamily: "DM Sans, sans-serif", fontWeight: 700 }}>
-            <IcClock s={10} /> {project.daysLeft}d left
+          <div style={{ width: "100%", height: "100%",
+            background: `linear-gradient(135deg,${accent}22,#ff990022)`,
+            display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <IcBookmark s={40} filled />
           </div>
         )}
-      </Link>
+        {/* Category pill */}
+        {project.category && (
+          <div style={{ position: "absolute", top: 12, left: 12,
+            background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)",
+            borderRadius: 8, padding: "4px 10px" }}>
+            <span style={{ fontFamily: "DM Mono, monospace", fontSize: 10.5,
+              color: "#fff", letterSpacing: "0.06em" }}>
+              {project.category}
+            </span>
+          </div>
+        )}
+        {/* Remove button */}
+        <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+          onClick={e => { e.preventDefault(); handleRemove(); }}
+          style={{ position: "absolute", top: 12, right: 12,
+            width: 32, height: 32, borderRadius: "50%",
+            background: "rgba(239,68,68,0.85)", backdropFilter: "blur(4px)",
+            border: "none", color: "#fff", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            opacity: hovered ? 1 : 0, transition: "opacity 0.2s" }}>
+          <IcTrash s={13} />
+        </motion.button>
+      </div>
 
-      {/* Body */}
-      <div style={{ padding: "18px 20px", flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* Content */}
+      <div style={{ padding: "16px 18px", flex: 1,
+        display: "flex", flexDirection: "column", gap: 10 }}>
         <div>
-          <Link href={`/projects/${project.id}`} style={{ textDecoration: "none" }}>
-            <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 15, color: hovered ? "#ff8800" : "var(--text)", margin: "0 0 6px", letterSpacing: "-0.02em", lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", transition: "color 0.18s" }}>
-              {project.title}
-            </h3>
-          </Link>
-          <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12.5, color: "var(--text-muted)", margin: 0, lineHeight: 1.65, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+          <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700,
+            fontSize: 15, color: txt, margin: "0 0 6px",
+            lineHeight: 1.35,
+            display: "-webkit-box", WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+            {project.title}
+          </h3>
+          <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12.5,
+            color: muted, margin: 0, lineHeight: 1.5,
+            display: "-webkit-box", WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical", overflow: "hidden" }}>
             {project.shortDescription}
           </p>
         </div>
 
         {/* Progress */}
-        <div style={{ marginTop: "auto" }}>
-          <div style={{ height: 5, borderRadius: 4, background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.06)", overflow: "hidden", marginBottom: 8 }}>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${pct}%` }}
-              transition={{ duration: 1.2, ease: "easeOut", delay: index * 0.07 + 0.2 }}
-              style={{ height: "100%", borderRadius: 4, background: pct >= 100 ? "#34d399" : "linear-gradient(90deg,#ff6b00,#ffcc00)" }}
-            />
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: "var(--text-muted)" }}>
-              <strong style={{ color: "var(--text)", fontWeight: 700 }}>{fmt(project.currentAmount)}</strong> of {fmt(project.goalAmount)}
-              <span style={{ marginLeft: 6, padding: "2px 7px", borderRadius: 6, background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)", fontSize: 10.5, fontWeight: 600 }}>{pct}%</span>
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between",
+            alignItems: "center", marginBottom: 6 }}>
+            <span style={{ fontFamily: "DM Sans, sans-serif",
+              fontSize: 12, color: muted }}>
+              {fmt(project.currentAmount)} raised
             </span>
-            {!urgency && (
-              <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: "var(--text-muted)" }}>{project.daysLeft}d left</span>
-            )}
+            <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800,
+              fontSize: 12, color: accent }}>
+              {pct}%
+            </span>
+          </div>
+          <div style={{ height: 4, borderRadius: 2,
+            background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)",
+            overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${pct}%`,
+              background: `linear-gradient(90deg,${accent},#ffb300)`,
+              borderRadius: 2 }} />
           </div>
         </div>
 
-        {/* Actions */}
-        <div style={{ display: "flex", gap: 8 }}>
-          <Link href={`/projects/${project.id}`} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 0", borderRadius: 12, background: "linear-gradient(135deg,#ff6b00,#ffcc00)", color: "#fff", textDecoration: "none", fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 13, position: "relative", overflow: "hidden", boxShadow: hovered ? "0 0 20px rgba(255,100,0,0.3)" : "none", transition: "box-shadow 0.25s" }}>
-            <span style={{ position: "absolute", inset: 0, background: "linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.18) 50%,transparent 70%)", animation: hovered ? "shimmer 1.8s ease-in-out infinite" : "none" }} />
-            View Project <IcArrow s={12} />
+        {/* Meta row */}
+        <div style={{ display: "flex", justifyContent: "space-between",
+          alignItems: "center", marginTop: "auto" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 4,
+            fontFamily: "DM Sans, sans-serif", fontSize: 12,
+            color: urgency ? "#ef4444" : muted }}>
+            <IcClock s={11} />
+            {project.daysLeft <= 0
+              ? "Ended"
+              : urgency
+                ? `${project.daysLeft}d left!`
+                : `${project.daysLeft}d left`}
+          </span>
+          <Link href={`/projects/${project.id}`}
+            style={{ display: "flex", alignItems: "center", gap: 5,
+              fontFamily: "Syne, sans-serif", fontWeight: 700,
+              fontSize: 12.5, color: accent,
+              textDecoration: "none",
+              padding: "5px 12px", borderRadius: 8,
+              background: `${accent}14`,
+              transition: "background 0.15s" }}>
+            View <IcArrow s={11} />
           </Link>
-          <button
-            onClick={handleRemove}
-            title="Remove from saved"
-            style={{ padding: "10px 13px", borderRadius: 12, background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)", border: `1px solid ${bdr}`, color: "var(--text-muted)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.18s" }}
-            onMouseEnter={e => { e.currentTarget.style.background = "rgba(239,68,68,0.1)"; e.currentTarget.style.color = "#ef4444"; e.currentTarget.style.borderColor = "rgba(239,68,68,0.25)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"; e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = bdr; }}
-          >
-            <IcTrash s={14} />
-          </button>
         </div>
       </div>
     </motion.div>
   );
 }
 
-function PageSkeleton() {
-  const { isDark } = useTheme();
-  const b = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)";
-  return (
-    <div style={{ padding: "40px 32px 60px", maxWidth: 1160, margin: "0 auto" }}>
-      <div style={{ marginBottom: 40 }}>
-        <div style={{ width: 140, height: 12, borderRadius: 6, background: b, marginBottom: 12, animation: "svpulse 2s ease-in-out infinite" }} />
-        <div style={{ width: 280, height: 40, borderRadius: 12, background: b, animation: "svpulse 2s ease-in-out infinite" }} />
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(290px,1fr))", gap: 22 }}>
-        {[1,2,3,4,5,6].map(i => (
-          <div key={i} style={{ height: 380, borderRadius: 20, background: b, animation: "svpulse 2s ease-in-out infinite", animationDelay: `${i * 0.1}s` }} />
-        ))}
-      </div>
-      <style>{`@keyframes svpulse{0%,100%{opacity:.35}50%{opacity:.85}}`}</style>
-    </div>
-  );
-}
-
+// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function SavedPage() {
   const { isDark } = useTheme();
-  const [mounted, setMounted] = useState(false);
   const [projects, setProjects] = useState<ProjectFeedResponse[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState<string | null>(null);
+  const [search,   setSearch]   = useState("");
 
+  const txt   = isDark ? "#f0f0f0" : "#0a0a0a";
+  const muted = isDark ? "rgba(255,255,255,0.42)" : "rgba(0,0,0,0.42)";
+  const bdr   = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
+  const accent = "#ff5c00";
+
+  // ── Fetch saved projects from backend ──────────────────────────────────────
   useEffect(() => {
-    setMounted(true);
-    loadSaved();
+    setLoading(true);
+    savedApi.getSaved()
+      .then(setProjects)
+      .catch(e => setError(e?.message ?? "Failed to load saved projects"))
+      .finally(() => setLoading(false));
   }, []);
 
-  async function loadSaved() {
-    setLoading(true);
-    const ids = getSavedIds();
-    if (ids.length === 0) { setProjects([]); setLoading(false); return; }
-    try {
-      const results = await Promise.allSettled(ids.map(id => projectApi.getById(id)));
-      const loaded = results
-        .filter((r): r is PromiseFulfilledResult<ProjectFeedResponse> => r.status === "fulfilled")
-        .map(r => r.value);
-      setProjects(loaded);
-    } catch {
-      setProjects([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   function handleRemove(id: number) {
-    removeSaved(id);
     setProjects(prev => prev.filter(p => p.id !== id));
   }
 
-  if (!mounted || loading) return <PageSkeleton />;
-
-  const bdr = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
-  const txt = isDark ? "#fff" : "#0a0a0a";
-  const muted = isDark ? "rgba(255,255,255,0.42)" : "rgba(0,0,0,0.42)";
+  const filtered = search.trim()
+    ? projects.filter(p =>
+        p.title.toLowerCase().includes(search.toLowerCase()) ||
+        p.shortDescription?.toLowerCase().includes(search.toLowerCase()))
+    : projects;
 
   return (
-    <div style={{ padding: "40px 32px 60px", maxWidth: 1160, margin: "0 auto", position: "relative" }}>
-      <div
-        aria-hidden
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 0,
-          pointerEvents: "none",
-          background: isDark
-            ? "radial-gradient(circle at 12% 15%, rgba(0,245,212,0.08), transparent 33%), radial-gradient(circle at 86% 12%, rgba(255,107,0,0.07), transparent 30%)"
-            : "radial-gradient(circle at 12% 15%, rgba(0,168,130,0.06), transparent 33%), radial-gradient(circle at 86% 12%, rgba(255,107,0,0.05), transparent 30%)",
-        }}
-      />
-      <motion.div
-        aria-hidden
-        animate={{ x: [0, -20, 0], y: [0, 12, 0] }}
-        transition={{ duration: 12.5, repeat: Infinity, ease: "easeInOut" }}
-        style={{
-          position: "absolute",
-          top: 16,
-          left: 20,
-          width: 140,
-          height: 140,
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(0,212,184,0.16) 0%, transparent 70%)",
-          filter: "blur(9px)",
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-      />
-      <div style={{ position: "relative", zIndex: 1 }}>
+    <div style={{ minHeight: "100vh",
+      background: isDark ? "#080808" : "#fafaf8",
+      padding: "32px 24px", maxWidth: 1200, margin: "0 auto" }}>
 
-      {/* ── Header ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        style={{ marginBottom: 40, display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 20 }}
-      >
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(0,245,212,0.1)", border: "1px solid rgba(0,245,212,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#00d4b8" }}>
-              <IcBookmark s={14} filled />
-            </div>
-            <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11.5, color: muted, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600 }}>Collection</span>
+      {/* Header */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 12,
+            background: `${accent}18`, border: `1px solid ${accent}30`,
+            display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <IcBookmark s={20} filled />
           </div>
-          <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(26px,3vw,38px)", color: txt, letterSpacing: "-0.03em", margin: 0, lineHeight: 1.1 }}>
-            Saved Campaigns
-            {projects.length > 0 && (
-              <span style={{ fontSize: 18, fontWeight: 600, color: muted, marginLeft: 14 }}>({projects.length})</span>
-            )}
+          <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 900,
+            fontSize: 26, color: txt, margin: 0 }}>
+            Saved Projects
           </h1>
         </div>
-        <Link href="/explore" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 12, background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)", border: `1px solid ${bdr}`, color: txt, textDecoration: "none", fontFamily: "DM Sans, sans-serif", fontWeight: 600, fontSize: 13, transition: "all 0.18s" }}>
-          <IcSearch s={13} /> Browse campaigns
-        </Link>
-      </motion.div>
+        <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14,
+          color: muted, margin: 0, paddingLeft: 52 }}>
+          {loading ? "Loading…"
+            : `${projects.length} project${projects.length !== 1 ? "s" : ""} saved`}
+        </p>
+      </div>
 
-      {/* ── Empty state ── */}
-      {projects.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          style={{ borderRadius: 24, padding: "80px 40px", textAlign: "center", position: "relative", overflow: "hidden", background: isDark ? "rgba(255,255,255,0.025)" : "#ffffff", border: `1px solid ${bdr}`, boxShadow: isDark ? "none" : "0 4px 40px rgba(0,0,0,0.06)" }}
-        >
-          <div style={{ position: "absolute", top: -100, left: "50%", transform: "translateX(-50%)", width: 400, height: 400, borderRadius: "50%", background: `radial-gradient(circle, rgba(0,212,184,0.08) 0%, transparent 70%)`, pointerEvents: "none" }} />
-          <div style={{ position: "absolute", bottom: -60, right: -60, width: 220, height: 220, borderRadius: "50%", background: "rgba(255,107,0,0.05)", filter: "blur(60px)", pointerEvents: "none" }} />
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            style={{ width: 80, height: 80, borderRadius: 24, margin: "0 auto 24px", background: "rgba(0,212,184,0.08)", border: "1px solid rgba(0,212,184,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#00d4b8" }}
-          >
-            <IcBookmark s={34} />
-          </motion.div>
-          <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 26, color: txt, margin: "0 0 12px", letterSpacing: "-0.02em" }}>Nothing saved yet</h2>
-          <p style={{ fontSize: 14.5, color: muted, fontFamily: "DM Sans, sans-serif", margin: "0 auto 36px", maxWidth: 400, lineHeight: 1.8 }}>
-            Hit the bookmark icon on any campaign to save it here. Revisit and back the ideas that excite you most.
+      {/* Search */}
+      {!loading && projects.length > 0 && (
+        <div style={{ position: "relative", marginBottom: 28, maxWidth: 400 }}>
+          <div style={{ position: "absolute", left: 14, top: "50%",
+            transform: "translateY(-50%)" }}>
+            <IcSearch s={14} />
+          </div>
+          <input
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search saved projects…"
+            style={{ width: "100%", boxSizing: "border-box",
+              padding: "11px 14px 11px 38px", borderRadius: 12,
+              border: `1.5px solid ${bdr}`,
+              background: isDark ? "rgba(255,255,255,0.04)" : "#fff",
+              color: txt, fontFamily: "DM Sans, sans-serif",
+              fontSize: 14, outline: "none" }}
+          />
+        </div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <div style={{ padding: "16px 20px", borderRadius: 14,
+          background: "rgba(239,68,68,0.07)",
+          border: "1px solid rgba(239,68,68,0.2)",
+          fontFamily: "DM Sans, sans-serif", fontSize: 14,
+          color: "#ef4444", marginBottom: 24 }}>
+          {error}
+        </div>
+      )}
+
+      {/* Loading skeletons */}
+      {loading && (
+        <div style={{ display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(280px,1fr))",
+          gap: 20 }}>
+          {[0,1,2,3].map(i => (
+            <div key={i} style={{ borderRadius: 20, overflow: "hidden",
+              border: `1px solid ${bdr}`,
+              animation: "pulse 1.5s ease-in-out infinite" }}>
+              <div style={{ height: 180,
+                background: isDark ? "rgba(255,255,255,0.04)" : "#f0f0f0" }} />
+              <div style={{ padding: 18 }}>
+                <div style={{ height: 14, width: "75%", borderRadius: 6, marginBottom: 10,
+                  background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }} />
+                <div style={{ height: 10, width: "90%", borderRadius: 6, marginBottom: 6,
+                  background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)" }} />
+                <div style={{ height: 10, width: "60%", borderRadius: 6,
+                  background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)" }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!loading && !error && filtered.length === 0 && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          style={{ textAlign: "center", padding: "64px 32px",
+            borderRadius: 24, border: `1.5px dashed ${bdr}` }}>
+          <div style={{ width: 72, height: 72, borderRadius: 22,
+            background: `${accent}12`, border: `1px solid ${accent}22`,
+            display: "flex", alignItems: "center",
+            justifyContent: "center", margin: "0 auto 20px" }}>
+            <IcBookmark s={32} />
+          </div>
+          <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 900,
+            fontSize: 22, color: txt, margin: "0 0 10px" }}>
+            {search ? "No results found" : "Nothing saved yet"}
+          </h2>
+          <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14,
+            color: muted, margin: "0 0 28px", lineHeight: 1.7 }}>
+            {search
+              ? `No saved projects match "${search}"`
+              : "Browse campaigns and tap the bookmark icon to save projects you're interested in."}
           </p>
-          <Link href="/explore" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 32px", borderRadius: 14, background: "linear-gradient(135deg,#ff6b00,#ffcc00)", color: "#fff", textDecoration: "none", fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 14, boxShadow: "0 0 30px rgba(255,100,0,0.3)", position: "relative", overflow: "hidden" }}>
-            <span style={{ position: "absolute", inset: 0, background: "linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.18) 50%,transparent 70%)", animation: "shimmer 2.4s ease-in-out infinite" }} />
-            Browse campaigns <IcArrow s={14} />
+          <Link href="/explore"
+            style={{ display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "12px 28px", borderRadius: 12,
+              background: `linear-gradient(135deg,${accent},#ff9900)`,
+              color: "#fff", fontFamily: "Syne, sans-serif",
+              fontWeight: 700, fontSize: 14, textDecoration: "none" }}>
+            Explore Campaigns <IcArrow s={13} />
           </Link>
         </motion.div>
-      ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(290px,1fr))", gap: 22 }}>
+      )}
+
+      {/* Grid */}
+      {!loading && filtered.length > 0 && (
+        <div style={{ display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(280px,1fr))",
+          gap: 20 }}>
           <AnimatePresence>
-            {projects.map((p, i) => (
-              <ProjectCard key={p.id} project={p} onRemove={handleRemove} isDark={isDark} index={i} />
+            {filtered.map((p, i) => (
+              <ProjectCard key={p.id} project={p} onRemove={handleRemove}
+                isDark={isDark} index={i} />
             ))}
           </AnimatePresence>
         </div>
       )}
 
-      <style>{`
-        @keyframes shimmer { 0%{transform:translateX(-100%)} 60%{transform:translateX(200%)} 100%{transform:translateX(200%)} }
-        @keyframes svpulse { 0%,100%{opacity:.35} 50%{opacity:.85} }
-      `}</style>
-      </div>
+      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
     </div>
   );
 }

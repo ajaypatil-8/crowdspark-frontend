@@ -924,3 +924,83 @@ export const refundApi = {
     request<RefundResponse[]>("/api/backer/refunds"),
 };
  
+// ─── Comment types ────────────────────────────────────────────────────────────
+
+export interface ProjectCommentResponse {
+  id: number;
+  projectId: number;
+  authorId: number;
+  authorUsername: string;
+  authorProfileImage: string | null;
+  authorIsCreator: boolean;
+  parentCommentId: number | null;
+  content: string;
+  deleted: boolean;
+  replies: ProjectCommentResponse[];
+  replyCount: number;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface ProjectCommentRequest {
+  content: string;
+  parentCommentId?: number | null;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;        // current page
+  size: number;
+  last: boolean;
+}
+
+// ─── Comments API ─────────────────────────────────────────────────────────────
+
+export const commentApi = {
+  /** Public: get paginated top-level comments with replies */
+  getComments: (projectId: number, page = 0, size = 20) =>
+    request<PageResponse<ProjectCommentResponse>>(
+      `/api/projects/${projectId}/comments?page=${page}&size=${size}`
+    ),
+
+  /** Authenticated: post a comment or reply */
+  postComment: (projectId: number, data: ProjectCommentRequest) =>
+    request<ProjectCommentResponse>(`/api/projects/${projectId}/comments`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  /** Authenticated: delete own comment (or creator deletes any) */
+  deleteComment: (projectId: number, commentId: number) =>
+    request<void>(`/api/projects/${projectId}/comments/${commentId}`, {
+      method: "DELETE",
+    }),
+};
+
+// ─── Saved Projects API ───────────────────────────────────────────────────────
+
+export const savedApi = {
+  /** Get all saved projects for the logged-in user */
+  getSaved: () =>
+    request<ProjectFeedResponse[]>("/api/users/saved"),
+
+  /** Check if a project is saved */
+  checkSaved: (projectId: number) =>
+    request<{ saved: boolean }>(`/api/users/saved/${projectId}/check`),
+
+  /** Save a project */
+  save: (projectId: number) =>
+    request<void>(`/api/users/saved/${projectId}`, { method: "POST" }),
+
+  /** Unsave a project */
+  unsave: (projectId: number) =>
+    request<void>(`/api/users/saved/${projectId}`, { method: "DELETE" }),
+
+  /** Toggle save state — returns { saved: boolean } */
+  toggle: (projectId: number) =>
+    request<{ saved: boolean }>(`/api/users/saved/${projectId}/toggle`, {
+      method: "PUT",
+    }),
+};

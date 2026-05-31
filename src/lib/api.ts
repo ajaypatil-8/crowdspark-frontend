@@ -831,3 +831,96 @@ export const campaignUpdateApi = {
       method: "DELETE",
     }),
 };
+
+
+export interface PayoutResponse {
+  id: number;
+  projectId: number;
+  projectTitle: string;
+  creatorId: number;
+  creatorUsername: string;
+  creatorUpiId: string | null;
+  grossAmount: number;
+  platformFeePercent: number;
+  platformFeeAmount: number;
+  netAmount: number;
+  status: "INITIATED" | "PROCESSING" | "COMPLETED" | "FAILED";
+  payoutMode: string;
+  razorpayPayoutId: string | null;
+  failureReason: string | null;
+  initiatedByUsername: string | null;
+  initiatedAt: string;
+  completedAt: string | null;
+}
+ 
+// ─── Payout API ───────────────────────────────────────────────────────────────
+ 
+export const payoutApi = {
+  /**
+   * POST /admin/projects/{id}/payout
+   * Admin initiates payout for a FUNDED project.
+   */
+  initiate: (projectId: number) =>
+    request<PayoutResponse>(`/admin/projects/${projectId}/payout`, {
+      method: "POST",
+    }),
+ 
+  /**
+   * GET /admin/payouts
+   * List all payouts (admin overview).
+   */
+  getAll: () =>
+    request<PayoutResponse[]>("/admin/payouts"),
+ 
+  /**
+   * GET /admin/projects/{id}/payout
+   * Get payout status for a specific project.
+   */
+  getByProject: (projectId: number) =>
+    request<PayoutResponse>(`/admin/projects/${projectId}/payout`),
+};
+ 
+// ─── Refund types ─────────────────────────────────────────────────────────────
+ 
+export interface RefundResponse {
+  id: number;
+  donationId: number;
+  projectId: number;
+  projectTitle: string;
+  backerId: number;
+  backerUsername: string;
+  amount: number;
+  status: "INITIATED" | "COMPLETED" | "FAILED";
+  razorpayRefundId: string | null;
+  failureReason: string | null;
+  initiatedAt: string;
+  completedAt: string | null;
+}
+ 
+// ─── Refund API ───────────────────────────────────────────────────────────────
+ 
+export const refundApi = {
+  /**
+   * GET /admin/projects/{id}/refunds
+   * List all refunds for a project (admin view).
+   */
+  getByProject: (projectId: number) =>
+    request<RefundResponse[]>(`/admin/projects/${projectId}/refunds`),
+ 
+  /**
+   * POST /admin/projects/{id}/refunds/retry
+   * Retry all failed/pending refunds for a FAILED project.
+   */
+  retry: (projectId: number) =>
+    request<void>(`/admin/projects/${projectId}/refunds/retry`, {
+      method: "POST",
+    }),
+ 
+  /**
+   * GET /api/backer/refunds
+   * Backer sees their own refunds.
+   */
+  getMyRefunds: () =>
+    request<RefundResponse[]>("/api/backer/refunds"),
+};
+ 

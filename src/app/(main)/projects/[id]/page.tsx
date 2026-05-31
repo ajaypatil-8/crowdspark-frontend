@@ -1,12 +1,12 @@
 "use client";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, type CSSProperties, type ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
-  exploreApi, isLoggedIn,
-  type ProjectFullDetailsResponse, type RewardTierResponse,
+  campaignUpdateApi, exploreApi, isLoggedIn,
+  type CampaignUpdateResponse, type ProjectFullDetailsResponse, type RewardTierResponse,
 } from "@/lib/api";
 import ProjectGallery from "@/components/ProjectGallery";
 import BackProjectModal from "@/components/BackProjectModal";
@@ -19,6 +19,9 @@ import {
 } from "lucide-react";
 
 if (typeof window !== "undefined") gsap.registerPlugin(ScrollTrigger);
+
+type ProjectTab = "story" | "rewards" | "updates";
+type ProjectDetails = ProjectFullDetailsResponse & { backersCount?: number };
 
 const fmt = (n: number) =>
   n >= 100000 ? `₹${(n / 100000).toFixed(1)}L`
@@ -72,7 +75,25 @@ function AmbientCanvas({ isDark }: { isDark: boolean }) {
 }
 
 // ── Tab button ───────────────────────────────────────────────────────────────
-function TabBtn({ id, active, label, icon, onClick, txt, muted, card2, bdr, card }: any) {
+function TabBtn({
+  id,
+  active,
+  label,
+  icon,
+  onClick,
+  txt,
+  muted,
+  card,
+}: {
+  id: ProjectTab;
+  active: boolean;
+  label: string;
+  icon: ReactNode;
+  onClick: (id: ProjectTab) => void;
+  txt: string;
+  muted: string;
+  card: string;
+}) {
   return (
     <motion.button
       whileTap={{ scale: 0.96 }}
@@ -92,30 +113,44 @@ function TabBtn({ id, active, label, icon, onClick, txt, muted, card2, bdr, card
   );
 }
 
-// ── Skeleton loader ──────────────────────────────────────────────────────────
-function PageSkeleton({ isDark }: { isDark: boolean }) {
-  const bdr = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
-  const S = ({ w="100%", h=14, mb=8, style={} }: any) => (
+function SkeletonBlock({
+  isDark,
+  w = "100%",
+  h = 14,
+  mb = 8,
+  style,
+}: {
+  isDark: boolean;
+  w?: string | number;
+  h?: number;
+  mb?: number;
+  style?: CSSProperties;
+}) {
+  return (
     <motion.div
       animate={{ opacity: [0.4, 0.8, 0.4] }}
       transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
       style={{ height: h, width: w, borderRadius: 6, background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)", marginBottom: mb, ...style }}
     />
   );
+}
+
+// ── Skeleton loader ──────────────────────────────────────────────────────────
+function PageSkeleton({ isDark }: { isDark: boolean }) {
   return (
     <div style={{ minHeight: "100vh", background: isDark ? "#080808" : "#f9f9f7", paddingTop: 88 }}>
       <AmbientCanvas isDark={isDark} />
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 24px", position: "relative", zIndex: 1, display: "grid", gridTemplateColumns: "1fr clamp(300px,30%,370px)", gap: 40 }}>
         <div>
-          <S h={12} w="30%" mb={24} />
-          <S h={56} mb={12} />
-          <S h={56} w="70%" mb={20} />
-          <S h={18} mb={8} />
-          <S h={18} w="80%" mb={32} />
-          <S h={300} mb={0} style={{ borderRadius: 20 }} />
+          <SkeletonBlock isDark={isDark} h={12} w="30%" mb={24} />
+          <SkeletonBlock isDark={isDark} h={56} mb={12} />
+          <SkeletonBlock isDark={isDark} h={56} w="70%" mb={20} />
+          <SkeletonBlock isDark={isDark} h={18} mb={8} />
+          <SkeletonBlock isDark={isDark} h={18} w="80%" mb={32} />
+          <SkeletonBlock isDark={isDark} h={300} mb={0} style={{ borderRadius: 20 }} />
         </div>
         <div>
-          <S h={320} style={{ borderRadius: 22 }} />
+          <SkeletonBlock isDark={isDark} h={320} style={{ borderRadius: 22 }} />
         </div>
       </div>
     </div>
@@ -129,15 +164,17 @@ export default function ProjectDetailPage() {
   const id      = Number(params.id);
   const { isDark } = useTheme();
 
-  const [project, setProject]  = useState<ProjectFullDetailsResponse | null>(null);
+  const [project, setProject]  = useState<ProjectDetails | null>(null);
   const [loading, setLoading]  = useState(true);
   const [error,   setError]    = useState<string | null>(null);
   const [modal,   setModal]    = useState(false);
-  const [activeTab, setActiveTab] = useState<"story" | "rewards" | "updates">("story");
+  const [activeTab, setActiveTab] = useState<ProjectTab>("story");
   const [myUsername, setMyUsername] = useState<string | null>(null);
   const [toast,   setToast]    = useState<string | null>(null);
   const [saved,   setSaved]    = useState(false);
-  const [faqOpen, setFaqOpen]  = useState<number | null>(null);
+  const [updates, setUpdates] = useState<CampaignUpdateResponse[]>([]);
+  const [updatesLoading, setUpdatesLoading] = useState(false);
+
 
   const mainRef     = useRef<HTMLDivElement>(null);
   const toastTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -164,11 +201,21 @@ export default function ProjectDetailPage() {
           const s = JSON.parse(localStorage.getItem("cs_saved_projects") ?? "[]") as number[];
           setSaved(s.includes(proj.id));
         } catch { /* ignore */ }
-      } catch (e: any) {
-        setError(e.message ?? "Project not found");
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : "Project not found");
       } finally { setLoading(false); }
     })();
   }, [id]);
+
+  useEffect(() => {
+    if (activeTab === "updates" && project) {
+      setUpdatesLoading(true);
+      campaignUpdateApi.getUpdates(project.id)
+        .then(setUpdates)
+        .catch(() => setUpdates([]))
+        .finally(() => setUpdatesLoading(false));
+    }
+  }, [activeTab, project]);
 
   useEffect(() => {
     if (!project) return;
@@ -224,7 +271,7 @@ export default function ProjectDetailPage() {
   const pct     = Math.min(project.fundedPercentage ?? 0, 100);
   const raised  = fmt(project.currentAmount ?? 0);
   const goal    = fmt(project.goalAmount ?? 0);
-  const rewards: RewardTierResponse[] = (project as any).rewards ?? [];
+  const rewards: RewardTierResponse[] = project.rewards ?? [];
   const isOwner = !!(myUsername && project.creator?.username === myUsername);
 
   return (
@@ -348,7 +395,7 @@ export default function ProjectDetailPage() {
             <div className="reveal" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 32 }}>
               {[
                 { icon: <TrendingUp size={15} color={accent} />, label: "Funded", value: `${pct}%` },
-                { icon: <Users size={15} color="#00d4b8" />, label: "Backers", value: (project as any).backersCount?.toLocaleString("en-IN") ?? "—" },
+                { icon: <Users size={15} color="#00d4b8" />, label: "Backers", value: project.backersCount?.toLocaleString("en-IN") ?? "—" },
                 { icon: <Calendar size={15} color="#818cf8" />, label: "Days Left", value: String(project.daysLeft ?? 0), color: daysColor(project.daysLeft) },
               ].map(s => (
                 <div key={s.label} style={{ padding: "16px", borderRadius: 16, background: card, border: `1px solid ${bdr}`, textAlign: "center" }}>
@@ -361,9 +408,9 @@ export default function ProjectDetailPage() {
 
             {/* Tab bar */}
             <div className="reveal" style={{ display: "flex", gap: 4, marginBottom: 26, background: card2, borderRadius: 16, padding: 5, border: `1px solid ${bdr}` }}>
-              <TabBtn id="story"   active={activeTab === "story"}   label="Story"   icon={<BookOpen size={14}/>}  onClick={setActiveTab} {...{txt,muted,card,card2,bdr}} />
-              <TabBtn id="rewards" active={activeTab === "rewards"} label="Rewards" icon={<Gift size={14}/>}      onClick={setActiveTab} {...{txt,muted,card,card2,bdr}} />
-              <TabBtn id="updates" active={activeTab === "updates"} label="Updates" icon={<Bell size={14}/>}      onClick={setActiveTab} {...{txt,muted,card,card2,bdr}} />
+              <TabBtn id="story"   active={activeTab === "story"}   label="Story"   icon={<BookOpen size={14}/>}  onClick={setActiveTab} {...{txt,muted,card}} />
+              <TabBtn id="rewards" active={activeTab === "rewards"} label="Rewards" icon={<Gift size={14}/>}      onClick={setActiveTab} {...{txt,muted,card}} />
+              <TabBtn id="updates" active={activeTab === "updates"} label="Updates" icon={<Bell size={14}/>}      onClick={setActiveTab} {...{txt,muted,card}} />
             </div>
 
             {/* Tab content */}
@@ -463,15 +510,138 @@ export default function ProjectDetailPage() {
                 )}
 
                 {/* ── Updates ── */}
-                {activeTab === "updates" && (
-                  <div style={{ padding: "48px 32px", borderRadius: 22, background: card, border: `1px solid ${bdr}`, textAlign: "center" }}>
-                    <div style={{ width: 64, height: 64, borderRadius: 18, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.22)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-                      <Bell size={26} color="#818cf8" />
-                    </div>
-                    <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 17, color: txt, margin: "0 0 8px" }}>No updates yet</p>
-                    <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13.5, color: muted, margin: 0, lineHeight: 1.7 }}>Check back later for campaign news and announcements.</p>
-                  </div>
-                )}
+         {activeTab === "updates" && (
+  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    {updatesLoading ? (
+      // Skeleton
+      [0,1,2].map(i => (
+        <div key={`uskel-${i}`} style={{
+          padding: "24px", borderRadius: 18,
+          background: card, border: `1px solid ${bdr}`,
+          animation: "pulse 1.5s ease-in-out infinite"
+        }}>
+          <div style={{ height: 16, width: "40%", borderRadius: 8,
+            background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+            marginBottom: 12 }} />
+          <div style={{ height: 12, width: "90%", borderRadius: 8,
+            background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
+            marginBottom: 8 }} />
+          <div style={{ height: 12, width: "75%", borderRadius: 8,
+            background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)" }} />
+        </div>
+      ))
+    ) : updates.length === 0 ? (
+      // Empty state
+      <div style={{
+        padding: "48px 32px", borderRadius: 22,
+        background: card, border: `1px solid ${bdr}`,
+        textAlign: "center"
+      }}>
+        <div style={{
+          width: 64, height: 64, borderRadius: 18,
+          background: "rgba(99,102,241,0.1)",
+          border: "1px solid rgba(99,102,241,0.22)",
+          display: "flex", alignItems: "center",
+          justifyContent: "center", margin: "0 auto 16px"
+        }}>
+          <Bell size={26} color="#818cf8" />
+        </div>
+        <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700,
+          fontSize: 17, color: txt, margin: "0 0 8px" }}>
+          No updates yet
+        </p>
+        <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13.5,
+          color: muted, margin: 0, lineHeight: 1.7 }}>
+          The creator hasn&apos;t posted any updates yet. Check back later!
+        </p>
+      </div>
+    ) : (
+      // Update cards
+      updates.map((u, i) => (
+        <motion.div
+          key={u.id}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.06 }}
+          style={{
+            padding: "24px 28px", borderRadius: 20,
+            background: card, border: `1px solid ${bdr}`,
+          }}
+        >
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "center",
+            gap: 10, marginBottom: 14 }}>
+            {/* Avatar */}
+            <div style={{
+              width: 38, height: 38, borderRadius: "50%",
+              background: "linear-gradient(135deg,#ff5c00,#ff9900)",
+              display: "flex", alignItems: "center",
+              justifyContent: "center", flexShrink: 0,
+              overflow: "hidden"
+            }}>
+              {u.authorProfileImage ? (
+                <img src={u.authorProfileImage} alt={u.authorUsername}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <span style={{ fontFamily: "Syne, sans-serif",
+                  fontWeight: 800, fontSize: 14, color: "#fff" }}>
+                  {u.authorUsername?.[0]?.toUpperCase()}
+                </span>
+              )}
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700,
+                fontSize: 13, color: txt, margin: 0 }}>
+                {u.authorUsername}
+              </p>
+              <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11.5,
+                color: muted, margin: 0 }}>
+                {new Date(u.createdAt).toLocaleDateString("en-IN", {
+                  day: "numeric", month: "long", year: "numeric"
+                })}
+                {u.updatedAt && u.updatedAt !== u.createdAt && " (edited)"}
+              </p>
+            </div>
+            {/* Update number badge */}
+            <span style={{
+              fontFamily: "DM Mono, monospace", fontSize: 11,
+              color: muted, background: isDark
+                ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
+              padding: "3px 9px", borderRadius: 8
+            }}>
+              Update #{updates.length - i}
+            </span>
+          </div>
+
+          {/* Title */}
+          <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800,
+            fontSize: 17, color: txt, margin: "0 0 10px", lineHeight: 1.3 }}>
+            {u.title}
+          </h3>
+
+          {/* Image */}
+          {u.imageUrl && (
+            <div style={{ borderRadius: 14, overflow: "hidden",
+              marginBottom: 14, maxHeight: 320 }}>
+              <img src={u.imageUrl} alt={u.title}
+                style={{ width: "100%", objectFit: "cover",
+                  maxHeight: 320, display: "block" }} />
+            </div>
+          )}
+
+          {/* Content */}
+          <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14.5,
+            color: muted, margin: 0, lineHeight: 1.75,
+            whiteSpace: "pre-wrap" }}>
+            {u.content}
+          </p>
+        </motion.div>
+      ))
+    )}
+  </div>
+)}
+
+
               </motion.div>
             </AnimatePresence>
           </div>

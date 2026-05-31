@@ -57,11 +57,14 @@ const STATUS_CONFIG: Record<StatusLevel, { label: string; color: string; bg: str
   maintenance:   { label: "Maintenance",         color: "#60a5fa", bg: "rgba(96,165,250,0.1)",  dot: "#60a5fa" },
 };
 
+const formatStatusTime = () =>
+  new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "long", timeStyle: "short" });
+
 // Generate 90 days of uptime bars (all green for demo)
 function UptimeBars() {
   const bars = Array.from({ length: 90 }, (_, i) => ({
     day: i,
-    ok: Math.random() > 0.02,
+    ok: i % 37 !== 0,
   }));
   return (
     <div style={{ display: "flex", gap: 2, alignItems: "flex-end", height: 32 }}>
@@ -75,12 +78,10 @@ function UptimeBars() {
 export default function StatusPage() {
   const { isDark } = useTheme();
   const [openIncident, setOpenIncident] = useState<number | null>(null);
-  const [now, setNow] = useState("");
+  const [now, setNow] = useState(formatStatusTime);
 
   useEffect(() => {
-    const fmt = () => new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "long", timeStyle: "short" });
-    setNow(fmt());
-    const t = setInterval(() => setNow(fmt()), 10000);
+    const t = setInterval(() => setNow(formatStatusTime()), 10000);
     return () => clearInterval(t);
   }, []);
 

@@ -142,7 +142,7 @@ export default function TermsPage() {
             <span style={{ color: "#f59e0b", textShadow: "0 0 36px rgba(245,158,11,0.4)" }}>no surprises.</span>
           </h1>
           <p className="tm-hero-in" style={{ fontFamily: "DM Sans, sans-serif", fontSize: "clamp(13px,1.6vw,16px)", color: "var(--text-muted)", lineHeight: 1.85, margin: "0 auto 18px" }}>
-            These terms govern your use of CrowdSpark-X. We've written them to be as clear
+            These terms govern your use of CrowdSpark-X. We&apos;ve written them to be as clear
             as possible — please read them carefully.
           </p>
           <div className="tm-hero-in" style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "8px 16px", borderRadius: 10, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)" }}>

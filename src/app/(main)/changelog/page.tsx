@@ -106,7 +106,7 @@ export default function ChangelogPage() {
             <span style={{ fontSize: 14 }}>🔄</span>
             <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600, color: "#ff8800" }}>Platform Changelog</span>
           </div>
-          <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(2rem, 5vw, 3rem)", color: "var(--text)", margin: "0 0 12px", letterSpacing: "-0.03em" }}>What's New at CrowdSpark</h1>
+          <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(2rem, 5vw, 3rem)", color: "var(--text)", margin: "0 0 12px", letterSpacing: "-0.03em" }}>What&apos;s New at CrowdSpark</h1>
           <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 16, color: "var(--text-muted)", maxWidth: 500, margin: "0 auto", lineHeight: 1.7 }}>
             Every update, improvement, and fix — documented transparently for our creator and backer community.
           </p>

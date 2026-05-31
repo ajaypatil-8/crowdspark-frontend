@@ -7,8 +7,43 @@ import { X, Gift, CheckCircle, Trophy, AlertCircle, IndianRupee, Loader2 } from 
 import type { RewardTierResponse } from "@/lib/api";
 import { paymentApi } from "@/lib/api";
 
+type RazorpayHandlerResponse = {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+};
+
+type RazorpayPaymentFailedResponse = {
+  error?: {
+    description?: string;
+  };
+};
+
+type RazorpayCheckoutOptions = {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  handler: (response: RazorpayHandlerResponse) => void | Promise<void>;
+  modal: {
+    ondismiss: () => void;
+  };
+  theme: {
+    color: string;
+  };
+};
+
+type RazorpayCheckout = {
+  on: (event: "payment.failed", handler: (response: RazorpayPaymentFailedResponse) => void) => void;
+  open: () => void;
+};
+
 declare global {
-  interface Window { Razorpay: any; }
+  interface Window {
+    Razorpay?: new (options: RazorpayCheckoutOptions) => RazorpayCheckout;
+  }
 }
 
 interface Props {
@@ -90,6 +125,8 @@ export default function BackProjectModal({
 
       setStep("processing");
 
+      if (!window.Razorpay) throw new Error("Payment gateway is unavailable.");
+
       const rzp = new window.Razorpay({
         key:         orderData.razorpayKeyId,
         amount:      orderData.amountInPaise,
@@ -98,11 +135,7 @@ export default function BackProjectModal({
         description: orderData.projectTitle,
         order_id:    orderData.razorpayOrderId,
 
-        handler: async (response: {
-          razorpay_payment_id: string;
-          razorpay_order_id:   string;
-          razorpay_signature:  string;
-        }) => {
+        handler: async (response) => {
           setStep("verifying");
           setLoading(true);
           try {
@@ -116,8 +149,8 @@ export default function BackProjectModal({
             setStep("form");  // ← SECOND: reset step so showSuccess wins
             setLoading(false);
             onSuccess?.();
-          } catch (e: any) {
-            setError(e?.message ?? "Payment verification failed. Please contact support.");
+          } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : "Payment verification failed. Please contact support.");
             setStep("form");
             setLoading(false);
           }
@@ -133,7 +166,7 @@ export default function BackProjectModal({
         theme: { color: "#ff5c00" },
       });
 
-      rzp.on("payment.failed", (resp: any) => {
+      rzp.on("payment.failed", (resp) => {
         setError(resp?.error?.description ?? "Payment failed. Please try again.");
         setStep("form");
         setLoading(false);
@@ -141,8 +174,8 @@ export default function BackProjectModal({
 
       rzp.open();
 
-    } catch (e: any) {
-      setError(e?.message ?? "Something went wrong. Please try again.");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
       setStep("form");
       setLoading(false);
     }
@@ -222,7 +255,7 @@ export default function BackProjectModal({
                   style={{ width: 72, height: 72, borderRadius: 22, background: "linear-gradient(135deg,rgba(34,197,94,0.18),rgba(0,212,184,0.15))", border: "1px solid rgba(34,197,94,0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
                   <CheckCircle size={34} color="#22c55e" />
                 </motion.div>
-                <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 24, color: txt, margin: "0 0 10px" }}>You're a backer! 🎉</h2>
+                <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 24, color: txt, margin: "0 0 10px" }}>You&apos;re a backer! 🎉</h2>
                 <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: muted, lineHeight: 1.7, margin: "0 0 4px" }}>
                   Thank you for backing <strong style={{ color: txt }}>{projectTitle}</strong>.
                 </p>

@@ -32,8 +32,24 @@ const PLATFORM_STATS = [
   { val: "21 days", label: "Avg. time to fund",     color: "#60a5fa" },
 ];
 
+type Creator = (typeof CREATORS)[number];
+
 // ── Creator card ──────────────────────────────────────────────────────────────
-function CreatorCard({ c, isDark, card, bdr, txt, muted }: any) {
+function CreatorCard({
+  c,
+  isDark,
+  card,
+  bdr,
+  txt,
+  muted,
+}: {
+  c: Creator;
+  isDark: boolean;
+  card: string;
+  bdr: string;
+  txt: string;
+  muted: string;
+}) {
   const [flipped, setFlipped] = useState(false);
   return (
     <motion.div
@@ -85,7 +101,7 @@ function CreatorCard({ c, isDark, card, bdr, txt, muted }: any) {
         <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden" as const, transform: "rotateY(180deg)", borderRadius: 22, background: isDark ? `linear-gradient(160deg,#0f0a05,#080508)` : `linear-gradient(160deg,#fff8f0,#f8f4ff)`, border: `1.5px solid ${c.avatar}40`, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center", paddingTop: 28, paddingBottom: 28, paddingLeft: 28, paddingRight: 28, boxShadow: `0 0 0 1px ${c.avatar}22, 0 24px 56px ${c.avatar}18` }}>
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${c.avatar},transparent)` }}/>
           <span style={{ fontSize: 28, marginBottom: 16 }}>💬</span>
-          <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14.5, color: isDark ? "rgba(255,255,255,0.82)" : "rgba(0,0,0,0.78)", lineHeight: 1.75, margin: "0 0 18px", fontStyle: "italic" }}>"{c.story}"</p>
+          <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14.5, color: isDark ? "rgba(255,255,255,0.82)" : "rgba(0,0,0,0.78)", lineHeight: 1.75, margin: "0 0 18px", fontStyle: "italic" }}>&quot;{c.story}&quot;</p>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 32, height: 32, borderRadius: "50%", background: `${c.avatar}`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 12, boxShadow: `0 0 10px ${c.avatar}60` }}>
               {c.name.split(" ").map((w: string) => w[0]).join("")}

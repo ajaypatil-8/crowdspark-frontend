@@ -151,7 +151,7 @@ export default function FaqPage() {
             <span style={{ color: "var(--accent)", textShadow: "0 0 40px var(--accent-glow)" }}>questions</span>
           </h1>
           <p className="faq-hero-in" style={{ fontFamily: "DM Sans, sans-serif", fontSize: "clamp(14px,1.7vw,17px)", color: "var(--text-muted)", lineHeight: 1.85, margin: "0 auto 36px", maxWidth: 520 }}>
-            Everything you need to know about CrowdSpark-X. Can't find what you're looking for? {" "}
+            Everything you need to know about CrowdSpark-X. Can&apos;t find what you&apos;re looking for?{" "}
             <Link href="/contact" style={{ color: "var(--accent)", textDecoration: "none", fontWeight: 700 }}>Contact us.</Link>
           </p>
 

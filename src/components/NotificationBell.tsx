@@ -162,7 +162,13 @@ export default function NotificationBell({ isDark }: { isDark: boolean }) {
   const [rect,    setRect]    = useState<DOMRect | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
-  useEffect(() => { setMounted(true); setLoggedIn(isLoggedIn()); }, []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setMounted(true);
+      setLoggedIn(isLoggedIn());
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const fetchCount = useCallback(async () => {
     if (!isLoggedIn()) return;
@@ -171,9 +177,14 @@ export default function NotificationBell({ isDark }: { isDark: boolean }) {
 
   useEffect(() => {
     if (!loggedIn) return;
-    fetchCount();
+    const timer = window.setTimeout(() => {
+      void fetchCount();
+    }, 0);
     timerRef.current = setInterval(fetchCount, POLL_MS);
-    return () => clearInterval(timerRef.current);
+    return () => {
+      window.clearTimeout(timer);
+      clearInterval(timerRef.current);
+    };
   }, [loggedIn, fetchCount]);
 
   const fetchItems = useCallback(async () => {
@@ -182,7 +193,13 @@ export default function NotificationBell({ isDark }: { isDark: boolean }) {
     setLoading(false);
   }, []);
 
-  useEffect(() => { if (open) fetchItems(); }, [open, fetchItems]);
+  useEffect(() => {
+    if (!open) return;
+    const timer = window.setTimeout(() => {
+      void fetchItems();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [open, fetchItems]);
 
   // Close on outside click
   useEffect(() => {

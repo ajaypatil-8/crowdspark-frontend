@@ -167,11 +167,11 @@ export default function AdminUsersPage() {
     try {
       if (action === "suspend") {
         await adminApi.suspendUser(user.id);
-        setUsers(us => us.map(u => u.id === user.id ? { ...u, accountStatus: "SUSPENDED" as any } : u));
+        setUsers(us => us.map(u => u.id === user.id ? { ...u, accountStatus: "SUSPENDED" } : u));
         showToast(`@${user.username} suspended`);
       } else {
         await adminApi.activateUser(user.id);
-        setUsers(us => us.map(u => u.id === user.id ? { ...u, accountStatus: "ACTIVE" as any } : u));
+        setUsers(us => us.map(u => u.id === user.id ? { ...u, accountStatus: "ACTIVE" } : u));
         showToast(`@${user.username} activated ✓`);
       }
       setConfirm(null);

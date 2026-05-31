@@ -42,7 +42,7 @@ export default function CareersPage() {
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 999, background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.25)", marginBottom: 20 }}>
             <span style={{ fontSize: 14 }}>💼</span>
-            <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600, color: "#7c3aed" }}>We're hiring</span>
+              <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600, color: "#7c3aed" }}>We&apos;re hiring</span>
           </div>
           <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(2rem, 5vw, 3.5rem)", color: "var(--text)", margin: "0 0 16px", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
             Build the{" "}
@@ -52,7 +52,7 @@ export default function CareersPage() {
             with Us
           </h1>
           <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 18, color: "var(--text-muted)", maxWidth: 560, margin: "0 auto", lineHeight: 1.7 }}>
-            Join a small, ambitious team building India's most trusted crowdfunding platform. We're backed by great investors and backed by even better values.
+              Join a small, ambitious team building India&apos;s most trusted crowdfunding platform. We&apos;re backed by great investors and backed by even better values.
           </p>
         </motion.div>
       </div>

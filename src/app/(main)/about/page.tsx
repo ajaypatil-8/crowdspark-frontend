@@ -102,7 +102,7 @@ export default function AboutPage() {
           </h1>
 
           <p className="ab-hero-in" style={{ fontFamily: "DM Sans, sans-serif", fontSize: "clamp(15px,1.8vw,18px)", color: "var(--text-muted)", lineHeight: 1.85, maxWidth: 560, margin: "0 auto 44px" }}>
-            CrowdSpark-X is India's most transparent crowdfunding platform — built for creators
+            CrowdSpark-X is India&apos;s most transparent crowdfunding platform — built for creators
             who dare to dream and backers who believe in them.
           </p>
 
@@ -157,10 +157,10 @@ export default function AboutPage() {
                 <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11.5, fontWeight: 700, color: "#ff8800", textTransform: "uppercase", letterSpacing: "0.08em" }}>Our mission</span>
               </div>
               <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(28px,3.5vw,44px)", color: "var(--text)", letterSpacing: "-0.03em", lineHeight: 1.1, margin: "0 0 20px" }}>
-                Democratising capital for India's creators
+              Democratising capital for India&apos;s creators
               </h2>
               <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 15.5, color: "var(--text-muted)", lineHeight: 1.85, margin: "0 0 18px" }}>
-                For too long, access to funding was locked behind banks and investors who didn't understand
+              For too long, access to funding was locked behind banks and investors who didn&apos;t understand
                 creative, entrepreneurial, and social ventures. CrowdSpark-X changes that.
               </p>
               <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 15.5, color: "var(--text-muted)", lineHeight: 1.85, margin: "0 0 32px" }}>
@@ -323,7 +323,7 @@ export default function AboutPage() {
               Join the movement
             </h2>
             <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 15.5, color: "var(--text-muted)", lineHeight: 1.8, maxWidth: 480, margin: "0 auto 36px" }}>
-              Whether you're a creator with a vision or a backer looking to shape the future —
+              Whether you&apos;re a creator with a vision or a backer looking to shape the future —
               your place on CrowdSpark-X is waiting.
             </p>
             <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>

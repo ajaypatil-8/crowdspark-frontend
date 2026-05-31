@@ -102,7 +102,7 @@ export default function LicensesPage() {
           <div style={{ fontSize: 48, marginBottom: 16 }}>📜</div>
           <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(2rem, 5vw, 3rem)", color: "var(--text)", margin: "0 0 12px", letterSpacing: "-0.03em" }}>Open Source Licenses</h1>
           <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 16, color: "var(--text-muted)", maxWidth: 540, margin: "0 auto 32px", lineHeight: 1.7 }}>
-            CrowdSpark is built on the shoulders of giants. We're grateful to the open-source community for the {totalPackages}+ libraries that power our platform.
+              CrowdSpark is built on the shoulders of giants. We&apos;re grateful to the open-source community for the {totalPackages}+ libraries that power our platform.
           </p>
           {/* Search */}
           <div style={{ maxWidth: 420, margin: "0 auto", position: "relative" }}>
@@ -189,7 +189,7 @@ export default function LicensesPage() {
         <div style={{ marginTop: 48, padding: "24px 28px", borderRadius: 18, background: isDark ? "rgba(255,255,255,0.025)" : "#fff", border: "1px solid var(--border)" }}>
           <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 15, color: "var(--text)", marginBottom: 8 }}>📌 Notice</div>
           <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: "var(--text-muted)", lineHeight: 1.7, margin: 0 }}>
-            This page lists the primary open-source dependencies used in CrowdSpark's platform. The full list of transitive dependencies is available in our{" "}
+                This page lists the primary open-source dependencies used in CrowdSpark&apos;s platform. The full list of transitive dependencies is available in our{" "}
             <a href="https://github.com/crowdspark" target="_blank" rel="noopener noreferrer" style={{ color: "#a78bfa", textDecoration: "none" }}>GitHub repository</a>.{" "}
             For licensing queries, contact <a href="mailto:legal@crowdspark.in" style={{ color: "#a78bfa", textDecoration: "none" }}>legal@crowdspark.in</a>.
           </p>

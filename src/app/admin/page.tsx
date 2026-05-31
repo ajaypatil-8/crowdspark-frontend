@@ -47,8 +47,28 @@ function StatCard({ label, value, icon, color, bg, index, href }: {
   color: string; bg: string; index: number; href?: string;
 }) {
   const { isDark } = useTheme();
-  const Wrapper = href ? Link : "div";
-  const wrapProps = href ? { href, style: { textDecoration: "none" } } : {};
+  const cardContent = (
+    <div style={{
+      padding: "22px 24px", borderRadius: 20,
+      background: isDark ? "rgba(255,255,255,0.03)" : "#ffffff",
+      border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
+      boxShadow: isDark ? "none" : "0 2px 20px rgba(0,0,0,0.04)",
+      position: "relative", overflow: "hidden", cursor: href ? "pointer" : "default",
+      transition: "border-color 0.18s",
+    }}
+    onMouseEnter={e => { if (href) (e.currentTarget as HTMLDivElement).style.borderColor = `${color}35`; }}
+    onMouseLeave={e => { if (href) (e.currentTarget as HTMLDivElement).style.borderColor = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"; }}>
+      <div style={{ position: "absolute", top: -24, right: -24, width: 88, height: 88, borderRadius: "50%", background: `radial-gradient(circle,${color}20 0%,transparent 70%)`, pointerEvents: "none" }} />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+        <div style={{ width: 42, height: 42, borderRadius: 13, background: bg, display: "flex", alignItems: "center", justifyContent: "center", color, flexShrink: 0 }}>{icon}</div>
+        {href && <span style={{ color, display: "flex", opacity: 0.6 }}><Ic.ArrowRight /></span>}
+      </div>
+      <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 34, color, margin: "0 0 4px", letterSpacing: "-0.03em", lineHeight: 1 }}>
+        <Counter value={value} />
+      </p>
+      <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 700, color: isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)", margin: 0, textTransform: "uppercase" as const, letterSpacing: "0.1em" }}>{label}</p>
+    </div>
+  );
 
   return (
     <motion.div
@@ -57,29 +77,7 @@ function StatCard({ label, value, icon, color, bg, index, href }: {
       transition={{ duration: 0.5, delay: 0.08 + index * 0.08, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -4, transition: { duration: 0.18 } }}
     >
-      {/* @ts-ignore */}
-      <Wrapper {...wrapProps}>
-        <div style={{
-          padding: "22px 24px", borderRadius: 20,
-          background: isDark ? "rgba(255,255,255,0.03)" : "#ffffff",
-          border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-          boxShadow: isDark ? "none" : "0 2px 20px rgba(0,0,0,0.04)",
-          position: "relative", overflow: "hidden", cursor: href ? "pointer" : "default",
-          transition: "border-color 0.18s",
-        }}
-        onMouseEnter={e => { if (href) (e.currentTarget as HTMLDivElement).style.borderColor = `${color}35`; }}
-        onMouseLeave={e => { if (href) (e.currentTarget as HTMLDivElement).style.borderColor = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"; }}>
-          <div style={{ position: "absolute", top: -24, right: -24, width: 88, height: 88, borderRadius: "50%", background: `radial-gradient(circle,${color}20 0%,transparent 70%)`, pointerEvents: "none" }} />
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
-            <div style={{ width: 42, height: 42, borderRadius: 13, background: bg, display: "flex", alignItems: "center", justifyContent: "center", color, flexShrink: 0 }}>{icon}</div>
-            {href && <span style={{ color, display: "flex", opacity: 0.6 }}><Ic.ArrowRight /></span>}
-          </div>
-          <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 34, color, margin: "0 0 4px", letterSpacing: "-0.03em", lineHeight: 1 }}>
-            <Counter value={value} />
-          </p>
-          <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 700, color: isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)", margin: 0, textTransform: "uppercase" as const, letterSpacing: "0.1em" }}>{label}</p>
-        </div>
-      </Wrapper>
+      {href ? <Link href={href} style={{ textDecoration: "none" }}>{cardContent}</Link> : cardContent}
     </motion.div>
   );
 }
@@ -214,7 +212,7 @@ function Panel({ title, icon, color, count, href, linkLabel, children, index, is
 }
 
 // ─── Hero Banner ──────────────────────────────────────────────────────────────
-function AdminHero({ user, isDark }: { user: any; isDark: boolean }) {
+function AdminHero({ user, isDark }: { user: UserResponse | null; isDark: boolean }) {
   const initials = user?.name?.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase() ?? "AD";
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
@@ -290,7 +288,10 @@ export default function AdminOverviewPage() {
   const [mounted, setMounted] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const load = useCallback(async () => {
     setRefreshing(true);
@@ -309,7 +310,13 @@ export default function AdminOverviewPage() {
     setRefreshing(false);
   }, []);
 
-  useEffect(() => { if (!loading && user) load(); }, [loading, user, load]);
+  useEffect(() => {
+    if (loading || !user) return;
+    const timer = window.setTimeout(() => {
+      void load();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loading, user, load]);
 
   if (!mounted || loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
@@ -379,7 +386,7 @@ export default function AdminOverviewPage() {
           emptyMsg="No pending KYC applications"
         >
           {pendingKyc.slice(0, 6).map((kyc, i) => (
-            <KycRow key={(kyc as any).userId ?? i} kyc={kyc} index={i} isDark={isDark} />
+            <KycRow key={kyc.userId ?? i} kyc={kyc} index={i} isDark={isDark} />
           ))}
         </Panel>
 

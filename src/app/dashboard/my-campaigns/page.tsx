@@ -50,7 +50,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 // ─── Campaign Card ────────────────────────────────────────────────────────────
-function CampaignCard({ project }: { project: CreatorProjectResponse }) {
+function CampaignCard({ project, now }: { project: CreatorProjectResponse; now: number }) {
   const { isDark } = useTheme();
   const [hovered, setHovered] = useState(false);
 
@@ -62,7 +62,7 @@ function CampaignCard({ project }: { project: CreatorProjectResponse }) {
 
   const deadline = project.deadline ? new Date(project.deadline) : null;
   const daysLeft = deadline
-    ? Math.max(0, Math.ceil((deadline.getTime() - Date.now()) / 86400000))
+    ? Math.max(0, Math.ceil((deadline.getTime() - now) / 86400000))
     : null;
 
   const isUrgent = daysLeft !== null && daysLeft <= 3 && project.status === "APPROVED";
@@ -436,6 +436,7 @@ function MyCampaignsPageInner() {
   const [mounted, setMounted]       = useState(false);
   const [showToast, setShowToast]   = useState(false);
   const [activeFilter, setActiveFilter] = useState<string>("all");
+  const [now] = useState(() => Date.now());
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -551,7 +552,7 @@ function MyCampaignsPageInner() {
                 Campaign submitted!
               </p>
               <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12.5, color: "var(--text-muted)", margin: 0 }}>
-                Under review — we'll notify you when it goes live.
+                        Under review — we&apos;ll notify you when it goes live.
               </p>
             </div>
             <button
@@ -766,7 +767,7 @@ function MyCampaignsPageInner() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.06, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                   >
-                    <CampaignCard project={p} />
+                    <CampaignCard project={p} now={now} />
                   </motion.div>
                 ))}
               </motion.div>

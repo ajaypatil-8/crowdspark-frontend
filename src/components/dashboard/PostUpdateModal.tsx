@@ -48,8 +48,8 @@ export default function PostUpdateModal({
       });
       setDone(true);
       onPosted?.();
-    } catch (e: any) {
-      setError(e?.message ?? "Failed to post update. Please try again.");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to post update. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -145,7 +145,7 @@ export default function PostUpdateModal({
                   </h2>
                   <p style={{ fontFamily: "DM Sans, sans-serif",
                     fontSize: 13, color: muted, margin: 0 }}>
-                    Keep your backers in the loop. They'll be notified instantly.
+          Keep your backers in the loop. They&apos;ll be notified instantly.
                   </p>
                 </div>
 

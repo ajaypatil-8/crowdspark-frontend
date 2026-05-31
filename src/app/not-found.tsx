@@ -130,7 +130,7 @@ export default function NotFoundPage() {
           transition={{ delay: 0.32, duration: 0.5 }}
           style={{ fontFamily: "DM Sans, sans-serif", fontSize: 16, color: "rgba(255,255,255,0.44)", lineHeight: 1.8, margin: "0 0 40px" }}
         >
-          The page you're looking for doesn't exist or has been moved. Let's get you back on track.
+            The page you&apos;re looking for doesn&apos;t exist or has been moved. Let&apos;s get you back on track.
         </motion.p>
 
         {/* Action buttons */}

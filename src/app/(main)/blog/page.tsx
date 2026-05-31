@@ -146,7 +146,7 @@ export default function BlogPage() {
             </span>
           </h1>
           <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 18, color: "var(--text-muted)", maxWidth: 560, margin: "0 auto 40px", lineHeight: 1.7 }}>
-            Insights from India's fastest-growing crowdfunding community — for creators who are ready to build something real.
+              Insights from India&apos;s fastest-growing crowdfunding community — for creators who are ready to build something real.
           </p>
           {/* Search */}
           <div style={{ maxWidth: 460, margin: "0 auto", position: "relative" }}>

@@ -106,8 +106,8 @@ export default function BackedPage() {
     try {
       const data = await backerApi.backedProjects();
       setProjects(data);
-    } catch (e: any) {
-      setError(e.message ?? "Failed to load backed projects");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load backed projects");
     } finally {
       setLoading(false);
     }

@@ -383,7 +383,7 @@ export default function CreateCampaignPage() {
               </motion.div>
               <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 26, color: txt, margin: "0 0 10px", letterSpacing: "-0.03em" }}>Campaign Submitted!</h2>
               <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 15, color: muted, margin: "0 auto", maxWidth: 320, lineHeight: 1.75 }}>
-                Your campaign is under review. We'll notify you within 24–48 hours. Redirecting…
+                  Your campaign is under review. We&apos;ll notify you within 24–48 hours. Redirecting…
               </p>
             </motion.div>
           </motion.div>

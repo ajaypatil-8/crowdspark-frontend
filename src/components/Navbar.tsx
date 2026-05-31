@@ -9,7 +9,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import NotificationBell from "@/components/NotificationBell";
 import { useProfile } from "@/contexts/ProfileContext";
-import { authApi, isLoggedIn } from "@/lib/api";
+import { authApi, isLoggedIn, type UserResponse } from "@/lib/api";
 
 // ── Types matching Spring Boot enums ─────────────────────────────────────────
 type Role      = "ADMIN" | "CREATOR" | "BACKER";
@@ -130,7 +130,7 @@ function Sidebar({ open, onClose, isDark, user }: {
   open: boolean;
   onClose: () => void;
   isDark: boolean;
-  user: any;
+  user: UserResponse | null;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -276,10 +276,12 @@ function Sidebar({ open, onClose, isDark, user }: {
               {(((user?.totalProjectsBacked ?? 0) > 0) || ((user?.totalProjectsCreated ?? 0) > 0)) && (
                 <div style={{ display: "flex", marginTop: 12, borderRadius: 10, overflow: "hidden", border: `1px solid ${borderClr}` }}>
                   {[
-                    isCreator && { val: user?.totalProjectsCreated ?? 0, label: "Created", color: "#34d399" },
-                    isCreator && { val: `₹${(user?.totalFundsRaised ?? 0).toLocaleString("en-IN")}`, label: "Raised", color: "#ff8800" },
+                    ...(isCreator ? [
+                      { val: user?.totalProjectsCreated ?? 0, label: "Created", color: "#34d399" },
+                      { val: `₹${(user?.totalFundsRaised ?? 0).toLocaleString("en-IN")}`, label: "Raised", color: "#ff8800" },
+                    ] : []),
                     { val: user?.totalProjectsBacked ?? 0, label: "Backed", color: "#60a5fa" },
-                  ].filter(Boolean).map((s: any, i, arr) => (
+                  ].map((s, i, arr) => (
                     <div key={s.label} style={{ flex: 1, paddingTop: 8, paddingBottom: 8, textAlign: "center", borderRight: i < arr.length - 1 ? `1px solid ${borderClr}` : "none", background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.018)" }}>
                       <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 15, color: s.color, margin: 0, letterSpacing: "-0.02em" }}>{s.val}</p>
                       <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, color: isDark ? "rgba(255,255,255,0.38)" : "rgba(0,0,0,0.38)", margin: 0 }}>{s.label}</p>
@@ -401,7 +403,7 @@ function Sidebar({ open, onClose, isDark, user }: {
 }
 
 // ── Trigger button in navbar ──────────────────────────────────────────────────
-function ProfileTrigger({ isDark, user, onClick }: { isDark: boolean; user: any; onClick: () => void }) {
+function ProfileTrigger({ isDark, user, onClick }: { isDark: boolean; user: UserResponse | null; onClick: () => void }) {
   const roles = (user?.roles ? Array.from(user.roles as Iterable<Role>) : []) as Role[];
   const isAdmin   = roles.includes("ADMIN");
   const isCreator = roles.includes("CREATOR");
@@ -461,8 +463,17 @@ export default function Navbar() {
   const [loggedIn,    setLoggedIn]    = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  useEffect(() => { setMounted(true); setLoggedIn(isLoggedIn()); }, []);
-  useEffect(() => { setLoggedIn(isLoggedIn()); }, [pathname]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setMounted(true);
+      setLoggedIn(isLoggedIn());
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setLoggedIn(isLoggedIn()), 0);
+    return () => window.clearTimeout(timer);
+  }, [pathname]);
   useEffect(() => {
     gsap.fromTo(navRef.current, { y: -80, opacity: 0, scale: 0.88 }, { y: 0, opacity: 1, scale: 1, duration: 1.05, ease: "back.out(1.6)", delay: 0.25 });
   }, []);
@@ -471,7 +482,13 @@ export default function Navbar() {
     window.addEventListener("scroll", fn, { passive: true });
     return () => window.removeEventListener("scroll", fn);
   }, []);
-  useEffect(() => { setMobileOpen(false); setSidebarOpen(false); }, [pathname]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setMobileOpen(false);
+      setSidebarOpen(false);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [pathname]);
 
   if (pathname === "/login" || pathname === "/register") return null;
 

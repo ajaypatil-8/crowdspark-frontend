@@ -55,10 +55,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
       setUser(data);
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (fetchIdRef.current !== thisId) return;
 
-      const msg: string = err.message || "Failed to load profile";
+      const msg = err instanceof Error ? err.message : "Failed to load profile";
       setError(msg);
       setUser(null);
 

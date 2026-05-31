@@ -87,9 +87,9 @@ export default function Step1BasicInfo({ data, onChange }: Props) {
   const [catError, setCatError]     = useState(false);
   const [catLoading, setCatLoading] = useState(true);
   const [touched, setTouched]       = useState<Record<string, boolean>>({});
+  const [minDeadline] = useState(() => new Date(Date.now() + 86400000).toISOString().slice(0, 16));
 
   useEffect(() => {
-    setCatLoading(true);
     categoryApi.getAll()
       .then(cats => { setCategories(cats); setCatError(false); })
       .catch(() => setCatError(true))
@@ -109,8 +109,6 @@ export default function Step1BasicInfo({ data, onChange }: Props) {
 
   const goalNum = Number(data.goalAmount);
   const goalErr = touched.goalAmount && data.goalAmount && goalNum < 1000 ? "Minimum goal is ₹1,000" : undefined;
-  const minDeadline = new Date(Date.now() + 86400000).toISOString().slice(0, 16);
-
   const bdr   = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
   const muted = isDark ? "rgba(255,255,255,0.38)" : "rgba(0,0,0,0.38)";
 

@@ -7,7 +7,7 @@ import { useProfile } from "@/contexts/ProfileContext";
 import {
   backerApi, projectApi,
   type BackedProjectResponse, type BackerStatsResponse,
-  type CreatorProjectResponse,
+  type CreatorProjectResponse, type UserResponse,
 } from "@/lib/api";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -228,7 +228,7 @@ function Empty({ icon, title, sub, cta, href }: { icon: React.ReactNode; title: 
 }
 
 // ─── Hero Welcome ─────────────────────────────────────────────────────────────
-function HeroWelcome({ user, isCreator, isDark }: { user: any; isCreator: boolean; isDark: boolean }) {
+function HeroWelcome({ user, isCreator, isDark }: { user: UserResponse | null; isCreator: boolean; isDark: boolean }) {
   const initials = user?.name?.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase() ?? "?";
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
@@ -320,24 +320,33 @@ export default function DashboardOverviewPage() {
   const [myCampaigns, setMyCampaigns] = useState<CreatorProjectResponse[]>([]);
   const [mounted, setMounted]     = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const load = useCallback(async () => {
     try {
       const isCreatorUser = user?.roles?.includes("CREATOR");
-      const calls: Promise<any>[] = [
+      const calls = [
         backerApi.stats(),
         backerApi.backedProjects(),
-        ...(isCreatorUser ? [projectApi.myProjects()] : []),
-      ];
+        isCreatorUser ? projectApi.myProjects() : Promise.resolve([] as CreatorProjectResponse[]),
+      ] as const;
       const results = await Promise.allSettled(calls);
       if (results[0].status === "fulfilled") setStats(results[0].value);
       if (results[1].status === "fulfilled") setBacked(results[1].value ?? []);
-      if (isCreatorUser && results[2]?.status === "fulfilled") setMyCampaigns(results[2].value ?? []);
+      if (isCreatorUser && results[2].status === "fulfilled") setMyCampaigns(results[2].value ?? []);
     } catch {}
   }, [user]);
 
-  useEffect(() => { if (!loading && user) load(); }, [loading, user, load]);
+  useEffect(() => {
+    if (loading || !user) return;
+    const timer = window.setTimeout(() => {
+      void load();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loading, user, load]);
 
   if (!mounted || loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
@@ -359,7 +368,7 @@ export default function DashboardOverviewPage() {
     { label: "Total Contributed", value: stats?.totalAmountBacked ?? 0,         icon: <Ic.Coins s={17} />,  color: "#ff8800", bg: "rgba(255,136,0,0.12)" },
     { label: isCreator ? "Live Campaigns" : "Active Campaigns",
                                   value: activeCampaignCount,                   icon: <Ic.Trend s={17} />,  color: "#34d399", bg: "rgba(52,211,153,0.12)" },
-    { label: "Member Since",      value: new Date(user?.createdAt ?? Date.now()).getFullYear(),
+    { label: "Member Since",      value: user?.createdAt ? new Date(user.createdAt).getFullYear() : 1970,
                                                                                  icon: <Ic.User s={17} />,   color: "#60a5fa", bg: "rgba(96,165,250,0.12)" },
   ];
 

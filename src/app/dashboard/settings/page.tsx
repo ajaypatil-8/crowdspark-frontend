@@ -564,7 +564,10 @@ export default function SettingsPage() {
   const { user, loading } = useProfile();
   const { isDark } = useTheme();
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   if (!mounted || loading) {
     return (

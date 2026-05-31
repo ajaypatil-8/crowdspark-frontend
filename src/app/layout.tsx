@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Syne, DM_Sans } from "next/font/google";
-// @ts-ignore - Next.js handles global CSS imports here.
 import "./globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ToastProvider }   from "@/components/ui/Toast";

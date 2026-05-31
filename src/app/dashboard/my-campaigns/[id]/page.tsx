@@ -15,6 +15,13 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { projectApi, exploreApi, type ProjectFullDetailsResponse } from "@/lib/api";
 import { StatCard } from "@/components/dashboard/widgets";
 
+type ProjectAnalytics = ProjectFullDetailsResponse & {
+  status?: string;
+  rejectionReason?: string | null;
+  backersCount?: number;
+  totalDays?: number;
+};
+
 // ─── Mini bar chart (no external lib needed) ────────────────────────────────
 function MiniBarChart({
   data,
@@ -183,7 +190,7 @@ function RewardCard({
 }
 
 // ─── Status banner ────────────────────────────────────────────────────────────
-function StatusBanner({ project }: { project: ProjectFullDetailsResponse & { status?: string; rejectionReason?: string } }) {
+function StatusBanner({ project }: { project: ProjectAnalytics }) {
   const status = project.status as string | undefined;
   if (!status || status === "APPROVED") return null;
 
@@ -243,7 +250,7 @@ export default function CampaignAnalyticsPage() {
   const id = Number(params?.id);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [project, setProject]   = useState<(ProjectFullDetailsResponse & { status?: string; rejectionReason?: string }) | null>(null);
+  const [project, setProject]   = useState<ProjectAnalytics | null>(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "rewards" | "activity">("overview");
@@ -259,7 +266,7 @@ export default function CampaignAnalyticsPage() {
     setLoading(true); setError(null);
     try {
       const data = await exploreApi.getFullDetails(id);
-      setProject(data as any);
+      setProject(data);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load campaign");
     } finally {
@@ -430,7 +437,7 @@ export default function CampaignAnalyticsPage() {
             }}>
               {project.category ?? "Campaign"}
             </span>
-            {(project as any).status && (
+            {project.status && (
               <span style={{
                 display: "inline-flex", alignItems: "center", gap: 4,
                 padding: "2px 9px", borderRadius: 20,
@@ -438,7 +445,7 @@ export default function CampaignAnalyticsPage() {
                 fontFamily: "DM Sans, sans-serif", fontSize: 11, fontWeight: 700,
                 color: progressColor,
               }}>
-                {(project as any).status === "APPROVED" ? "● Live" : (project as any).status}
+                {project.status === "APPROVED" ? "● Live" : project.status}
               </span>
             )}
           </div>
@@ -461,7 +468,7 @@ export default function CampaignAnalyticsPage() {
 
         {/* Action buttons */}
         <div style={{ display: "flex", gap: 9, flexShrink: 0 }}>
-          {(project as any).status === "APPROVED" && (
+          {project.status === "APPROVED" && (
             <Link
               href={`/projects/${project.id}`}
               target="_blank"
@@ -507,7 +514,7 @@ export default function CampaignAnalyticsPage() {
         <StatCard
           icon={<Users size={16} />}
           label="Total backers"
-          value={(project as any).backersCount ?? "—"}
+          value={project.backersCount ?? "—"}
           accentColor="#60a5fa"
           delay={80}
         />
@@ -740,8 +747,8 @@ export default function CampaignAnalyticsPage() {
                   {[
                     {
                       label: "Avg / day",
-                      value: daysLeft < (project as any).totalDays
-                        ? `₹${Math.round(project.currentAmount / Math.max(1, ((project as any).totalDays || 30) - daysLeft)).toLocaleString("en-IN")}`
+                      value: daysLeft < (project.totalDays ?? 30)
+                        ? `₹${Math.round(project.currentAmount / Math.max(1, (project.totalDays ?? 30) - daysLeft)).toLocaleString("en-IN")}`
                         : "₹—",
                       color: "#34d399",
                     },

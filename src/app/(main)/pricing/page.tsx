@@ -177,7 +177,7 @@ export default function PricingPage() {
           </h1>
 
           <p className="pr-hero-item" style={{ opacity: 0, fontFamily: "DM Sans, sans-serif", fontSize: "clamp(15px,2vw,18px)", color: muted, lineHeight: 1.8, maxWidth: 480, margin: "0 auto 40px" }}>
-            No upfront costs. No platform fee if your campaign doesn't fund. We only win when you win.
+                No upfront costs. No platform fee if your campaign doesn&apos;t fund. We only win when you win.
           </p>
 
           {/* Billing toggle */}
@@ -312,7 +312,7 @@ export default function PricingPage() {
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
           <div className="pr-sec-h" style={{ opacity: 0, textAlign: "center", marginBottom: 52 }}>
             <p style={{ fontFamily: "DM Sans, sans-serif", fontWeight: 700, fontSize: 11, letterSpacing: "0.24em", textTransform: "uppercase", color: "#ff8800", marginBottom: 10 }}>Compare</p>
-            <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: "clamp(26px,4vw,46px)", color: txt, letterSpacing: "-0.025em", margin: 0 }}>See what's included</h2>
+            <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: "clamp(26px,4vw,46px)", color: txt, letterSpacing: "-0.025em", margin: 0 }}>See what&apos;s included</h2>
           </div>
 
           {/* Table */}

@@ -258,7 +258,10 @@ function VerifyEmailPageInner() {
   const [message, setMessage] = useState("");
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (!mounted) return;
@@ -266,9 +269,11 @@ function VerifyEmailPageInner() {
     const email = searchParams.get("email");
 
     if (!token || !email) {
-      setState("error");
-      setMessage("Invalid verification link. Please request a new one from your settings.");
-      return;
+      const timer = window.setTimeout(() => {
+        setState("error");
+        setMessage("Invalid verification link. Please request a new one from your settings.");
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
 
     emailVerifyApi

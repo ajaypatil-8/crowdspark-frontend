@@ -1,9 +1,9 @@
 "use client";
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import gsap from "gsap";
-import { creatorApi, type KycSubmitRequest } from "@/lib/api";
+import { creatorApi, type KycSubmitRequest, type UserResponse } from "@/lib/api";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -53,6 +53,7 @@ async function textPost(path: string, body?: object): Promise<string> {
 // ─── Types ────────────────────────────────────────────────────────────────────
 type WizardStep = "start" | "otp-sent" | "docs" | "submitted";
 type KycStatus  = "NOT_SUBMITTED" | "PENDING_SUBMISSION" | "PENDING_APPROVAL" | "APPROVED" | "REJECTED";
+type UserKycDetails = UserResponse & { kycRejectionReason?: string | null };
 
 interface DocUpload {
   url: string; publicId: string; name: string; preview: string | null; size: number;
@@ -450,7 +451,8 @@ export default function BecomeCreatorPage() {
   const [kyc, setKyc] = useState({ panNumber: "", aadhaarNumber: "", bankAccountHolderName: "", bankAccountNumber: "", bankIfscCode: "", bankName: "", bankBranchName: "", upiId: "" });
   const k = (field: string) => (v: string) => setKyc(prev => ({ ...prev, [field]: v }));
 
-  const kycStatus: KycStatus = (user as any)?.kycStatus ?? (user?.kycVerified ? "APPROVED" : "NOT_SUBMITTED");
+  const userWithKycDetails = user as UserKycDetails | null;
+  const kycStatus: KycStatus = userWithKycDetails?.kycStatus ?? (user?.kycVerified ? "APPROVED" : "NOT_SUBMITTED");
 
   // Route to correct step based on KYC status
   useEffect(() => {
@@ -585,7 +587,7 @@ export default function BecomeCreatorPage() {
 
   const bg    = isDark ? "#06050a" : "#f5f4f0";
   const isRej = kycStatus === "REJECTED";
-  const rejReason = (user as any)?.kycRejectionReason as string | undefined;
+  const rejReason = userWithKycDetails?.kycRejectionReason ?? undefined;
 
   // ─── APPROVED ────────────────────────────────────────────────────────────────
   if (kycStatus === "APPROVED") return (
@@ -763,7 +765,7 @@ export default function BecomeCreatorPage() {
                     }}
                     animate={{ borderColor: d ? "rgba(255,107,0,0.7)" : "rgba(128,128,128,0.2)", scale: d ? 1.05 : 1, boxShadow: d ? "0 0 0 3px rgba(255,107,0,0.12), 0 0 16px rgba(255,107,0,0.15)" : "none" }}
                     transition={{ duration: 0.18 }}
-                    style={{ width: 52, height: 58, borderRadius: 14, border: "1.5px solid", textAlign: "center", fontFamily: "Syne, sans-serif", fontSize: 24, fontWeight: 900, color: d ? "#ff8800" : "var(--text)", outline: "none", background: d ? (isDark ? "rgba(255,107,0,0.07)" : "rgba(255,107,0,0.04)") : (isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.025)"), caretColor: "transparent", cursor: "text", transition: "background 0.18s" } as any}
+                    style={{ width: 52, height: 58, borderRadius: 14, border: "1.5px solid", textAlign: "center", fontFamily: "Syne, sans-serif", fontSize: 24, fontWeight: 900, color: d ? "#ff8800" : "var(--text)", outline: "none", background: d ? (isDark ? "rgba(255,107,0,0.07)" : "rgba(255,107,0,0.04)") : (isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.025)"), caretColor: "transparent", cursor: "text", transition: "background 0.18s" } as CSSProperties}
                   />
                 ))}
               </div>

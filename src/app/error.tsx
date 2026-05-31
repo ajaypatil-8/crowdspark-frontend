@@ -69,7 +69,7 @@ export default function GlobalError({ error, reset }: Props) {
             </h1>
 
             <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 15.5, color: "rgba(255,255,255,0.45)", lineHeight: 1.75, margin: "0 0 32px" }}>
-              Something went wrong on our end. This has been logged and we're working on a fix.
+            Something went wrong on our end. This has been logged and we&apos;re working on a fix.
             </p>
 
             {/* Digest badge */}

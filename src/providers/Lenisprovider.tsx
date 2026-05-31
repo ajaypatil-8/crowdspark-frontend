@@ -23,7 +23,7 @@ export default function LenisProvider({ children }: { children: React.ReactNode 
       smoothWheel: true,
     });
 
-    setLenis(instance);
+    const setLenisTimer = window.setTimeout(() => setLenis(instance), 0);
 
     // stable reference for cleanup
     const rafCallback = (time: number) => instance.raf(time * 1000);
@@ -34,6 +34,7 @@ export default function LenisProvider({ children }: { children: React.ReactNode 
     instance.on("scroll", scrollCallback);
 
     return () => {
+      window.clearTimeout(setLenisTimer);
       instance.off("scroll", scrollCallback);
       gsap.ticker.remove(rafCallback);
       instance.destroy();

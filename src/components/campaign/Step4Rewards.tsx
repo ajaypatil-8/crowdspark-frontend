@@ -137,7 +137,7 @@ export default function Step4Rewards({ data, onChange }: Props) {
       <div style={{ padding: "12px 16px", borderRadius: 13, background: isDark ? "rgba(167,139,250,0.06)" : "rgba(167,139,250,0.04)", border: "1px solid rgba(167,139,250,0.18)", display: "flex", gap: 12, alignItems: "flex-start" }}>
         <span style={{ fontSize: 16, flexShrink: 0 }}>🎁</span>
         <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13.5, color: muted, margin: 0, lineHeight: 1.65 }}>
-          Reward tiers are <strong style={{ color: "#a78bfa" }}>optional</strong> but strongly boost conversions. Backers who pledge ≥ the minimum receive that tier's reward.
+        Reward tiers are <strong style={{ color: "#a78bfa" }}>optional</strong> but strongly boost conversions. Backers who pledge ≥ the minimum receive that tier&apos;s reward.
         </p>
       </div>
 
@@ -183,7 +183,7 @@ export default function Step4Rewards({ data, onChange }: Props) {
 
       {data.rewards.length === 0 && (
         <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: muted, textAlign: "center", margin: 0 }}>
-          No tiers yet — that's fine! You can skip this step or use the presets above.
+          No tiers yet — that&apos;s fine! You can skip this step or use the presets above.
         </p>
       )}
 

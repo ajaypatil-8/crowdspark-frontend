@@ -45,7 +45,7 @@ export default function PressPage() {
             </span>
           </h1>
           <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 18, color: "var(--text-muted)", maxWidth: 520, margin: "0 auto 36px", lineHeight: 1.7 }}>
-            Resources for journalists, analysts, and media professionals covering India's crowdfunding ecosystem.
+              Resources for journalists, analysts, and media professionals covering India&apos;s crowdfunding ecosystem.
           </p>
           <a href="mailto:press@crowdspark.in" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "14px 28px", borderRadius: 14, background: "linear-gradient(135deg,#3b82f6,#7c3aed)", color: "#fff", fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 15, textDecoration: "none", boxShadow: "0 0 32px rgba(96,165,250,0.3)" }}>
             Contact Press Team →
@@ -95,7 +95,7 @@ export default function PressPage() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
             {TEAM.map((member, i) => (
               <div key={i} style={{ padding: "32px", borderRadius: 22, background: isDark ? "rgba(255,255,255,0.025)" : "#fff", border: "1px solid var(--border)", position: "relative" }}>
-                <div style={{ fontSize: 40, color: "rgba(255,136,0,0.3)", fontFamily: "serif", lineHeight: 1, marginBottom: 16 }}>"</div>
+                <div style={{ fontSize: 40, color: "rgba(255,136,0,0.3)", fontFamily: "serif", lineHeight: 1, marginBottom: 16 }}>&quot;</div>
                 <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 15, color: "var(--text-sub)", lineHeight: 1.75, fontStyle: "italic", margin: "0 0 24px" }}>{member.quote}</p>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg,#ff5500,#ffcc00)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 15, color: "#fff" }}>{member.name[0]}</div>

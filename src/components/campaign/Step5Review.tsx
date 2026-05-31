@@ -184,7 +184,7 @@ export default function Step5Review(props: Props) {
       </ReviewSection>
 
       <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: muted, lineHeight: 1.7, marginTop: 4, padding: "13px 16px", borderRadius: 12, background: isDark ? "rgba(255,255,255,0.025)" : "rgba(0,0,0,0.025)", border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}` }}>
-        🔍 Your campaign will be submitted for <strong style={{ color: "var(--text)" }}>admin review</strong>. You'll receive an email once it's approved or if changes are needed. Approval usually takes 24–48 hours.
+        🔍 Your campaign will be submitted for <strong style={{ color: "var(--text)" }}>admin review</strong>. You&apos;ll receive an email once it&apos;s approved or if changes are needed. Approval usually takes 24–48 hours.
       </p>
     </div>
   );

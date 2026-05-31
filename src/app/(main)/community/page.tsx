@@ -48,7 +48,7 @@ export default function CommunityPage() {
             </span>
           </h1>
           <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 18, color: "var(--text-muted)", maxWidth: 560, margin: "0 auto", lineHeight: 1.7 }}>
-            India's most supportive crowdfunding community — learn from fellow creators, connect with backers, and share your wins.
+            India&apos;s most supportive crowdfunding community — learn from fellow creators, connect with backers, and share your wins.
           </p>
         </motion.div>
       </div>

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useProfile } from "@/contexts/ProfileContext";
 import { calcCompletion, getBadge, COMPLETION_FIELDS, type UserProfile } from "@/lib/profile";
-import { profileApi } from "@/lib/api";
+import { profileApi, type Gender, type UpdateProfileRequest } from "@/lib/api";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const IcUser = ({ s = 14 }: { s?: number }) => (
@@ -191,7 +191,22 @@ function Field({ label, value, onChange, placeholder, type = "text", maxLength, 
 }
 
 const CATS = ["Technology","Art","Music","Film","Food","Games","Fashion","Education","Environment","Health","Sports","Social","Science","Design","Writing","Photography"];
-const GENDERS = [{ value: "", label: "Select gender" }, { value: "MALE", label: "Male" }, { value: "FEMALE", label: "Female" }, { value: "OTHER", label: "Other" }, { value: "PREFER_NOT_TO_SAY", label: "Prefer not to say" }];
+type GenderInput = "" | Gender | "PREFER_NOT_TO_SAY";
+type ProfileForm = {
+  bio: string;
+  about: string;
+  gender: GenderInput;
+  dob: string;
+  website: string;
+  linkedin: string;
+  instagram: string;
+  twitter: string;
+  city: string;
+  profession: string;
+  cats: string[];
+};
+
+const GENDERS: { value: GenderInput; label: string }[] = [{ value: "", label: "Select gender" }, { value: "MALE", label: "Male" }, { value: "FEMALE", label: "Female" }, { value: "OTHER", label: "Other" }, { value: "PREFER_NOT_TO_SAY", label: "Prefer not to say" }];
 
 // ─── Completion Ring ──────────────────────────────────────────────────────────
 function CompletionRing({ pct, color }: { pct: number; color: string }) {
@@ -225,8 +240,24 @@ function ProfileSkeleton() {
   );
 }
 
-function buildDraft(user: UserProfile, form: Record<string, any>): UserProfile {
-  return { ...user, bio: form.bio, about: form.about, gender: form.gender as any, dateOfBirth: form.dob, websiteUrl: form.website, linkedinUrl: form.linkedin, instagramUrl: form.instagram, twitterUrl: form.twitter, city: form.city, profession: form.profession, interestedCategories: form.cats };
+function normalizeGender(value: GenderInput): Gender | null {
+  return value === "" || value === "PREFER_NOT_TO_SAY" ? null : value;
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
+function getValidationErrors(error: unknown): Record<string, string> | undefined {
+  if (error && typeof error === "object" && "errors" in error) {
+    const errors = (error as { errors?: unknown }).errors;
+    if (errors && typeof errors === "object") return errors as Record<string, string>;
+  }
+  return undefined;
+}
+
+function buildDraft(user: UserProfile, form: ProfileForm): UserProfile {
+  return { ...user, bio: form.bio, about: form.about, gender: normalizeGender(form.gender), dateOfBirth: form.dob, websiteUrl: form.website, linkedinUrl: form.linkedin, instagramUrl: form.instagram, twitterUrl: form.twitter, city: form.city, profession: form.profession, interestedCategories: form.cats };
 }
 
 export default function ProfilePage() {
@@ -248,7 +279,7 @@ export default function ProfilePage() {
 
   const [bio, setBio] = useState("");
   const [about, setAbout] = useState("");
-  const [gender, setGender] = useState("");
+  const [gender, setGender] = useState<GenderInput>("");
   const [dob, setDob] = useState("");
   const [website, setWebsite] = useState("");
   const [linkedin, setLinkedin] = useState("");
@@ -287,7 +318,7 @@ export default function ProfilePage() {
     const preview = URL.createObjectURL(file);
     setAvatarPreview(preview); setAL(true);
     try { await profileApi.uploadAvatar(file); await refetch(); show("Avatar updated!", "success"); }
-    catch (e: any) { setAvatarPreview(user?.profileImageUrl ?? ""); show(e.message ?? "Upload failed", "error"); }
+    catch (e: unknown) { setAvatarPreview(user?.profileImageUrl ?? ""); show(getErrorMessage(e, "Upload failed"), "error"); }
     finally { setAL(false); }
   }, [refetch, show, user?.profileImageUrl]);
 
@@ -295,7 +326,7 @@ export default function ProfilePage() {
     const preview = URL.createObjectURL(file);
     setBannerPreview(preview); setBL(true);
     try { await profileApi.uploadBanner(file); await refetch(); show("Banner updated!", "success"); }
-    catch (e: any) { setBannerPreview(user?.bannerImageUrl ?? ""); show(e.message ?? "Upload failed", "error"); }
+    catch (e: unknown) { setBannerPreview(user?.bannerImageUrl ?? ""); show(getErrorMessage(e, "Upload failed"), "error"); }
     finally { setBL(false); }
   }, [refetch, show, user?.bannerImageUrl]);
 
@@ -309,11 +340,15 @@ export default function ProfilePage() {
     if (Object.keys(errors).length > 0) { setFormErrors(errors); show("Please fix the errors below", "error"); return; }
     setSaving(true);
     try {
-      await profileApi.update({ bio, about, gender: gender as any, dateOfBirth: dob, websiteUrl: website, linkedinUrl: linkedin, instagramUrl: instagram, twitterUrl: twitter, addressLine: address, city, state: stateProv, country, pincode, profession, organization: org, interestedCategories: cats });
+      const payload: UpdateProfileRequest = { bio, about, dateOfBirth: dob, websiteUrl: website, linkedinUrl: linkedin, instagramUrl: instagram, twitterUrl: twitter, addressLine: address, city, state: stateProv, country, pincode, profession, organization: org, interestedCategories: cats };
+      const apiGender = normalizeGender(gender);
+      if (apiGender) payload.gender = apiGender;
+      await profileApi.update(payload);
       await refetch(); setIsDirty(false); show("Profile saved!", "success");
-    } catch (e: any) {
-      if (e.errors) setFormErrors(e.errors);
-      show(e.message ?? "Save failed", "error");
+    } catch (e: unknown) {
+      const validationErrors = getValidationErrors(e);
+      if (validationErrors) setFormErrors(validationErrors);
+      show(getErrorMessage(e, "Save failed"), "error");
     } finally { setSaving(false); }
   }, [bio, about, gender, dob, website, linkedin, instagram, twitter, address, city, stateProv, country, pincode, profession, org, cats, refetch, show]);
 
@@ -400,7 +435,7 @@ export default function ProfilePage() {
             </div>
             <div>
               <label htmlFor={genderSelId} style={{ display: "block", fontFamily: "DM Sans, sans-serif", fontWeight: 600, fontSize: 11, color: "var(--text-muted)", marginBottom: 7, letterSpacing: "0.08em", textTransform: "uppercase" }}>Gender</label>
-              <select id={genderSelId} value={gender} onChange={e => { setGender(e.target.value); setIsDirty(true); }}
+              <select id={genderSelId} value={gender} onChange={e => { setGender(e.target.value as GenderInput); setIsDirty(true); }}
                 style={{ width: "100%", padding: "11px 14px", borderRadius: 12, boxSizing: "border-box" as const, fontFamily: "DM Sans, sans-serif", fontSize: 14, outline: "none", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`, background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.025)", color: "var(--text)", cursor: "pointer", transition: "border-color 0.15s" }}>
                 {GENDERS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
               </select>

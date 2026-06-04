@@ -1004,3 +1004,16 @@ export const savedApi = {
       method: "PUT",
     }),
 };
+
+export const gdprApi = {
+
+  deleteAccount: (password: string, reason?: string) =>
+    request<void>("/auth/me", {
+      method: "DELETE",
+      body: JSON.stringify({ password, reason }),
+    }),
+
+
+  exportData: () =>
+    request<object>("/auth/me/data-export"),
+};

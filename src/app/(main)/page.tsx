@@ -841,8 +841,8 @@ export default function HomePage() {
         .lp-root { min-height:100vh; background:var(--bg); overflow-x:hidden; position:relative; }
 
         /* ── Ambient orbs — position:absolute (NOT fixed) avoids scroll repaint ── */
-        .lp-orb-1 { position:absolute; width:600px; height:600px; border-radius:50%; background:radial-gradient(circle,rgba(0,245,212,0.06) 0%,transparent 70%); filter:blur(60px); top:-150px; right:-150px; pointer-events:none; z-index:0; }
-        .lp-orb-2 { position:absolute; width:400px; height:400px; border-radius:50%; background:radial-gradient(circle,rgba(100,30,220,0.05) 0%,transparent 70%); filter:blur(60px); bottom:300px; left:-80px; pointer-events:none; z-index:0; }
+        .lp-orb-1 { position:absolute; width:600px; height:600px; border-radius:50%; background:radial-gradient(circle,rgba(0,245,212,0.06) 0%,transparent 70%); top:-150px; right:-150px; pointer-events:none; z-index:0; will-change: transform; }
+        .lp-orb-2 { position:absolute; width:400px; height:400px; border-radius:50%; background:radial-gradient(circle,rgba(100,30,220,0.05) 0%,transparent 70%); bottom:300px; left:-80px; pointer-events:none; z-index:0; will-change: transform; }
 
         /* ── Hero ── */
         .lp-hero { position:relative; min-height:100vh; width:min(1280px,100%); margin:0 auto; display:grid; grid-template-columns:minmax(420px,.9fr) minmax(520px,1.1fr); align-items:center; padding:120px 56px 80px; gap:54px; overflow:hidden; z-index:1; }
@@ -889,7 +889,7 @@ export default function HomePage() {
 
         /* H1 */
         .lp-h1 { font-family:"Syne",sans-serif; font-weight:800; font-size:clamp(48px,5.9vw,92px); line-height:.94; letter-spacing:0; color:var(--text); margin:0 0 24px; }
-        .lp-h1-gradient { background:linear-gradient(135deg,#ff6b00,#ffcc00); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+        .lp-h1-gradient { background:linear-gradient(135deg,var(--accent),#ff007f); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
         .lp-h1-accent { color:var(--accent); text-shadow:0 0 50px var(--accent-glow); }
 
         .lp-sub { font-size:clamp(15px,1.5vw,18px); color:var(--text-muted); font-family:"DM Sans",sans-serif; line-height:1.82; max-width:470px; margin:0 0 40px; }
@@ -985,10 +985,10 @@ export default function HomePage() {
         .lp-cta-inner { max-width:820px; margin:0 auto; }
         .lp-cta-banner { border-radius:28px; padding:76px 56px; text-align:center; background:var(--card-bg); border:1px solid var(--card-border); position:relative; overflow:hidden; box-shadow:var(--card-shadow); }
         .lp-cta-top-line { position:absolute; top:0; left:"10%"; right:"10%"; height:1.5px; background:linear-gradient(90deg,transparent,var(--accent),rgba(255,204,0,0.8),var(--accent),transparent); }
-        .lp-cta-bg-orb { position:absolute; border-radius:50%; pointer-events:none; }
+        .lp-cta-bg-orb { position:absolute; border-radius:50%; pointer-events:none; will-change: transform; }
         .lp-cta-bg-orb-a { width:500px; height:500px; background:radial-gradient(circle,rgba(0,245,212,0.07) 0%,transparent 70%); top:50%; left:50%; transform:translate(-50%,-50%); }
-        .lp-cta-bg-orb-b { width:200px; height:200px; background:rgba(255,107,0,0.06); filter:blur(60px); top:-60px; right:-60px; }
-        .lp-cta-noise { position:absolute; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"); opacity:.08; mix-blend-mode:overlay; pointer-events:none; }
+        .lp-cta-bg-orb-b { width:200px; height:200px; background:radial-gradient(circle, rgba(255,107,0,0.06) 0%, transparent 70%); top:-60px; right:-60px; }
+        .lp-cta-noise { position:absolute; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"); opacity:.05; mix-blend-mode:overlay; pointer-events:none; }
         .lp-cta-overline { position:relative; margin-bottom:18px; }
         .lp-cta-h2 { font-family:"Syne",sans-serif; font-weight:800; font-size:clamp(30px,4vw,54px); color:var(--text); letter-spacing:-0.025em; line-height:1.08; margin:0 0 20px; position:relative; }
         .lp-cta-accent { color:var(--accent); text-shadow:0 0 50px var(--accent-glow); }

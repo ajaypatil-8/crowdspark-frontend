@@ -81,35 +81,17 @@ const SIDEBAR_ITEMS = [
   },
 ];
 
-// ── Fire particles on logo ────────────────────────────────────────────────────
+// ── Fire glow on logo (optimized) ────────────────────────────────────────────────────
 function FireParticles() {
-  const ref = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.matchMedia("(pointer: coarse)").matches) return;
-    const c = ref.current; if (!c) return;
-    const ctx = c.getContext("2d")!;
-    c.width = 80; c.height = 40;
-    type P = { x: number; y: number; vy: number; life: number; ml: number; s: number };
-    const ps: P[] = [];
-    let f = 0, raf: number;
-    const tick = () => {
-      raf = requestAnimationFrame(tick); f++;
-      if (f % 2 === 0) ps.push({ x: 30 + Math.random() * 20, y: 36, vy: -(0.6 + Math.random()), life: 0, ml: 24 + Math.random() * 16, s: 2 + Math.random() * 3 });
-      ctx.clearRect(0, 0, 80, 40);
-      for (let i = ps.length - 1; i >= 0; i--) {
-        const p = ps[i]; p.y += p.vy; p.x += (Math.random() - 0.5) * 0.8; p.life++;
-        const t = p.life / p.ml; if (t >= 1) { ps.splice(i, 1); continue; }
-        ctx.save(); ctx.globalAlpha = (1 - t) * 0.85;
-        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.s * (1 - t * 0.6));
-        g.addColorStop(0, `rgb(255,${Math.round(255*(1-t*0.85))},${Math.round(60*(1-t))})`);
-        g.addColorStop(1, "transparent");
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, p.s * (1 - t * 0.6), 0, Math.PI * 2); ctx.fill(); ctx.restore();
-      }
-    };
-    tick(); return () => cancelAnimationFrame(raf);
-  }, []);
-  return <canvas ref={ref} style={{ position: "absolute", bottom: -4, left: -16, width: 80, height: 40, pointerEvents: "none", zIndex: 0 }} />;
+  return (
+    <div style={{ position: "absolute", bottom: -8, left: -8, width: 52, height: 52, pointerEvents: "none", zIndex: 0 }}>
+      <motion.div
+        animate={{ scale: [1, 1.25, 1], opacity: [0.15, 0.4, 0.15] }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+        style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,107,0,0.5) 0%, transparent 65%)" }}
+      />
+    </div>
+  );
 }
 
 // ── Avatar ────────────────────────────────────────────────────────────────────

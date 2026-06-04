@@ -6,6 +6,7 @@ import { useProfile } from "@/contexts/ProfileContext";
 import {
   authApi, creatorApi, tokenStorage,
   type KycStatusResponse, type KycStatus,
+  gdprApi,
 } from "@/lib/api";
 
 type WizardStep = "intro" | "otp-sent" | "otp-verified" | "kyc-form" | "submitted" | "approved" | "rejected";
@@ -526,35 +527,187 @@ function AccountInfo() {
 }
 
 // ─── Danger Zone ──────────────────────────────────────────────────────────────
+// FIX: All state declarations, handler functions, and JSX are now correctly
+//      placed — state/handlers in the function body, JSX in the return.
 function DangerZone() {
-  const [showConfirm, setShowConfirm] = useState(false);
+  const { isDark } = useTheme();
 
+  // ── State ──────────────────────────────────────────────────────────────────
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
+
+  /** GDPR Art. 20 — downloads all personal data as a JSON file */
+  async function handleExport() {
+    try {
+      const data = await gdprApi.exportData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = `crowdspark-data-export-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("Failed to export data. Please try again.");
+    }
+  }
+
+  /** GDPR Art. 17 — permanently deletes account after password confirmation */
+  async function handleDeleteAccount() {
+    if (!deletePassword.trim()) {
+      setDeleteError("Password is required to confirm deletion");
+      return;
+    }
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await gdprApi.deleteAccount(deletePassword);
+      // Wipe all local auth state and redirect to home
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.href = "/";
+    } catch (e: unknown) {
+      setDeleteError(e instanceof Error ? e.message : "Deletion failed. Check your password.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  function cancelDelete() {
+    setShowDeleteModal(false);
+    setDeletePassword("");
+    setDeleteError(null);
+  }
+
+  // ── JSX ────────────────────────────────────────────────────────────────────
   return (
-    <div style={{ padding: 18, borderRadius: 16, background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.14)" }}>
-      <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: showConfirm ? 16 : 0 }}>
-        <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#ef4444", flexShrink: 0 }}><IcWarn s={15} /></div>
-        <div style={{ flex: 1 }}>
-          <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 14, color: "#ef4444", margin: "0 0 4px" }}>Deactivate account</p>
-          <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: "var(--text-muted)", margin: 0, lineHeight: 1.65 }}>Suspends your account. Reactivate any time via support.</p>
-        </div>
-      </div>
-      {!showConfirm && (
-        <button type="button" onClick={() => setShowConfirm(true)}
-          style={{ marginTop: 14, padding: "10px 20px", background: "none", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 11, fontSize: 13.5, fontFamily: "DM Sans, sans-serif", fontWeight: 600, cursor: "pointer", transition: "all 0.18s" }}>
-          Deactivate my account
-        </button>
-      )}
-      <AnimatePresence>
-        {showConfirm && (
-          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            role="alert" style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)" }}>
-            <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13.5, color: "var(--text)", margin: "0 0 12px", lineHeight: 1.65 }}>
-              Contact <strong>support@crowdspark.in</strong> to deactivate your account.
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
+      {/* ── Download My Data ─────────────────────────────────────────────── */}
+      <div style={{ padding: 18, borderRadius: 16, background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)", border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}` }}>
+        <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 14 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)"}`, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", flexShrink: 0 }}>
+            <IcShield s={15} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 14, color: "var(--text)", margin: "0 0 4px" }}>Download my data</p>
+            <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: "var(--text-muted)", margin: 0, lineHeight: 1.65 }}>
+              Export all data we hold about you as JSON (GDPR Art. 20 — Right to portability).
             </p>
-            <GhostBtn label="Dismiss" onClick={() => setShowConfirm(false)} />
-          </motion.div>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={handleExport}
+          style={{ padding: "10px 20px", background: "none", color: "var(--text)", border: `1px solid ${isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)"}`, borderRadius: 11, fontSize: 13.5, fontFamily: "DM Sans, sans-serif", fontWeight: 600, cursor: "pointer", transition: "all 0.18s" }}
+        >
+          ↓ Download My Data
+        </button>
+      </div>
+
+      {/* ── Delete Account ────────────────────────────────────────────────── */}
+      <div style={{ padding: 18, borderRadius: 16, background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.14)" }}>
+        <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: showDeleteModal ? 16 : 0 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#ef4444", flexShrink: 0 }}>
+            <IcWarn s={15} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 14, color: "#ef4444", margin: "0 0 4px" }}>Delete account</p>
+            <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: "var(--text-muted)", margin: 0, lineHeight: 1.65 }}>
+              Permanently deletes all personal data. Financial records are kept for legal compliance. This cannot be undone.
+            </p>
+          </div>
+        </div>
+
+        {!showDeleteModal ? (
+          <button
+            type="button"
+            onClick={() => setShowDeleteModal(true)}
+            style={{ marginTop: 14, padding: "10px 20px", background: "none", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 11, fontSize: 13.5, fontFamily: "DM Sans, sans-serif", fontWeight: 600, cursor: "pointer", transition: "all 0.18s" }}
+          >
+            Delete my account
+          </button>
+        ) : (
+          <AnimatePresence>
+            <motion.div
+              initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)" }}
+            >
+              <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13.5, color: "var(--text)", margin: "0 0 14px", lineHeight: 1.65 }}>
+                ⚠️ This will permanently delete your account and all personal data.
+                Enter your current password to confirm.
+              </p>
+              <SInput
+                label="Confirm Password"
+                value={deletePassword}
+                onChange={setDeletePassword}
+                type="password"
+                placeholder="Enter your password to confirm"
+                error={deleteError ?? undefined}
+                required
+              />
+              <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+                <button
+                  type="button"
+                  onClick={handleDeleteAccount}
+                  disabled={deleting}
+                  style={{ padding: "10px 20px", background: deleting ? "rgba(239,68,68,0.5)" : "#ef4444", color: "#fff", border: "none", borderRadius: 11, fontSize: 13.5, fontFamily: "DM Sans, sans-serif", fontWeight: 600, cursor: deleting ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: 8, transition: "all 0.18s" }}
+                >
+                  {deleting && <span style={{ width: 13, height: 13, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", animation: "stSpin .7s linear infinite", flexShrink: 0 }} />}
+                  {deleting ? "Deleting…" : "Permanently Delete"}
+                </button>
+                <GhostBtn label="Cancel" onClick={cancelDelete} />
+              </div>
+            </motion.div>
+          </AnimatePresence>
         )}
-      </AnimatePresence>
+      </div>
+
+      {/* ── Deactivate Account (softer — contact support) ─────────────────── */}
+      <div style={{ padding: 18, borderRadius: 16, background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.14)" }}>
+        <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: showConfirm ? 16 : 0 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#ef4444", flexShrink: 0 }}>
+            <IcWarn s={15} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 14, color: "#ef4444", margin: "0 0 4px" }}>Deactivate account</p>
+            <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: "var(--text-muted)", margin: 0, lineHeight: 1.65 }}>
+              Suspends your account. Reactivate any time via support.
+            </p>
+          </div>
+        </div>
+
+        {!showConfirm && (
+          <button
+            type="button"
+            onClick={() => setShowConfirm(true)}
+            style={{ marginTop: 14, padding: "10px 20px", background: "none", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 11, fontSize: 13.5, fontFamily: "DM Sans, sans-serif", fontWeight: 600, cursor: "pointer", transition: "all 0.18s" }}
+          >
+            Deactivate my account
+          </button>
+        )}
+
+        <AnimatePresence>
+          {showConfirm && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              role="alert"
+              style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)" }}
+            >
+              <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13.5, color: "var(--text)", margin: "0 0 12px", lineHeight: 1.65 }}>
+                Contact <strong>support@crowdspark.in</strong> to deactivate your account.
+              </p>
+              <GhostBtn label="Dismiss" onClick={() => setShowConfirm(false)} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
     </div>
   );
 }
@@ -597,63 +750,42 @@ export default function SettingsPage() {
         aria-hidden
         animate={{ x: [0, 26, 0], y: [0, -12, 0] }}
         transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
-        style={{
-          position: "absolute",
-          top: 40,
-          right: 40,
-          width: 160,
-          height: 160,
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(255,136,0,0.16) 0%, transparent 70%)",
-          filter: "blur(8px)",
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
+        style={{ position: "absolute", top: 40, right: 40, width: 160, height: 160, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,136,0,0.16) 0%, transparent 70%)", filter: "blur(8px)", pointerEvents: "none", zIndex: 0 }}
       />
       <motion.div
         aria-hidden
         animate={{ x: [0, -20, 0], y: [0, 16, 0] }}
         transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
-        style={{
-          position: "absolute",
-          bottom: 10,
-          left: 10,
-          width: 150,
-          height: 150,
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(167,139,250,0.14) 0%, transparent 70%)",
-          filter: "blur(8px)",
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
+        style={{ position: "absolute", bottom: 10, left: 10, width: 150, height: 150, borderRadius: "50%", background: "radial-gradient(circle, rgba(167,139,250,0.14) 0%, transparent 70%)", filter: "blur(8px)", pointerEvents: "none", zIndex: 0 }}
       />
+
       <div style={{ position: "relative", zIndex: 1 }}>
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 32 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(255,136,0,0.1)", border: "1px solid rgba(255,136,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#ff8800" }}>
-            <IcCard s={14} />
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 32 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <div style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(255,136,0,0.1)", border: "1px solid rgba(255,136,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#ff8800" }}>
+              <IcCard s={14} />
+            </div>
+            <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11.5, color: isDark ? "rgba(255,255,255,0.42)" : "rgba(0,0,0,0.42)", textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600 }}>Account</span>
           </div>
-          <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11.5, color: isDark ? "rgba(255,255,255,0.42)" : "rgba(0,0,0,0.42)", textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600 }}>Account</span>
-        </div>
-        <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(24px,3vw,36px)", color: isDark ? "#fff" : "#0a0a0a", letterSpacing: "-0.03em", margin: "0 0 6px", lineHeight: 1.1 }}>Settings</h1>
-        <p style={{ fontSize: 14, color: isDark ? "rgba(255,255,255,0.42)" : "rgba(0,0,0,0.42)", fontFamily: "DM Sans, sans-serif", margin: 0 }}>Manage verification, creator status, and account details.</p>
-      </motion.div>
+          <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(24px,3vw,36px)", color: isDark ? "#fff" : "#0a0a0a", letterSpacing: "-0.03em", margin: "0 0 6px", lineHeight: 1.1 }}>Settings</h1>
+          <p style={{ fontSize: 14, color: isDark ? "rgba(255,255,255,0.42)" : "rgba(0,0,0,0.42)", fontFamily: "DM Sans, sans-serif", margin: 0 }}>Manage verification, creator status, and account details.</p>
+        </motion.div>
 
-      <Section title="Email Verification" icon={<IcMail s={14} />} subtitle="Verify your email to unlock all features">
-        <EmailVerification />
-      </Section>
+        <Section title="Email Verification" icon={<IcMail s={14} />} subtitle="Verify your email to unlock all features">
+          <EmailVerification />
+        </Section>
 
-      <Section title={isCreator ? "Creator Status" : "Become a Creator"} icon={<IcRocket s={14} />} subtitle={isCreator ? "Your KYC verification details" : "3-step process to start launching campaigns"} accentColor={isCreator ? "#34d399" : "#ff8800"}>
-        <BecomeCreatorWizard />
-      </Section>
+        <Section title={isCreator ? "Creator Status" : "Become a Creator"} icon={<IcRocket s={14} />} subtitle={isCreator ? "Your KYC verification details" : "3-step process to start launching campaigns"} accentColor={isCreator ? "#34d399" : "#ff8800"}>
+          <BecomeCreatorWizard />
+        </Section>
 
-      <Section title="Account Information" icon={<IcCard s={14} />} subtitle="Your account details and status">
-        <AccountInfo />
-      </Section>
+        <Section title="Account Information" icon={<IcCard s={14} />} subtitle="Your account details and status">
+          <AccountInfo />
+        </Section>
 
-      <Section title="Danger Zone" icon={<IcWarn s={14} />} subtitle="Irreversible actions" accentColor="#ef4444">
-        <DangerZone />
-      </Section>
+        <Section title="Danger Zone" icon={<IcWarn s={14} />} subtitle="Data export and irreversible account actions" accentColor="#ef4444">
+          <DangerZone />
+        </Section>
       </div>
 
       <style>{`

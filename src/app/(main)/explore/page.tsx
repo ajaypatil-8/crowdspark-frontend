@@ -135,7 +135,7 @@ function ExploreContent() {
             height: 300,
             borderRadius: "50%",
             background: "radial-gradient(circle, rgba(0,245,212,0.07) 0%, transparent 70%)",
-            filter: "blur(60px)",
+            willChange: "transform",
             pointerEvents: "none",
           }}
         />

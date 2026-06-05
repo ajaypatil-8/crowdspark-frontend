@@ -18,6 +18,8 @@ import {
   TrendingUp, Calendar, ArrowLeft, MessageSquare ,
 } from "lucide-react";
 import CommentsTab from "@/components/CommentsTab";
+// ── CHANGE 1: import live-funding hook ────────────────────────────────────────
+import { useFundingStream } from "@/hooks/useFundingStream";
 
 if (typeof window !== "undefined") gsap.registerPlugin(ScrollTrigger);
 
@@ -169,14 +171,13 @@ export default function ProjectDetailPage() {
   const [loading, setLoading]  = useState(true);
   const [error,   setError]    = useState<string | null>(null);
   const [modal,   setModal]    = useState(false);
- const [activeTab, setActiveTab] = useState<ProjectTab>("story");
+  const [activeTab, setActiveTab] = useState<ProjectTab>("story");
   const [myUsername, setMyUsername] = useState<string | null>(null);
   const [toast,   setToast]    = useState<string | null>(null);
   const [saved,   setSaved]    = useState(false);
   const [updates, setUpdates] = useState<CampaignUpdateResponse[]>([]);
   const [updatesLoading, setUpdatesLoading] = useState(false);
   const [myUserId, setMyUserId] = useState<number | null>(null);
-
 
   const mainRef     = useRef<HTMLDivElement>(null);
   const toastTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -203,7 +204,7 @@ export default function ProjectDetailPage() {
         ]);
         setProject(proj);
         try {
-          if (myUsername) {  // only check if user is logged in
+          if (myUsername) {
   savedApi.checkSaved(Number(id))
     .then(data => setSaved(data.saved))
     .catch(() => {});
@@ -256,6 +257,24 @@ export default function ProjectDetailPage() {
   const accent = "#ff5c00";
   const accentSoft = isDark ? "rgba(255,92,0,0.12)" : "rgba(255,92,0,0.09)";
 
+  // ── CHANGE 2: SSE live funding stream ────────────────────────────────────────
+  // Hook MUST be called unconditionally (before early returns) — React rules of hooks.
+  // When project is null (loading), enabled=false so no SSE connection opens yet.
+  const funding = useFundingStream(
+    project?.id ?? 0,
+    {
+      projectId:        project?.id        ?? 0,
+      currentAmount:    project?.currentAmount    ?? 0,
+      goalAmount:       project?.goalAmount       ?? 0,
+      fundedPercentage: project?.fundedPercentage ?? 0,
+      backersCount:     (project as any)?.backersCount ?? 0,
+      status:           (project as any)?.status  ?? "APPROVED",
+      timestamp:        Date.now(),
+    },
+    // Only stream for active campaigns — no point opening SSE for FAILED/CLOSED
+    !!project && ["APPROVED"].includes((project as any)?.status ?? "APPROVED")
+  );
+
   if (loading) return <PageSkeleton isDark={isDark} />;
 
   if (error || !project) {
@@ -276,14 +295,23 @@ export default function ProjectDetailPage() {
     );
   }
 
-  const pct     = Math.min(project.fundedPercentage ?? 0, 100);
-  const raised  = fmt(project.currentAmount ?? 0);
-  const goal    = fmt(project.goalAmount ?? 0);
+  // Derive display values from live SSE data instead of static project snapshot
+  const pct     = Math.min(funding.fundedPercentage, 100);
+  const raised  = fmt(funding.currentAmount);
+  const goal    = fmt(funding.goalAmount);
   const rewards: RewardTierResponse[] = project.rewards ?? [];
   const isOwner = !!(myUsername && project.creator?.username === myUsername);
 
   return (
     <div ref={mainRef} style={{ minHeight: "100vh", background: bg, paddingTop: 80 }}>
+      {/* ── CHANGE 5 (CSS): keyframe for the live-pulse dot ── */}
+      <style>{`
+        @keyframes livePulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50%       { opacity: 0.5; transform: scale(0.85); }
+        }
+      `}</style>
+
       <AmbientCanvas isDark={isDark} />
 
       {/* Toast */}
@@ -403,7 +431,9 @@ export default function ProjectDetailPage() {
             <div className="reveal" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 32 }}>
               {[
                 { icon: <TrendingUp size={15} color={accent} />, label: "Funded", value: `${pct}%` },
-                { icon: <Users size={15} color="#00d4b8" />, label: "Backers", value: project.backersCount?.toLocaleString("en-IN") ?? "—" },
+                // ── CHANGE 3: backers count from live SSE data ────────────────
+                { icon: <Users size={15} color="#00d4b8" />, label: "Backers",
+                  value: funding.backersCount.toLocaleString("en-IN") },
                 { icon: <Calendar size={15} color="#818cf8" />, label: "Days Left", value: String(project.daysLeft ?? 0), color: daysColor(project.daysLeft) },
               ].map(s => (
                 <div key={s.label} style={{ padding: "16px", borderRadius: 16, background: card, border: `1px solid ${bdr}`, textAlign: "center" }}>
@@ -419,8 +449,7 @@ export default function ProjectDetailPage() {
               <TabBtn id="story"   active={activeTab === "story"}   label="Story"   icon={<BookOpen size={14}/>}  onClick={setActiveTab} {...{txt,muted,card}} />
               <TabBtn id="rewards" active={activeTab === "rewards"} label="Rewards" icon={<Gift size={14}/>}      onClick={setActiveTab} {...{txt,muted,card}} />
               <TabBtn id="updates" active={activeTab === "updates"} label="Updates" icon={<Bell size={14}/>}      onClick={setActiveTab} {...{txt,muted,card}} />
-              <TabBtn id ="comments" active={activeTab === "comments"} label="Q&A" icon={< MessageSquare size={14}/>} onClick={setActiveTab} {...{txt,muted,card,card2,bdr}} />
-
+              <TabBtn id ="comments" active={activeTab === "comments"} label="Q&A" icon={< MessageSquare size={14}/>} onClick={setActiveTab} {...{txt,muted,card}} />
             </div>
 
             {/* Tab content */}
@@ -520,151 +549,141 @@ export default function ProjectDetailPage() {
                 )}
 
                 {/* ── Updates ── */}
-         {activeTab === "updates" && (
-  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-    {updatesLoading ? (
-      // Skeleton
-      [0,1,2].map(i => (
-        <div key={`uskel-${i}`} style={{
-          padding: "24px", borderRadius: 18,
-          background: card, border: `1px solid ${bdr}`,
-          animation: "pulse 1.5s ease-in-out infinite"
-        }}>
-          <div style={{ height: 16, width: "40%", borderRadius: 8,
-            background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
-            marginBottom: 12 }} />
-          <div style={{ height: 12, width: "90%", borderRadius: 8,
-            background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
-            marginBottom: 8 }} />
-          <div style={{ height: 12, width: "75%", borderRadius: 8,
-            background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)" }} />
-        </div>
-      ))
-    ) : updates.length === 0 ? (
-      // Empty state
-      <div style={{
-        padding: "48px 32px", borderRadius: 22,
-        background: card, border: `1px solid ${bdr}`,
-        textAlign: "center"
-      }}>
-        <div style={{
-          width: 64, height: 64, borderRadius: 18,
-          background: "rgba(99,102,241,0.1)",
-          border: "1px solid rgba(99,102,241,0.22)",
-          display: "flex", alignItems: "center",
-          justifyContent: "center", margin: "0 auto 16px"
-        }}>
-          <Bell size={26} color="#818cf8" />
-        </div>
-        <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700,
-          fontSize: 17, color: txt, margin: "0 0 8px" }}>
-          No updates yet
-        </p>
-        <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13.5,
-          color: muted, margin: 0, lineHeight: 1.7 }}>
-          The creator hasn&apos;t posted any updates yet. Check back later!
-        </p>
-      </div>
-    ) : (
-      // Update cards
-      updates.map((u, i) => (
-        <motion.div
-          key={u.id}
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.06 }}
-          style={{
-            padding: "24px 28px", borderRadius: 20,
-            background: card, border: `1px solid ${bdr}`,
-          }}
-        >
-          {/* Header */}
-          <div style={{ display: "flex", alignItems: "center",
-            gap: 10, marginBottom: 14 }}>
-            {/* Avatar */}
-            <div style={{
-              width: 38, height: 38, borderRadius: "50%",
-              background: "linear-gradient(135deg,#ff5c00,#ff9900)",
-              display: "flex", alignItems: "center",
-              justifyContent: "center", flexShrink: 0,
-              overflow: "hidden"
-            }}>
-              {u.authorProfileImage ? (
-                <img src={u.authorProfileImage} alt={u.authorUsername}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              ) : (
-                <span style={{ fontFamily: "Syne, sans-serif",
-                  fontWeight: 800, fontSize: 14, color: "#fff" }}>
-                  {u.authorUsername?.[0]?.toUpperCase()}
-                </span>
-              )}
-            </div>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700,
-                fontSize: 13, color: txt, margin: 0 }}>
-                {u.authorUsername}
-              </p>
-              <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11.5,
-                color: muted, margin: 0 }}>
-                {new Date(u.createdAt).toLocaleDateString("en-IN", {
-                  day: "numeric", month: "long", year: "numeric"
-                })}
-                {u.updatedAt && u.updatedAt !== u.createdAt && " (edited)"}
-              </p>
-            </div>
-            {/* Update number badge */}
-            <span style={{
-              fontFamily: "DM Mono, monospace", fontSize: 11,
-              color: muted, background: isDark
-                ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
-              padding: "3px 9px", borderRadius: 8
-            }}>
-              Update #{updates.length - i}
-            </span>
-          </div>
+                {activeTab === "updates" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    {updatesLoading ? (
+                      [0,1,2].map(i => (
+                        <div key={`uskel-${i}`} style={{
+                          padding: "24px", borderRadius: 18,
+                          background: card, border: `1px solid ${bdr}`,
+                          animation: "pulse 1.5s ease-in-out infinite"
+                        }}>
+                          <div style={{ height: 16, width: "40%", borderRadius: 8,
+                            background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+                            marginBottom: 12 }} />
+                          <div style={{ height: 12, width: "90%", borderRadius: 8,
+                            background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
+                            marginBottom: 8 }} />
+                          <div style={{ height: 12, width: "75%", borderRadius: 8,
+                            background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)" }} />
+                        </div>
+                      ))
+                    ) : updates.length === 0 ? (
+                      <div style={{
+                        padding: "48px 32px", borderRadius: 22,
+                        background: card, border: `1px solid ${bdr}`,
+                        textAlign: "center"
+                      }}>
+                        <div style={{
+                          width: 64, height: 64, borderRadius: 18,
+                          background: "rgba(99,102,241,0.1)",
+                          border: "1px solid rgba(99,102,241,0.22)",
+                          display: "flex", alignItems: "center",
+                          justifyContent: "center", margin: "0 auto 16px"
+                        }}>
+                          <Bell size={26} color="#818cf8" />
+                        </div>
+                        <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700,
+                          fontSize: 17, color: txt, margin: "0 0 8px" }}>
+                          No updates yet
+                        </p>
+                        <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13.5,
+                          color: muted, margin: 0, lineHeight: 1.7 }}>
+                          The creator hasn&apos;t posted any updates yet. Check back later!
+                        </p>
+                      </div>
+                    ) : (
+                      updates.map((u, i) => (
+                        <motion.div
+                          key={u.id}
+                          initial={{ opacity: 0, y: 16 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.06 }}
+                          style={{
+                            padding: "24px 28px", borderRadius: 20,
+                            background: card, border: `1px solid ${bdr}`,
+                          }}
+                        >
+                          {/* Header */}
+                          <div style={{ display: "flex", alignItems: "center",
+                            gap: 10, marginBottom: 14 }}>
+                            <div style={{
+                              width: 38, height: 38, borderRadius: "50%",
+                              background: "linear-gradient(135deg,#ff5c00,#ff9900)",
+                              display: "flex", alignItems: "center",
+                              justifyContent: "center", flexShrink: 0,
+                              overflow: "hidden"
+                            }}>
+                              {u.authorProfileImage ? (
+                                <img src={u.authorProfileImage} alt={u.authorUsername}
+                                  style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              ) : (
+                                <span style={{ fontFamily: "Syne, sans-serif",
+                                  fontWeight: 800, fontSize: 14, color: "#fff" }}>
+                                  {u.authorUsername?.[0]?.toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700,
+                                fontSize: 13, color: txt, margin: 0 }}>
+                                {u.authorUsername}
+                              </p>
+                              <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11.5,
+                                color: muted, margin: 0 }}>
+                                {new Date(u.createdAt).toLocaleDateString("en-IN", {
+                                  day: "numeric", month: "long", year: "numeric"
+                                })}
+                                {u.updatedAt && u.updatedAt !== u.createdAt && " (edited)"}
+                              </p>
+                            </div>
+                            <span style={{
+                              fontFamily: "DM Mono, monospace", fontSize: 11,
+                              color: muted, background: isDark
+                                ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
+                              padding: "3px 9px", borderRadius: 8
+                            }}>
+                              Update #{updates.length - i}
+                            </span>
+                          </div>
 
-          {/* Title */}
-          <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800,
-            fontSize: 17, color: txt, margin: "0 0 10px", lineHeight: 1.3 }}>
-            {u.title}
-          </h3>
+                          <h3 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800,
+                            fontSize: 17, color: txt, margin: "0 0 10px", lineHeight: 1.3 }}>
+                            {u.title}
+                          </h3>
 
-          {/* Image */}
-          {u.imageUrl && (
-            <div style={{ borderRadius: 14, overflow: "hidden",
-              marginBottom: 14, maxHeight: 320 }}>
-              <img src={u.imageUrl} alt={u.title}
-                style={{ width: "100%", objectFit: "cover",
-                  maxHeight: 320, display: "block" }} />
-            </div>
-          )}
+                          {u.imageUrl && (
+                            <div style={{ borderRadius: 14, overflow: "hidden",
+                              marginBottom: 14, maxHeight: 320 }}>
+                              <img src={u.imageUrl} alt={u.title}
+                                style={{ width: "100%", objectFit: "cover",
+                                  maxHeight: 320, display: "block" }} />
+                            </div>
+                          )}
 
-          {/* Content */}
-          <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14.5,
-            color: muted, margin: 0, lineHeight: 1.75,
-            whiteSpace: "pre-wrap" }}>
-            {u.content}
-          </p>
-        </motion.div>
-      ))
-    )}
-  </div>
-)}
-
+                          <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14.5,
+                            color: muted, margin: 0, lineHeight: 1.75,
+                            whiteSpace: "pre-wrap" }}>
+                            {u.content}
+                          </p>
+                        </motion.div>
+                      ))
+                    )}
+                  </div>
+                )}
 
               </motion.div>
             </AnimatePresence>
           </div>
 
-         {activeTab === "comments" && (
-  <CommentsTab
-    projectId={project.id}
-    creatorId={project.creator.id}
-    isDark={isDark}
-    myUserId={myUserId}
-  />
-)}
-
+          {activeTab === "comments" && (
+            <CommentsTab
+              projectId={project.id}
+              creatorId={project.creator.id}
+              isDark={isDark}
+              myUserId={myUserId}
+            />
+          )}
 
           {/* ═══ RIGHT SIDEBAR ═══ */}
           <div className="sidebar-card" style={{ position: "sticky", top: 96, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -692,7 +711,24 @@ export default function ProjectDetailPage() {
                   style={{ position: "absolute", inset: "0 auto 0 0", borderRadius: 5, background: `linear-gradient(90deg,${accent},#ffb300)`, boxShadow: `0 0 10px ${accent}60` }}
                 />
               </div>
-              <p style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: accent, letterSpacing: "0.1em", margin: "0 0 22px" }}>{pct}% FUNDED</p>
+
+              {/* ── CHANGE 5: % FUNDED label with live green pulse dot ────────── */}
+              <p style={{ fontFamily: "DM Mono, monospace", fontSize: 11,
+                          color: accent, letterSpacing: "0.1em", margin: "0 0 22px",
+                          display: "flex", alignItems: "center", gap: 6 }}>
+                {pct}% FUNDED
+                {["APPROVED"].includes((project as any).status ?? "") && (
+                  <span
+                    title="Live funding updates active"
+                    style={{
+                      display: "inline-block", width: 7, height: 7,
+                      borderRadius: "50%", background: "#22c55e",
+                      boxShadow: "0 0 0 2px rgba(34,197,94,0.25)",
+                      animation: "livePulse 2s ease-in-out infinite",
+                    }}
+                  />
+                )}
+              </p>
 
               {/* Stats grid */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 22 }}>
@@ -825,12 +861,17 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* Back modal */}
+      {/* ── CHANGE 4: onSuccess keeps full re-fetch (SSE handles the bar live) ── */}
       <BackProjectModal
         open={modal} onClose={() => setModal(false)}
         projectId={project.id} projectTitle={project.title}
         rewards={rewards} isDark={isDark}
         goalAmount={project.goalAmount} currentAmount={project.currentAmount}
-        onSuccess={() => exploreApi.getFullDetails(id).then(setProject).catch(() => {})}
+        onSuccess={() => {
+          // SSE already pushed the funding update live.
+          // Re-fetch full project to refresh creator stats, status badges, etc.
+          exploreApi.getFullDetails(id).then(setProject).catch(() => {});
+        }}
       />
     </div>
   );

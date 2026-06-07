@@ -1,18 +1,5 @@
 "use client";
 
-/**
- * Explore page — Section 4 updated with Section 11 skeleton loading states.
- * src/app/(main)/explore/page.tsx
- *
- * Fixes applied:
- *  1. useSearchParams wrapped in Suspense (required by Next.js 14+)
- *  2. search input rendered in toolbar so 'search' state is actually usable
- *  3. sort dropdown rendered so users can change sort order
- *  4. CampaignCard prop renamed from 'project' to 'p' to match component interface
- *  5. category passed to API search (exploreApi.search supports it)
- *  6. Removed 'as any' cast on CampaignCard — now typed correctly
- */
-
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,13 +13,15 @@ import type { ProjectFeedResponse } from "@/lib/api";
 
 const PAGE_SIZE = 9;
 
-type SortOption = "NEWEST" | "MOST_FUNDED" | "TRENDING";
+type SortOption = "NEWEST" | "MOST_FUNDED" | "TRENDING" | "ENDING_SOON";
 
 const SORT_LABELS: Record<SortOption, string> = {
-  NEWEST:      "Newest first",
-  MOST_FUNDED: "Most funded",
+  NEWEST:      "Latest",
+  MOST_FUNDED: "Most Funded",
   TRENDING:    "Trending",
+  ENDING_SOON: "Ending Soon",   
 };
+
 
 // ─── Inner component that uses useSearchParams ────────────────────────────────
 function ExploreContent() {

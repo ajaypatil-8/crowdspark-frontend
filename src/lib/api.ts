@@ -483,12 +483,15 @@ export const notificationApi = {
 // ─── Explore types ────────────────────────────────────────────────────────────
 
 export interface ExploreParams {
+  keyword?:    string;
   categoryId?: number;
-  keyword?: string;
-  sort?: "NEWEST" | "MOST_FUNDED" | "TRENDING";
-  page?: number;
-  size?: number;
+  sort?:       "NEWEST" | "MOST_FUNDED" | "TRENDING" | "ENDING_SOON";  // ← ENDING_SOON added
+  minGoal?:    number;   
+  maxGoal?:    number;   
+  page?:       number;
+  size?:       number;
 }
+
 
 export interface RewardTierResponse {
   id: number;

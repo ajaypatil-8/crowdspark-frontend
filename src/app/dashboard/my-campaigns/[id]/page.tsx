@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { projectApi, exploreApi, type ProjectFullDetailsResponse } from "@/lib/api";
+import AnalyticsDashboard from "@/components/dashboard/AnalyticsDashboard"; // Feature #15
 import { StatCard } from "@/components/dashboard/widgets";
 
 type ProjectAnalytics = ProjectFullDetailsResponse & {
@@ -253,7 +254,7 @@ export default function CampaignAnalyticsPage() {
   const [project, setProject]   = useState<ProjectAnalytics | null>(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "rewards" | "activity">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "analytics" | "rewards" | "activity">("overview");
 
   // Simulated daily funding data (replace with real API when available)
   const mockDailyData = Array.from({ length: 14 }, (_, i) => {
@@ -566,6 +567,26 @@ export default function CampaignAnalyticsPage() {
             {tab.icon} {tab.label}
           </button>
         ))}
+        {/* STEP C — Feature #15: Analytics tab */}
+        <button
+          onClick={() => setActiveTab("analytics")}
+          style={{
+            display: "flex", alignItems: "center", gap: 7,
+            padding: "10px 16px", borderRadius: "11px 11px 0 0",
+            border: "none",
+            borderBottom: `2px solid ${activeTab === "analytics" ? "#ff8800" : "transparent"}`,
+            background: activeTab === "analytics"
+              ? (isDark ? "rgba(255,136,0,0.07)" : "rgba(255,107,0,0.05)")
+              : "transparent",
+            color: activeTab === "analytics" ? "#ff8800" : "var(--text-muted)",
+            fontFamily: "DM Sans, sans-serif", fontSize: 13.5,
+            fontWeight: activeTab === "analytics" ? 700 : 500,
+            cursor: "pointer", transition: "all 0.16s",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <BarChart2 size={14} /> Analytics
+        </button>
       </div>
 
       {/* ── Tab content ── */}
@@ -907,6 +928,11 @@ export default function CampaignAnalyticsPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* STEP D — Feature #15: Analytics tab panel (outside AnimatePresence — mounts/unmounts simply) */}
+      {activeTab === "analytics" && (
+        <AnalyticsDashboard projectId={project.id} isDark={isDark} />
+      )}
 
       <style>{`
         .mca-enter { opacity: 0; }

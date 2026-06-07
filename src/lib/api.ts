@@ -1,7 +1,6 @@
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/crowdspark";
 
-
 export const tokenStorage = {
   getAccess: (): string | null => {
     if (typeof window === "undefined") return null;
@@ -21,8 +20,6 @@ export const tokenStorage = {
   },
 };
 
-
-
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -41,7 +38,6 @@ async function request<T>(
     headers: { ...(options.headers as Record<string, string>), ...headers },
   });
 
-  // Auto-refresh on 401
   if (res.status === 401 && !isRetry) {
     const rt = tokenStorage.getRefresh();
     if (rt) {
@@ -59,8 +55,6 @@ async function request<T>(
       } catch { /* fall through */ }
     }
     tokenStorage.clear();
-    // Throw only — let the caller (ProfileContext) handle the redirect so
-    // React state is updated cleanly before navigation happens.
     throw new Error("Session expired");
   }
 
@@ -74,13 +68,10 @@ async function request<T>(
 
   if (res.status === 204) return undefined as T;
   const body = await res.json();
-  // Unwrap ApiResponse<T> wrapper: { success, message, data, timestamp }
   return (body !== null && typeof body === "object" && "data" in body && "success" in body)
     ? body.data
     : body;
 }
-
-// ─── Types (exact match to backend DTOs) ─────────────────────────────────────
 
 export type Role = "ADMIN" | "BACKER" | "CREATOR";
 export type KycStatus =
@@ -90,7 +81,7 @@ export type KycStatus =
   | "APPROVED"
   | "REJECTED";
 export type Gender = "MALE" | "FEMALE" | "OTHER";
-export type AccountStatus = "ACTIVE" | "SUSPENDED" | "BANNED";
+export type AccountStatus = "ACTIVE" | "SUSPENDED" | "BANNED" | "DELETED";
 
 export interface UserResponse {
   id: number;
@@ -103,14 +94,14 @@ export interface UserResponse {
   emailVerified: boolean;
   phoneVerified: boolean;
   kycVerified: boolean;
-  kycStatus: KycStatus;   // from User entity via ModelMapper
+  kycStatus: KycStatus;
   createdAt: string;
   profileImageUrl: string | null;
   bannerImageUrl: string | null;
   bio: string | null;
   about: string | null;
   gender: Gender | null;
-  dateOfBirth: string | null; // "YYYY-MM-DD"
+  dateOfBirth: string | null;
   websiteUrl: string | null;
   linkedinUrl: string | null;
   instagramUrl: string | null;
@@ -163,7 +154,7 @@ export interface UpdateProfileRequest {
   bio?: string;
   about?: string;
   gender?: Gender;
-  dateOfBirth?: string; // "YYYY-MM-DD"
+  dateOfBirth?: string;
   websiteUrl?: string;
   linkedinUrl?: string;
   instagramUrl?: string;
@@ -182,26 +173,23 @@ export interface UpdateProfileRequest {
 }
 
 export interface KycSubmitRequest {
-  panNumber: string;          
+  panNumber: string;
   panCardImageUrl: string;
   panCardImagePublicId: string;
-  aadhaarNumber: string;       
+  aadhaarNumber: string;
   aadhaarFrontImageUrl: string;
   aadhaarFrontPublicId: string;
   aadhaarBackImageUrl: string;
   aadhaarBackPublicId: string;
   bankAccountHolderName: string;
   bankAccountNumber: string;
-  bankIfscCode: string;      
+  bankIfscCode: string;
   bankName: string;
   bankBranchName?: string;
-  upiId: string;              
+  upiId: string;
 }
 
-// ─── Auth API ─────────────────────────────────────────────────────────────────
-
 export const authApi = {
-
   register: (data: {
     username: string;
     name: string;
@@ -214,9 +202,6 @@ export const authApi = {
       body: JSON.stringify(data),
     }),
 
-  // POST /auth/login
-  // identifier = username OR email OR phone (backend tries all three)
-  // Stores tokens in localStorage automatically
   login: async (identifier: string, password: string): Promise<LoginResponse> => {
     const data = await request<LoginResponse>("/auth/login", {
       method: "POST",
@@ -226,7 +211,6 @@ export const authApi = {
     return data;
   },
 
-  // POST /auth/logout — clears localStorage
   logout: async () => {
     try {
       await request("/auth/logout", { method: "POST" });
@@ -235,17 +219,14 @@ export const authApi = {
     }
   },
 
-  // GET /auth/me — returns full UserResponse
   me: () => request<UserResponse>("/auth/me"),
 
-  // PUT /auth/me/profile
   updateProfile: (data: UpdateProfileRequest) =>
     request<UserResponse>("/auth/me/profile", {
       method: "PUT",
       body: JSON.stringify(data),
     }),
 
-  // PUT /auth/me/profile-image — multipart, field name: "file"
   uploadProfileImage: (file: File) => {
     const form = new FormData();
     form.append("file", file);
@@ -255,7 +236,6 @@ export const authApi = {
     });
   },
 
-  // PUT /auth/me/banner-image — multipart, field name: "file"
   uploadBannerImage: (file: File) => {
     const form = new FormData();
     form.append("file", file);
@@ -265,11 +245,9 @@ export const authApi = {
     });
   },
 
-
   sendVerificationEmail: () =>
     request<void>("/auth/send-verification-email", { method: "POST" }),
 
-  // POST /auth/refresh?refreshToken=xxx — query param NOT body
   refresh: async (refreshToken: string): Promise<LoginResponse> => {
     const data = await request<LoginResponse>(
       `/auth/refresh?refreshToken=${encodeURIComponent(refreshToken)}`,
@@ -280,13 +258,9 @@ export const authApi = {
   },
 };
 
-// ─── Creator / KYC API ────────────────────────────────────────────────────────
-
 export const creatorApi = {
-
   sendOtp: () =>
     request<string>("/api/creator/send-otp", { method: "POST" }),
-
 
   verifyOtp: (otp: string) =>
     request<string>("/api/creator/verify-otp", {
@@ -303,23 +277,18 @@ export const creatorApi = {
     );
   },
 
-
   submitKyc: (data: KycSubmitRequest) =>
     request<KycStatusResponse>("/api/creator/submit-kyc", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
-
   getKycStatus: () =>
     request<KycStatusResponse>("/api/creator/kyc-status"),
-
 
   kycStatus: () =>
     request<KycStatusResponse>("/api/creator/kyc-status"),
 };
-
-
 
 export const isLoggedIn = () => !!tokenStorage.getAccess();
 export const hasRole = (user: UserResponse | null, role: Role) =>
@@ -327,15 +296,11 @@ export const hasRole = (user: UserResponse | null, role: Role) =>
 export const isCreator = (user: UserResponse | null) => hasRole(user, "CREATOR");
 export const isAdmin = (user: UserResponse | null) => hasRole(user, "ADMIN");
 
-
-
 export const profileApi = {
   update: (data: UpdateProfileRequest) => authApi.updateProfile(data),
   uploadAvatar: (file: File) => authApi.uploadProfileImage(file),
   uploadBanner: (file: File) => authApi.uploadBannerImage(file),
 };
-
-// ─── Types for projects ───────────────────────────────────────────────────────
 
 export interface CreatorProjectResponse {
   id: number;
@@ -372,8 +337,6 @@ export interface ProjectFeedResponse {
   };
 }
 
-// ─── Campaign creation types ──────────────────────────────────────────────────
-
 export type MediaType = "IMAGE" | "VIDEO";
 export type MediaUsage = "THUMBNAIL" | "CARD_VIDEO" | "GALLERY_IMAGE" | "STORY_IMAGE";
 
@@ -402,28 +365,19 @@ export interface CreateProjectRequest {
   rewardTiers: RewardTierRequest[];
 }
 
-// ─── Project API ──────────────────────────────────────────────────────────────
-
 export const projectApi = {
-  // GET /api/projects/feed — public
   feed: () => request<ProjectFeedResponse[]>("/api/projects/feed"),
 
-  // GET /api/projects/{id} — public
   getById: (id: number) => request<ProjectFeedResponse>(`/api/projects/${id}`),
 
-  // GET /api/projects/creator/projects — ROLE_CREATOR
   myProjects: () => request<CreatorProjectResponse[]>("/api/projects/creator/projects"),
 
-  // POST /api/projects/create — ROLE_CREATOR
   create: (body: CreateProjectRequest) =>
     request<{ id: number }>("/api/projects/create", {
       method: "POST",
       body: JSON.stringify(body),
     }),
 
-  // POST /api/projects/upload-media — ROLE_CREATOR
-  // Upload a single image/video before submitting CreateProjectRequest.
-  // Returns { secure_url, public_id, resource_type }
   uploadMedia: (file: File): Promise<{ secure_url: string; public_id: string; resource_type: string }> => {
     const form = new FormData();
     form.append("file", file);
@@ -433,7 +387,6 @@ export const projectApi = {
     );
   },
 };
-// ─── Notification types ───────────────────────────────────────────────────────
 
 export interface NotificationResponse {
   id: number;
@@ -456,42 +409,33 @@ export interface Page<T> {
   last: boolean;
 }
 
-// ─── Notification API ─────────────────────────────────────────────────────────
-
 export const notificationApi = {
-  // GET /api/notifications?page=0&size=20
   getAll: (page = 0, size = 20) =>
     request<Page<NotificationResponse>>(
       `/api/notifications?page=${page}&size=${size}`
     ),
 
-  // GET /api/notifications/unread-count
   unreadCount: () =>
     request<{ unreadCount: number }>("/api/notifications/unread-count"),
 
-  // PUT /api/notifications/{id}/read
   markRead: (id: number) =>
     request<NotificationResponse>(`/api/notifications/${id}/read`, {
       method: "PUT",
     }),
 
-  // PUT /api/notifications/read-all
   markAllRead: () =>
     request<number>("/api/notifications/read-all", { method: "PUT" }),
 };
 
-// ─── Explore types ────────────────────────────────────────────────────────────
-
 export interface ExploreParams {
   keyword?:    string;
   categoryId?: number;
-  sort?:       "NEWEST" | "MOST_FUNDED" | "TRENDING" | "ENDING_SOON";  // ← ENDING_SOON added
-  minGoal?:    number;   
-  maxGoal?:    number;   
+  sort?:       "NEWEST" | "MOST_FUNDED" | "TRENDING" | "ENDING_SOON";
+  minGoal?:    number;
+  maxGoal?:    number;
   page?:       number;
   size?:       number;
 }
-
 
 export interface RewardTierResponse {
   id: number;
@@ -524,11 +468,7 @@ export interface ProjectFullDetailsResponse {
   };
 }
 
-// ─── Extended Project API ─────────────────────────────────────────────────────
-
-// Extend projectApi with explore + full details
 export const exploreApi = {
-  // GET /api/projects/explore?categoryId=&keyword=&sort=&page=&size=
   search: (params: ExploreParams = {}) => {
     const q = new URLSearchParams();
     if (params.categoryId !== undefined) q.set("categoryId", String(params.categoryId));
@@ -539,16 +479,12 @@ export const exploreApi = {
     return request<Page<ProjectFeedResponse>>(`/api/projects/explore?${q.toString()}`);
   },
 
-  // GET /api/projects/{id} — full details with rewards
   getFullDetails: (id: number) =>
     request<ProjectFullDetailsResponse>(`/api/projects/${id}`),
 
-  // GET /api/projects/{id}/rewards
   getRewards: (projectId: number) =>
     request<RewardTierResponse[]>(`/api/projects/${projectId}/rewards`),
 };
-
-// ─── Category types ───────────────────────────────────────────────────────────
 
 export interface Category {
   id: number;
@@ -558,8 +494,6 @@ export interface Category {
 export const categoryApi = {
   getAll: () => request<Category[]>("/api/categories"),
 };
-
-// ─── Backer API ───────────────────────────────────────────────────────────────
 
 export interface BackedProjectResponse {
   donationId?: number;
@@ -586,8 +520,6 @@ export const backerApi = {
   stats: () =>
     request<BackerStatsResponse>("/api/backer/stats"),
 };
-
-// ─── Contact Messages API ────────────────────────────────────────────────────
 
 export type ContactMessageStatus = "NEW" | "READ" | "REPLIED";
 
@@ -620,21 +552,16 @@ export const contactApi = {
       body: JSON.stringify(data),
     }),
 };
-// ─── Email Verification API ───────────────────────────────────────────────────
 
 export const emailVerifyApi = {
-  // POST /auth/send-verification-email  (requires auth)
   send: () =>
     request<void>("/auth/send-verification-email", { method: "POST" }),
 
-  // GET /auth/verify-email?token=xxx&email=yyy  (public — called from email link)
   verify: (token: string, email: string) =>
     request<void>(
       `/auth/verify-email?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`
     ),
 };
-
-// ─── Admin API ────────────────────────────────────────────────────────────────
 
 export interface AdminProjectResponse {
   id: number;
@@ -649,7 +576,6 @@ export interface AdminProjectResponse {
 }
 
 export const adminApi = {
-  // Projects
   pendingProjects: () =>
     request<AdminProjectResponse[]>("/admin/projects/pending"),
 
@@ -668,7 +594,6 @@ export const adminApi = {
       body: JSON.stringify({ reason }),
     }),
 
-  // KYC
   pendingKyc: () =>
     request<KycStatusResponse[]>("/admin/kyc/pending"),
 
@@ -684,7 +609,6 @@ export const adminApi = {
       body: JSON.stringify({ rejectionReason }),
     }),
 
-  // Users
   allUsers: () =>
     request<UserResponse[]>("/admin/users"),
 
@@ -694,7 +618,6 @@ export const adminApi = {
   activateUser: (id: number) =>
     request<void>(`/admin/users/${id}/activate`, { method: "PUT" }),
 
-  // Contact messages
   contactMessages: () =>
     request<ContactMessageResponse[]>("/admin/contact-messages"),
 
@@ -710,12 +633,6 @@ export const adminApi = {
     }),
 };
 
-
-// src/lib/api.ts
-// PASTE THESE ADDITIONS at the bottom of your existing api.ts file
-
-// ─── Payment types ────────────────────────────────────────────────────────────
-
 export interface PaymentOrderRequest {
   projectId: number;
   amount: number;
@@ -724,12 +641,12 @@ export interface PaymentOrderRequest {
 }
 
 export interface PaymentOrderResponse {
-  razorpayOrderId: string;  // Razorpay order id → pass to checkout as `order_id`
-  amountInPaise: number;    // amount in paise  → pass to checkout as `amount`
-  currency: string;         // "INR"
-  razorpayKeyId: string;    // your key id      → pass to checkout as `key`
-  donationId: number;       // our internal donation id (PENDING)
-  projectTitle: string;     // for checkout description
+  razorpayOrderId: string;
+  amountInPaise: number;
+  currency: string;
+  razorpayKeyId: string;
+  donationId: number;
+  projectTitle: string;
 }
 
 export interface PaymentVerifyRequest {
@@ -739,31 +656,19 @@ export interface PaymentVerifyRequest {
   razorpaySignature: string;
 }
 
-// ─── Payment API ──────────────────────────────────────────────────────────────
-
 export const paymentApi = {
-  /**
-   * Step 1: Create a Razorpay order + PENDING donation.
-   * Call this when the user clicks "Back this project".
-   */
   createOrder: (data: PaymentOrderRequest) =>
     request<PaymentOrderResponse>("/api/payment/create-order", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
-  /**
-   * Step 2: Verify payment after Razorpay checkout completes.
-   * Call this inside the Razorpay handler() callback.
-   */
   verify: (data: PaymentVerifyRequest) =>
     request<DonationResponse>("/api/payment/verify", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 };
-
-// ─── DonationResponse type (add if not already in your api.ts) ───────────────
 
 export interface DonationResponse {
   id: number;
@@ -781,11 +686,6 @@ export interface DonationResponse {
   createdAt: string;
   paidAt: string | null;
 }
-
-
-// src/lib/api.ts — paste at the bottom
-
-// ─── Campaign Update types ────────────────────────────────────────────────────
 
 export interface CampaignUpdateResponse {
   id: number;
@@ -807,34 +707,27 @@ export interface CampaignUpdateRequest {
   imageUrl?: string | null;
 }
 
-// ─── Campaign Update API ──────────────────────────────────────────────────────
-
 export const campaignUpdateApi = {
-  /** Public: get all updates for a project */
   getUpdates: (projectId: number) =>
     request<CampaignUpdateResponse[]>(`/api/projects/${projectId}/updates`),
 
-  /** Creator: post a new update */
   createUpdate: (projectId: number, data: CampaignUpdateRequest) =>
     request<CampaignUpdateResponse>(`/api/projects/${projectId}/updates`, {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
-  /** Creator: edit an existing update */
   editUpdate: (projectId: number, updateId: number, data: CampaignUpdateRequest) =>
     request<CampaignUpdateResponse>(`/api/projects/${projectId}/updates/${updateId}`, {
       method: "PUT",
       body: JSON.stringify(data),
     }),
 
-  /** Creator: delete an update */
   deleteUpdate: (projectId: number, updateId: number) =>
     request<void>(`/api/projects/${projectId}/updates/${updateId}`, {
       method: "DELETE",
     }),
 };
-
 
 export interface PayoutResponse {
   id: number;
@@ -855,36 +748,20 @@ export interface PayoutResponse {
   initiatedAt: string;
   completedAt: string | null;
 }
- 
-// ─── Payout API ───────────────────────────────────────────────────────────────
- 
+
 export const payoutApi = {
-  /**
-   * POST /admin/projects/{id}/payout
-   * Admin initiates payout for a FUNDED project.
-   */
   initiate: (projectId: number) =>
     request<PayoutResponse>(`/admin/projects/${projectId}/payout`, {
       method: "POST",
     }),
- 
-  /**
-   * GET /admin/payouts
-   * List all payouts (admin overview).
-   */
+
   getAll: () =>
     request<PayoutResponse[]>("/admin/payouts"),
- 
-  /**
-   * GET /admin/projects/{id}/payout
-   * Get payout status for a specific project.
-   */
+
   getByProject: (projectId: number) =>
     request<PayoutResponse>(`/admin/projects/${projectId}/payout`),
 };
- 
-// ─── Refund types ─────────────────────────────────────────────────────────────
- 
+
 export interface RefundResponse {
   id: number;
   donationId: number;
@@ -899,35 +776,19 @@ export interface RefundResponse {
   initiatedAt: string;
   completedAt: string | null;
 }
- 
-// ─── Refund API ───────────────────────────────────────────────────────────────
- 
+
 export const refundApi = {
-  /**
-   * GET /admin/projects/{id}/refunds
-   * List all refunds for a project (admin view).
-   */
   getByProject: (projectId: number) =>
     request<RefundResponse[]>(`/admin/projects/${projectId}/refunds`),
- 
-  /**
-   * POST /admin/projects/{id}/refunds/retry
-   * Retry all failed/pending refunds for a FAILED project.
-   */
+
   retry: (projectId: number) =>
     request<void>(`/admin/projects/${projectId}/refunds/retry`, {
       method: "POST",
     }),
- 
-  /**
-   * GET /api/backer/refunds
-   * Backer sees their own refunds.
-   */
+
   getMyRefunds: () =>
     request<RefundResponse[]>("/api/backer/refunds"),
 };
- 
-// ─── Comment types ────────────────────────────────────────────────────────────
 
 export interface ProjectCommentResponse {
   id: number;
@@ -954,54 +815,42 @@ export interface PageResponse<T> {
   content: T[];
   totalElements: number;
   totalPages: number;
-  number: number;        // current page
+  number: number;
   size: number;
   last: boolean;
 }
 
-// ─── Comments API ─────────────────────────────────────────────────────────────
-
 export const commentApi = {
-  /** Public: get paginated top-level comments with replies */
   getComments: (projectId: number, page = 0, size = 20) =>
     request<PageResponse<ProjectCommentResponse>>(
       `/api/projects/${projectId}/comments?page=${page}&size=${size}`
     ),
 
-  /** Authenticated: post a comment or reply */
   postComment: (projectId: number, data: ProjectCommentRequest) =>
     request<ProjectCommentResponse>(`/api/projects/${projectId}/comments`, {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
-  /** Authenticated: delete own comment (or creator deletes any) */
   deleteComment: (projectId: number, commentId: number) =>
     request<void>(`/api/projects/${projectId}/comments/${commentId}`, {
       method: "DELETE",
     }),
 };
 
-// ─── Saved Projects API ───────────────────────────────────────────────────────
-
 export const savedApi = {
-  /** Get all saved projects for the logged-in user */
   getSaved: () =>
     request<ProjectFeedResponse[]>("/api/users/saved"),
 
-  /** Check if a project is saved */
   checkSaved: (projectId: number) =>
     request<{ saved: boolean }>(`/api/users/saved/${projectId}/check`),
 
-  /** Save a project */
   save: (projectId: number) =>
     request<void>(`/api/users/saved/${projectId}`, { method: "POST" }),
 
-  /** Unsave a project */
   unsave: (projectId: number) =>
     request<void>(`/api/users/saved/${projectId}`, { method: "DELETE" }),
 
-  /** Toggle save state — returns { saved: boolean } */
   toggle: (projectId: number) =>
     request<{ saved: boolean }>(`/api/users/saved/${projectId}/toggle`, {
       method: "PUT",
@@ -1009,14 +858,48 @@ export const savedApi = {
 };
 
 export const gdprApi = {
-
   deleteAccount: (password: string, reason?: string) =>
     request<void>("/auth/me", {
       method: "DELETE",
       body: JSON.stringify({ password, reason }),
     }),
 
-
   exportData: () =>
     request<object>("/auth/me/data-export"),
+};
+
+export interface DailyDataPoint {
+  date:  string;
+  value: number;
+}
+
+export interface ProjectAnalyticsResponse {
+  projectId:           number;
+  projectTitle:        string;
+  status:              string;
+  goalAmount:          number;
+  currentAmount:       number;
+  remainingAmount:     number;
+  fundedPercentage:    number;
+  backersCount:        number;
+  avgDonationAmount:   number;
+  conversionRate:      number;
+  totalViews:          number;
+  totalUniqueVisitors: number;
+  viewsLast7Days:      number;
+  viewsLast30Days:     number;
+  updatesCount:        number;
+  commentsCount:       number;
+  savedCount:          number;
+  dailyViews:          DailyDataPoint[];
+  dailyFunding:        DailyDataPoint[];
+}
+
+export const analyticsApi = {
+  trackView: (projectId: number) =>
+    fetch(`${BASE_URL}/api/projects/${projectId}/view`, { method: "POST" })
+      .catch(() => {}),
+
+  getAnalytics: (projectId: number) =>
+    request<ProjectAnalyticsResponse>(`/api/projects/${projectId}/analytics`),
 };

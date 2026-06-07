@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
+import { analyticsApi } from "@/lib/api";
 import {
   campaignUpdateApi, exploreApi, isLoggedIn, savedApi,
   type CampaignUpdateResponse, type ProjectFullDetailsResponse, type RewardTierResponse,
@@ -203,6 +204,7 @@ export default function ProjectDetailPage() {
   : Promise.resolve(),
         ]);
         setProject(proj);
+        analyticsApi.trackView(Number(id)); 
         try {
           if (myUsername) {
   savedApi.checkSaved(Number(id))

@@ -903,3 +903,51 @@ export const analyticsApi = {
   getAnalytics: (projectId: number) =>
     request<ProjectAnalyticsResponse>(`/api/projects/${projectId}/analytics`),
 };
+
+// ─── Follow types ─────────────────────────────────────────────────────────────
+
+export interface FollowStatusResponse {
+  targetUserId:  number;
+  following:     boolean;
+  followerCount: number;
+}
+
+export interface FollowResponse {
+  userId:         number;
+  username:       string;
+  name:           string;
+  profileImageUrl: string | null;
+  bio:            string | null;
+  isCreator:      boolean;
+  followerCount:  number;
+  totalProjects:  number;
+  followedAt:     string;
+}
+
+// ─── Follow API ───────────────────────────────────────────────────────────────
+
+export const followApi = {
+  /** Toggle follow/unfollow. Returns new state. */
+  toggle: (targetUserId: number) =>
+    request<FollowStatusResponse>(`/api/users/${targetUserId}/follow`, {
+      method: "PUT",
+    }),
+
+  /** Check if you follow a user */
+  checkStatus: (targetUserId: number) =>
+    request<FollowStatusResponse>(`/api/users/${targetUserId}/follow/status`),
+
+  /** Get who a user follows */
+  getFollowing: (userId: number, page = 0, size = 20) =>
+    request<PageResponse<FollowResponse>>(
+      `/api/users/${userId}/following?page=${page}&size=${size}`),
+
+  /** Get a user's followers */
+  getFollowers: (userId: number, page = 0, size = 20) =>
+    request<PageResponse<FollowResponse>>(
+      `/api/users/${userId}/followers?page=${page}&size=${size}`),
+
+  /** Feed of projects from creators you follow */
+  getFollowedFeed: () =>
+    request<ProjectFeedResponse[]>("/api/feed/followed"),
+};

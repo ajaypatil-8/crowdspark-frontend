@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { isLoggedIn, projectApi, type ProjectFeedResponse } from "@/lib/api";
+import { isLoggedIn, projectApi, followApi, type ProjectFeedResponse } from "@/lib/api";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -120,6 +120,7 @@ function AnimatedCounter({ target, suffix = "" }: { target: string; suffix?: str
         if (p < 1) requestAnimationFrame(step);
         else setDisplay(target);
       };
+      
       requestAnimationFrame(step);
       obs.disconnect();
     }, { threshold: 0.3 });
@@ -401,6 +402,7 @@ export default function HomePage() {
   const howRef      = useRef<HTMLElement>(null);
   const ctaBanRef   = useRef<HTMLElement>(null);
   const showcaseRef = useRef<HTMLDivElement>(null);
+  const [followedProjects, setFollowedProjects] = useState<ProjectFeedResponse[]>([]);
 
   const [activeTesti, setActiveTesti] = useState(0);
   const [campaigns,   setCampaigns]   = useState<ProjectFeedResponse[]>([]);
@@ -413,6 +415,14 @@ export default function HomePage() {
       .then(d => { setCampaigns(d || []); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+
+  // ── CHANGE 3: fetch followed-creator feed once loggedIn is confirmed ──
+  useEffect(() => {
+    if (!loggedIn) return;
+    followApi.getFollowedFeed()
+      .then(setFollowedProjects)
+      .catch(() => {});
+  }, [loggedIn]);
 
   useEffect(() => {
     const id = requestAnimationFrame(() => {
@@ -695,6 +705,29 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ════════════════ FROM CREATORS YOU FOLLOW (Change 3) ════════════════ */}
+      {loggedIn && followedProjects.length > 0 && (
+        <section className="lp-projects lp-followed" aria-label="From creators you follow">
+          <div className="lp-section-inner">
+            <div className="lp-projects-header">
+              <div className="sec-label lp-sec-label" style={{ marginBottom: 0 }}>
+                <p className="lp-overline">Curated for you</p>
+                <h2 className="lp-h2" style={{ marginBottom: 0 }}>From creators you follow</h2>
+              </div>
+              <Link href="/explore" className="btn-outline lp-view-all">
+                View all <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" width="13" height="13"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </Link>
+            </div>
+
+            <div className="lp-proj-grid">
+              {followedProjects.map((p, i) => (
+                <TrendCard key={`followed-${p.id}`} p={p} idx={i} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ════════════════ FEATURES ════════════════ */}
       <section ref={featRef} className="lp-features" aria-label="Platform features">
         <div className="lp-section-inner">
@@ -941,6 +974,7 @@ export default function HomePage() {
 
         /* ── Projects ── */
         .lp-projects { padding:80px 48px; background:var(--bg-2); border-top:1px solid var(--border); position:relative; z-index:1; }
+        .lp-followed { background:var(--bg); }
         .lp-projects-header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:40px; gap:16px; flex-wrap:wrap; }
         .lp-view-all { display:inline-flex; align-items:center; gap:7px; padding:10px 20px; font-size:13px; text-decoration:none; white-space:nowrap; border-radius:10px; }
         .lp-proj-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }

@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
+import FollowButton from "@/components/FollowButton";
 import { analyticsApi } from "@/lib/api";
 import {
   campaignUpdateApi, exploreApi, isLoggedIn, savedApi,
@@ -843,7 +844,22 @@ export default function ProjectDetailPage() {
               <p style={{ fontFamily: "DM Mono, monospace", fontSize: 10.5, color: muted, letterSpacing: "0.12em", margin: "0 0 14px", textTransform: "uppercase" }}>About the Creator</p>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: project.creator?.about ? 12 : 0 }}>
                 {project.creator?.profileImage ? (
-                  <img src={project.creator.profileImage} alt={project.creator.username} style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover" }} />
+                  <>
+                    <img
+                      src={project.creator.profileImage}
+                      alt={project.creator.username}
+                      style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover" }}
+                    />
+                    {/* Follow button — only show if not the creator themselves */}
+                    {myUsername !== project.creator.username && (
+                      <FollowButton
+                        targetUserId={project.creator.id}
+                        isDark={isDark}
+                        isLoggedIn={!!myUsername}
+                        size="sm"
+                      />
+                    )}
+                  </>
                 ) : (
                   <div style={{ width: 44, height: 44, borderRadius: "50%", background: `conic-gradient(from 120deg,${accent},#facc15,${accent})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 18, color: "#fff" }}>{project.creator?.username?.charAt(0)?.toUpperCase()}</span>

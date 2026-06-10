@@ -7,7 +7,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import FollowButton from "@/components/FollowButton";
 import { analyticsApi } from "@/lib/api";
 import {
-  campaignUpdateApi, exploreApi, isLoggedIn, savedApi,
+  campaignUpdateApi, exploreApi, isLoggedIn, savedApi, reviewApi,
   type CampaignUpdateResponse, type ProjectFullDetailsResponse, type RewardTierResponse,
 } from "@/lib/api";
 import ProjectGallery from "@/components/ProjectGallery";
@@ -17,15 +17,15 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   ChevronRight, BookOpen, Gift, Bell, Clock, Users,
   Share2, Bookmark, BookmarkCheck, AlertTriangle,
-  TrendingUp, Calendar, ArrowLeft, MessageSquare ,
+  TrendingUp, Calendar, ArrowLeft, MessageSquare, Star,
 } from "lucide-react";
-import CommentsTab from "@/components/CommentsTab";
-// ── CHANGE 1: import live-funding hook ────────────────────────────────────────
+import CommentsTab  from "@/components/CommentsTab";
+import ReviewsTab   from "@/components/ReviewsTab";
 import { useFundingStream } from "@/hooks/useFundingStream";
 
 if (typeof window !== "undefined") gsap.registerPlugin(ScrollTrigger);
 
-type ProjectTab = "story" | "rewards" | "updates" | "comments";
+type ProjectTab = "story" | "rewards" | "updates" | "comments" | "reviews";
 type ProjectDetails = ProjectFullDetailsResponse & { backersCount?: number };
 
 const fmt = (n: number) =>
@@ -452,7 +452,8 @@ export default function ProjectDetailPage() {
               <TabBtn id="story"   active={activeTab === "story"}   label="Story"   icon={<BookOpen size={14}/>}  onClick={setActiveTab} {...{txt,muted,card}} />
               <TabBtn id="rewards" active={activeTab === "rewards"} label="Rewards" icon={<Gift size={14}/>}      onClick={setActiveTab} {...{txt,muted,card}} />
               <TabBtn id="updates" active={activeTab === "updates"} label="Updates" icon={<Bell size={14}/>}      onClick={setActiveTab} {...{txt,muted,card}} />
-              <TabBtn id ="comments" active={activeTab === "comments"} label="Q&A" icon={< MessageSquare size={14}/>} onClick={setActiveTab} {...{txt,muted,card}} />
+              <TabBtn id ="comments" active={activeTab === "comments"} label="Q&A"     icon={<MessageSquare size={14}/>} onClick={setActiveTab} {...{txt,muted,card}} />
+              <TabBtn id ="reviews"  active={activeTab === "reviews"}  label="Reviews" icon={<Star size={14}/>}          onClick={setActiveTab} {...{txt,muted,card}} />
             </div>
 
             {/* Tab content */}
@@ -683,6 +684,14 @@ export default function ProjectDetailPage() {
             <CommentsTab
               projectId={project.id}
               creatorId={project.creator.id}
+              isDark={isDark}
+              myUserId={myUserId}
+            />
+          )}
+
+          {activeTab === "reviews" && (
+            <ReviewsTab
+              projectId={project.id}
               isDark={isDark}
               myUserId={myUserId}
             />

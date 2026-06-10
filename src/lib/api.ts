@@ -951,3 +951,69 @@ export const followApi = {
   getFollowedFeed: () =>
     request<ProjectFeedResponse[]>("/api/feed/followed"),
 };
+
+// ─── Review types ─────────────────────────────────────────────────────────────
+
+export interface ProjectReviewResponse {
+  id:                     number;
+  projectId:              number;
+  reviewerId:             number;
+  reviewerName:           string;
+  reviewerUsername:       string;
+  reviewerProfileImageUrl: string | null;
+  rating:                 number;            // 1–5
+  title:                  string | null;
+  content:                string | null;
+  createdAt:              string;
+  updatedAt:              string | null;
+  myReview:               boolean;
+}
+
+export interface ReviewSummaryResponse {
+  projectId:         number;
+  totalReviews:      number;
+  averageRating:     number | null;
+  ratingDistribution: Record<number, number>; // { 1: N, 2: N, … 5: N }
+  myReview:          ProjectReviewResponse | null;
+  canReview:         boolean;
+}
+
+export interface ProjectReviewRequest {
+  rating:   number;
+  title?:   string;
+  content?: string;
+}
+
+// ─── Review API ───────────────────────────────────────────────────────────────
+
+export const reviewApi = {
+  /** Average + distribution + current user's review */
+  getSummary: (projectId: number) =>
+    request<ReviewSummaryResponse>(`/api/projects/${projectId}/reviews/summary`),
+
+  /** Paginated list, newest first */
+  getReviews: (projectId: number, page = 0, size = 10) =>
+    request<PageResponse<ProjectReviewResponse>>(
+      `/api/projects/${projectId}/reviews?page=${page}&size=${size}`
+    ),
+
+  /** Submit new review — backer only */
+  submitReview: (projectId: number, data: ProjectReviewRequest) =>
+    request<ProjectReviewResponse>(`/api/projects/${projectId}/reviews`, {
+      method: "POST",
+      body:   JSON.stringify(data),
+    }),
+
+  /** Update own review */
+  updateReview: (projectId: number, reviewId: number, data: ProjectReviewRequest) =>
+    request<ProjectReviewResponse>(`/api/projects/${projectId}/reviews/${reviewId}`, {
+      method: "PUT",
+      body:   JSON.stringify(data),
+    }),
+
+  /** Delete own review */
+  deleteReview: (projectId: number, reviewId: number) =>
+    request<void>(`/api/projects/${projectId}/reviews/${reviewId}`, {
+      method: "DELETE",
+    }),
+};

@@ -9,11 +9,12 @@ import {
   ArrowLeft, BarChart2, DollarSign, Users, Clock, TrendingUp,
   Gift, ExternalLink, AlertTriangle, RefreshCcw, Zap,
   CheckCircle2, XCircle, Eye, Calendar, Target,
-  ChevronRight, Edit3, Share2, Sparkles, Rocket, Plus,
+  ChevronRight, Edit3, Share2, Sparkles, Rocket, Plus, Flag,
 } from "lucide-react";
+import MilestonesManager   from "@/components/dashboard/MilestonesManager";
 import { useTheme } from "@/contexts/ThemeContext";
 import { projectApi, exploreApi, type ProjectFullDetailsResponse } from "@/lib/api";
-import AnalyticsDashboard from "@/components/dashboard/AnalyticsDashboard"; // Feature #15
+import AnalyticsDashboard from "@/components/dashboard/AnalyticsDashboard";
 import { StatCard } from "@/components/dashboard/widgets";
 
 type ProjectAnalytics = ProjectFullDetailsResponse & {
@@ -254,7 +255,7 @@ export default function CampaignAnalyticsPage() {
   const [project, setProject]   = useState<ProjectAnalytics | null>(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "analytics" | "rewards" | "activity">("overview");
+const [activeTab, setActiveTab] = useState<"overview" | "analytics" | "rewards" | "activity" | "milestones">("overview");
 
   // Simulated daily funding data (replace with real API when available)
   const mockDailyData = Array.from({ length: 14 }, (_, i) => {
@@ -588,6 +589,28 @@ export default function CampaignAnalyticsPage() {
           <BarChart2 size={14} /> Analytics
         </button>
       </div>
+
+      <button
+          onClick={() => setActiveTab("milestones")}
+          style={{
+            display: "flex", alignItems: "center", gap: 7,
+            padding: "10px 16px", borderRadius: "11px 11px 0 0",
+            border: "none",
+            borderBottom: `2px solid ${activeTab === "milestones" ? "#ff8800" : "transparent"}`,
+            background: activeTab === "milestones"
+              ? (isDark ? "rgba(255,136,0,0.07)" : "rgba(255,107,0,0.05)")
+              : "transparent",
+            color: activeTab === "milestones" ? "#ff8800" : "var(--text-muted)",
+            fontFamily: "DM Sans, sans-serif", fontSize: 13.5,
+            fontWeight: activeTab === "milestones" ? 700 : 500,
+            cursor: "pointer", transition: "all 0.16s",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <Flag size={14} /> Milestones
+        </button>
+
+
 
       {/* ── Tab content ── */}
       <AnimatePresence mode="wait">
@@ -933,6 +956,24 @@ export default function CampaignAnalyticsPage() {
       {activeTab === "analytics" && (
         <AnalyticsDashboard projectId={project.id} isDark={isDark} />
       )}
+
+      {activeTab === "milestones" && (
+        <motion.div
+          key="milestones"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          style={{ paddingTop: 4 }}
+        >
+          <MilestonesManager
+            projectId={id}
+            isDark={isDark}
+            goalAmount={project?.goalAmount}
+          />
+        </motion.div>
+      )}
+
 
       <style>{`
         .mca-enter { opacity: 0; }

@@ -1017,3 +1017,65 @@ export const reviewApi = {
       method: "DELETE",
     }),
 };
+
+// ─── Milestone types ──────────────────────────────────────────────────────────
+
+export interface MilestoneResponse {
+  id:            number;
+  projectId:     number;
+  title:         string;
+  description:   string | null;
+  targetAmount:  number | null;
+  sortOrder:     number;
+  status:        "PENDING" | "COMPLETED";
+  completedAt:   string | null;
+  createdAt:     string;
+  updatedAt:     string | null;
+}
+
+export interface MilestoneRequest {
+  title:        string;
+  description?: string;
+  targetAmount?: number;
+  sortOrder?:   number;
+}
+
+// ─── Milestone API ────────────────────────────────────────────────────────────
+
+export const milestoneApi = {
+  /** Public — get all milestones ordered by sort_order */
+  getAll: (projectId: number) =>
+    request<MilestoneResponse[]>(`/api/projects/${projectId}/milestones`),
+
+  /** Creator — create a new milestone */
+  create: (projectId: number, data: MilestoneRequest) =>
+    request<MilestoneResponse>(`/api/projects/${projectId}/milestones`, {
+      method: "POST",
+      body:   JSON.stringify(data),
+    }),
+
+  /** Creator — update existing milestone */
+  update: (projectId: number, milestoneId: number, data: MilestoneRequest) =>
+    request<MilestoneResponse>(`/api/projects/${projectId}/milestones/${milestoneId}`, {
+      method: "PUT",
+      body:   JSON.stringify(data),
+    }),
+
+  /** Creator — delete a milestone */
+  delete: (projectId: number, milestoneId: number) =>
+    request<void>(`/api/projects/${projectId}/milestones/${milestoneId}`, {
+      method: "DELETE",
+    }),
+
+  /** Creator — mark milestone complete, triggers backer notifications */
+  complete: (projectId: number, milestoneId: number) =>
+    request<MilestoneResponse>(`/api/projects/${projectId}/milestones/${milestoneId}/complete`, {
+      method: "POST",
+    }),
+
+  /** Creator — revert milestone back to PENDING */
+  reopen: (projectId: number, milestoneId: number) =>
+    request<MilestoneResponse>(`/api/projects/${projectId}/milestones/${milestoneId}/reopen`, {
+      method: "POST",
+    }),
+};

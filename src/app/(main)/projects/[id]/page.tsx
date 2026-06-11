@@ -7,11 +7,12 @@ import { useTheme } from "@/contexts/ThemeContext";
 import FollowButton from "@/components/FollowButton";
 import { analyticsApi } from "@/lib/api";
 import {
-  campaignUpdateApi, exploreApi, isLoggedIn, savedApi, reviewApi,
+  campaignUpdateApi, exploreApi, isLoggedIn, savedApi, reviewApi , milestoneApi , 
   type CampaignUpdateResponse, type ProjectFullDetailsResponse, type RewardTierResponse,
 } from "@/lib/api";
 import ProjectGallery from "@/components/ProjectGallery";
 import BackProjectModal from "@/components/BackProjectModal";
+import MilestonesTimeline from "@/components/MilestonesTimeline";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
@@ -486,6 +487,27 @@ export default function ProjectDetailPage() {
                         ))}
                       </div>
                     )}
+
+                                  {/* ── Milestones ── */}
+                        <div style={{ marginTop: 40 }}>
+                          <div style={{
+                            display: "flex", alignItems: "center", gap: 10, marginBottom: 16,
+                          }}>
+                            <div style={{
+                              width: 3, height: 18, borderRadius: 2,
+                              background: "linear-gradient(to bottom,#ff5c00,#ff9000)",
+                            }} />
+                            <h3 style={{ fontSize: 16, fontWeight: 700, color: txt, margin: 0 }}>
+                              Project Milestones
+                            </h3>
+                          </div>
+                          <MilestonesTimeline
+                            projectId={project.id}
+                            isDark={isDark}
+                            goalAmount={project.goalAmount}
+                          />
+                        </div>
+
 
                     {/* Deadline callout */}
                     <div style={{ marginTop: 32, padding: "18px 20px", borderRadius: 16, background: card2, border: `1px solid ${bdr}`, display: "flex", alignItems: "center", gap: 12 }}>

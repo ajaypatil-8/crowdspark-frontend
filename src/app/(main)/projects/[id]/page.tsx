@@ -13,11 +13,11 @@ import {
 import ProjectGallery from "@/components/ProjectGallery";
 import BackProjectModal from "@/components/BackProjectModal";
 import MilestonesTimeline from "@/components/MilestonesTimeline";
+import ShareButtons       from "@/components/ShareButtons";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
-  ChevronRight, BookOpen, Gift, Bell, Clock, Users,
-  Share2, Bookmark, BookmarkCheck, AlertTriangle,
+  ChevronRight, BookOpen, Gift, Bell, Clock, Users, Bookmark, BookmarkCheck, AlertTriangle,
   TrendingUp, Calendar, ArrowLeft, MessageSquare, Star,
 } from "lucide-react";
 import CommentsTab  from "@/components/CommentsTab";
@@ -828,47 +828,48 @@ export default function ProjectDetailPage() {
 
             {/* Share / Save */}
             <div style={{ display: "flex", gap: 8 }}>
-              {[
-                {
-                  label: "Share", icon: <Share2 size={14} />,
-                  action: () => {
-                    navigator.clipboard?.writeText(window.location.href)
-                      .then(() => showToast("Link copied!"))
-                      .catch(() => showToast("Copy: " + window.location.href));
-                  },
-                },
-                {
-                  label: saved ? "Saved" : "Save",
-                  icon: saved ? <BookmarkCheck size={14} color={accent} /> : <Bookmark size={14} />,
-                  action: () => {
-                    try {
-                      savedApi.toggle(project.id)
-                        .then(data => {
-                          setSaved(data.saved);
-                          showToast(data.saved ? "Project saved! ✓" : "Removed from saved");
-                        })
-                        .catch(() => showToast("Please sign in to save projects"));
-                    } catch { showToast("Could not save"); }
-                  },
-                },
-              ].map(b => (
-                <motion.button
-                  key={b.label}
-                  whileHover={{ y: -2 }} whileTap={{ scale: 0.95 }}
-                  onClick={b.action}
-                  style={{
-                    flex: 1, padding: "12px", borderRadius: 14,
-                    background: card, border: `1px solid ${bdr}`,
-                    color: saved && b.label === "Saved" ? accent : muted,
-                    fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600,
-                    cursor: "pointer",
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-                  }}
-                >
-                  {b.icon} {b.label}
-                </motion.button>
-              ))}
+
+              {/* ── Share — full platform popover ── */}
+              <ShareButtons
+                title={project.title}
+                description={project.shortDescription}
+                isDark={isDark}
+                onShare={(platform) => {
+                  // optional: fire analytics event here
+                  console.log("Shared via", platform);
+                }}
+              />
+
+              {/* ── Save / Bookmark ── */}
+              <motion.button
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  try {
+                    savedApi.toggle(project.id)
+                      .then(data => {
+                        setSaved(data.saved);
+                        showToast(data.saved ? "Project saved! ✓" : "Removed from saved");
+                      })
+                      .catch(() => showToast("Please sign in to save projects"));
+                  } catch { showToast("Could not save"); }
+                }}
+                style={{
+                  flex: 1, padding: "11px 16px", borderRadius: 14,
+                  background: card, border: `1px solid ${bdr}`,
+                  color: saved ? accent : muted,
+                  fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                }}
+              >
+                {saved
+                  ? <BookmarkCheck size={14} color={accent} />
+                  : <Bookmark size={14} />}
+                {saved ? "Saved" : "Save"}
+              </motion.button>
             </div>
+
 
             {/* Creator card */}
             <div style={{ padding: "20px 22px", borderRadius: 20, background: card, border: `1px solid ${bdr}` }}>

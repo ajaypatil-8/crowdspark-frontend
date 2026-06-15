@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Syne, DM_Sans } from "next/font/google";
+// @ts-ignore - Next.js handles global CSS imports at build time.
 import "./globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ToastProvider }   from "@/components/ui/Toast";
@@ -7,6 +8,7 @@ import { ConfirmProvider }  from "@/components/ui/ConfirmDialog";
 import { RouteLoader }          from "@/components/ui/PageLoader";
 import { SkipToMain }       from "@/components/ui/Accessibility";
 import CustomCursor from "@/components/CustomCursor";
+import PushNotificationSetup from "@/components/PushNotificationSetup";
 
 // ─── Fonts ────────────────────────────────────────────────────────────────────
 const syne = Syne({
@@ -103,8 +105,8 @@ export default function RootLayout({
 
               {/* Global custom cursor for all routes */}
               <CustomCursor />
-
-              {/* Main content landmark for skip-link target */}
+              {/* Web push — silently registers token after login */}
+              <PushNotificationSetup />
               <main id="main-content" style={{ display: "contents" }}>
                 {children}
               </main>

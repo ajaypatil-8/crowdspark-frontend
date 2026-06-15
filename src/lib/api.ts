@@ -1079,3 +1079,17 @@ export const milestoneApi = {
       method: "POST",
     }),
 };
+
+export const pushApi = {
+  subscribe: (token: string, deviceHint?: string) =>
+    request<void>("/api/notifications/subscribe", {
+      method: "POST",
+      body: JSON.stringify({ token, deviceHint }),
+    }),
+
+  unsubscribe: (token: string) =>
+    request<void>("/api/notifications/unsubscribe", {
+      method: "DELETE",
+      body: JSON.stringify({ token }),
+    }),
+};

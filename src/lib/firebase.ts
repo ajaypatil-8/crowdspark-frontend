@@ -3,6 +3,9 @@
 // Only imported on the client side (no "use server" code here).
 
 import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
+// Provide a minimal ambient module declaration to avoid TS errors when
+// the firebase/messaging types aren't available in the environment.
+declare module "firebase/messaging";
 import { getMessaging, getToken, onMessage, type Messaging } from "firebase/messaging";
 
 // ─── Config from env vars ─────────────────────────────────────────────────

@@ -1133,3 +1133,87 @@ export const totpApi = {
       body:   JSON.stringify({ pendingToken, code }),
     }),
 };
+
+
+// ─── Reward Claim types ───────────────────────────────────────────────────────
+
+export type RewardClaimStatus =
+  | "PENDING" | "PROCESSING" | "SHIPPED" | "FULFILLED" | "CANCELLED";
+
+export interface RewardClaimResponse {
+  id:                   number;
+  donationId:           number;
+  backerId:             number;
+  backerName:           string;
+  backerUsername:       string;
+  backerProfileImageUrl: string | null;
+  projectId:            number;
+  projectTitle:         string;
+  rewardTierId:         number;
+  rewardTierTitle:      string;
+  rewardTierMinAmount:  number;
+  donationAmount:       number;
+  status:               RewardClaimStatus;
+  // Shipping
+  shippingName:         string | null;
+  shippingAddress:      string | null;
+  shippingCity:         string | null;
+  shippingPincode:      string | null;
+  shippingCountry:      string | null;
+  shippingPhone:        string | null;
+  shippingProvided:     boolean;
+  // Fulfillment
+  trackingNumber:       string | null;
+  fulfillmentNote:      string | null;
+  claimedAt:            string;
+  fulfilledAt:          string | null;
+}
+
+export interface RewardClaimStatusRequest {
+  status:          Exclude<RewardClaimStatus, "PENDING">;
+  trackingNumber?: string;
+  fulfillmentNote?: string;
+}
+
+export interface RewardClaimShippingRequest {
+  shippingName:    string;
+  shippingAddress: string;
+  shippingCity:    string;
+  shippingPincode: string;
+  shippingCountry?: string;
+  shippingPhone?:  string;
+}
+
+// ─── Reward Claim API ─────────────────────────────────────────────────────────
+
+export const rewardClaimApi = {
+  // Creator
+  getProjectClaims: (projectId: number, status?: string, page = 0, size = 20) => {
+    const qs = new URLSearchParams({ page: String(page), size: String(size) });
+    if (status) qs.set("status", status);
+    return request<PageResponse<RewardClaimResponse>>(
+      `/api/projects/${projectId}/reward-claims?${qs}`
+    );
+  },
+
+  getClaimSummary: (projectId: number) =>
+    request<Record<RewardClaimStatus, number>>(
+      `/api/projects/${projectId}/reward-claims/summary`
+    ),
+
+  updateStatus: (claimId: number, data: RewardClaimStatusRequest) =>
+    request<RewardClaimResponse>(`/api/reward-claims/${claimId}/status`, {
+      method: "PUT",
+      body:   JSON.stringify(data),
+    }),
+
+  // Backer
+  myBackerClaims: () =>
+    request<RewardClaimResponse[]>("/api/backer/reward-claims"),
+
+  updateShipping: (claimId: number, data: RewardClaimShippingRequest) =>
+    request<RewardClaimResponse>(`/api/reward-claims/${claimId}/shipping`, {
+      method: "PUT",
+      body:   JSON.stringify(data),
+    }),
+};

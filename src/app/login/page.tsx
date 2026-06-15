@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { authApi } from "@/lib/api";
 import { useTheme } from "@/contexts/ThemeContext";
 import ThemeToggle from "@/components/ThemeToggle";
+import TotpVerifyModal from "@/components/TotpVerifyModal";
 
 const OAUTH_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/crowdspark";
 
@@ -235,19 +236,31 @@ export default function LoginPage(){
   const[loading,setLoading]=useState(false);
   const[error,setError]=useState<string|null>(null);
   const[mounted,setMounted]=useState(false);
+  const [totpPending,     setTotpPending]     = useState(false);
+const [pendingToken,    setPendingToken]    = useState("");
   useEffect(()=>{setMounted(true);},[]);
 
   const handleSubmit=useCallback(async(e:FormEvent)=>{
     e.preventDefault();
     if(!identifier.trim()||!password) return;
     setError(null); setLoading(true);
-    try{
-      await authApi.login(identifier.trim(),password);
-      window.location.href="/dashboard";
-    }catch(err:unknown){
-      setError(err instanceof Error?err.message:"Login failed. Check your credentials.");
-    }finally{setLoading(false);}
+        try {
+      const res = await authApi.login(identifier.trim(), password);
+
+      if (res.totpRequired && res.pendingToken) {
+        // Credentials valid — show TOTP step
+        setPendingToken(res.pendingToken);
+        setTotpPending(true);
+        return;
+      }
+      // Normal login — tokens already stored by authApi.login
+      window.location.href = "/dashboard";
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Login failed. Check your credentials.");
+    } finally { setLoading(false); }
   },[identifier,password]);
+
+  
 
   const canSubmit=!loading&&identifier.length>0&&password.length>0;
   const pageBg=isDark?"#06050a":"#f3f2ee";
@@ -414,6 +427,16 @@ export default function LoginPage(){
           <Link href="/register" style={{color:"#ff8800",fontWeight:700,textDecoration:"none"}}>Sign up free →</Link>
         </motion.p>
       </motion.div>
+
+      {totpPending && (
+        <TotpVerifyModal
+          pendingToken={pendingToken}
+          isDark={isDark}
+          onSuccess={() => { window.location.href = "/dashboard"; }}
+          onCancel={() => { setTotpPending(false); setPendingToken(""); }}
+        />
+      )}
+
 
       <style>{`
         @keyframes lpShimmer{0%{transform:translateX(-100%)}60%{transform:translateX(220%)}100%{transform:translateX(220%)}}

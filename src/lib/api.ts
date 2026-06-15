@@ -127,8 +127,10 @@ export interface UserResponse {
 }
 
 export interface LoginResponse {
-  accessToken: string;
+  accessToken:  string;
   refreshToken: string;
+  totpRequired?: boolean;
+  pendingToken?: string;
 }
 
 export interface KycStatusResponse {
@@ -1091,5 +1093,43 @@ export const pushApi = {
     request<void>("/api/notifications/unsubscribe", {
       method: "DELETE",
       body: JSON.stringify({ token }),
+    }),
+};
+
+// ─── TOTP types ───────────────────────────────────────────────────────────────
+
+export interface TotpSetupResponse {
+  otpauthUri:  string;   // otpauth://totp/... — render as QR code
+  secret:      string;   // plain base32 — show as text backup
+  issuer:      string;
+  accountName: string;
+}
+
+// ─── TOTP API ─────────────────────────────────────────────────────────────────
+
+export const totpApi = {
+  /** Step 1: generate secret + QR URI */
+  setup: () =>
+    request<TotpSetupResponse>("/auth/totp/setup"),
+
+  /** Step 2: confirm QR scan with first code */
+  enable: (code: string) =>
+    request<void>("/auth/totp/enable", {
+      method: "POST",
+      body:   JSON.stringify({ code }),
+    }),
+
+  /** Disable 2FA — requires code + password */
+  disable: (code: string, password: string) =>
+    request<void>("/auth/totp/disable", {
+      method: "POST",
+      body:   JSON.stringify({ code, password }),
+    }),
+
+  /** Complete TOTP login — pendingToken from login response + 6-digit code */
+  verifyLogin: (pendingToken: string, code: string) =>
+    request<LoginResponse>("/auth/totp/verify-login", {
+      method: "POST",
+      body:   JSON.stringify({ pendingToken, code }),
     }),
 };

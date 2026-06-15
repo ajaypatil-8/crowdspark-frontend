@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, useCallback, useId } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useProfile } from "@/contexts/ProfileContext";
+import TotpSetupSection from "@/components/dashboard/TotpSetupSection";
 import {
   authApi, creatorApi, tokenStorage,
   type KycStatusResponse, type KycStatus,
@@ -208,6 +209,7 @@ function KycFormStep({ onSubmitted, onBack, showToast }: { onSubmitted: (d: KycS
   const [uploadingDoc, setUploadingDoc] = useState<"pan" | "af" | "ab" | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [errs, setErrs] = useState<Record<string, string>>({});
+  const [totpEnabled, setTotpEnabled] = useState<boolean>(false);
 
   const uploadDoc = useCallback(async (file: File, type: "pan" | "af" | "ab") => {
     setUploadingDoc(type);

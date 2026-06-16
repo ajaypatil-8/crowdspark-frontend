@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useProfile } from "@/contexts/ProfileContext";
 import { backerApi, type BackedProjectResponse } from "@/lib/api";
+import MyRewardClaims from "@/components/dashboard/MyRewardClaims";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const IcTarget = ({ s = 16 }: { s?: number }) => (
@@ -97,6 +98,7 @@ export default function BackedPage() {
   const [error, setError]       = useState<string | null>(null);
   const [mounted, setMounted]   = useState(false);
   const [hoveredRow, setHoveredRow] = useState<string | number | null>(null);
+  const [activeTab, setActiveTab] = useState<"backed" | "rewards">("backed");
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -205,6 +207,32 @@ export default function BackedPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+              <div style={{ display: "flex", gap: 4, marginBottom: 20 }}>
+          {(["backed", "rewards"] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => setActiveTab(t)}
+              style={{
+                padding: "8px 18px", borderRadius: 10, border: "none",
+                background: activeTab === t ? "#ff5c00" : "transparent",
+                color: activeTab === t ? "#fff" : muted,
+                cursor: "pointer", fontSize: 13, fontWeight: 600,
+                textTransform: "capitalize",
+              }}
+            >
+              {t === "backed" ? "Backed Projects" : "🎁 Reward Claims"}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === "backed" && (
+          <></>
+        )}
+
+        {activeTab === "rewards" && (
+          <MyRewardClaims isDark={isDark} />
+        )}
 
       {/* ── Content Card ── */}
       <motion.div

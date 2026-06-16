@@ -5,11 +5,12 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import gsap from "gsap";
+import CreatorRewardFulfillment from "@/components/dashboard/CreatorRewardFulfillment";
 import {
   ArrowLeft, BarChart2, DollarSign, Users, Clock, TrendingUp,
   Gift, ExternalLink, AlertTriangle, RefreshCcw, Zap,
   CheckCircle2, XCircle, Eye, Calendar, Target,
-  ChevronRight, Edit3, Share2, Sparkles, Rocket, Plus, Flag,
+  ChevronRight, Edit3, Share2, Sparkles, Rocket, Plus, Flag, 
 } from "lucide-react";
 import MilestonesManager   from "@/components/dashboard/MilestonesManager";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -255,7 +256,7 @@ export default function CampaignAnalyticsPage() {
   const [project, setProject]   = useState<ProjectAnalytics | null>(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
-const [activeTab, setActiveTab] = useState<"overview" | "analytics" | "rewards" | "activity" | "milestones">("overview");
+const [activeTab, setActiveTab] = useState<"overview" | "analytics" | "rewards" | "activity" | "milestones" | "fulfillment">("overview");
 
   // Simulated daily funding data (replace with real API when available)
   const mockDailyData = Array.from({ length: 14 }, (_, i) => {
@@ -609,6 +610,26 @@ const [activeTab, setActiveTab] = useState<"overview" | "analytics" | "rewards" 
         >
           <Flag size={14} /> Milestones
         </button>
+
+        <button
+          onClick={() => setActiveTab("fulfillment")}
+          style={{
+            display: "flex", alignItems: "center", gap: 7,
+            padding: "10px 16px", borderRadius: "11px 11px 0 0",
+            border: "none",
+            borderBottom: `2px solid ${activeTab === "fulfillment" ? "#ff8800" : "transparent"}`,
+            background: activeTab === "fulfillment"
+              ? (isDark ? "rgba(255,136,0,0.07)" : "rgba(255,107,0,0.05)")
+              : "transparent",
+            color: activeTab === "fulfillment" ? "#ff8800" : "var(--text-muted)",
+            fontFamily: "DM Sans, sans-serif", fontSize: 13.5,
+            fontWeight: activeTab === "fulfillment" ? 700 : 500,
+            cursor: "pointer", whiteSpace: "nowrap",
+          }}
+        >
+          <Gift size={14} /> Fulfillment
+        </button>
+
 
 
 
@@ -973,6 +994,17 @@ const [activeTab, setActiveTab] = useState<"overview" | "analytics" | "rewards" 
           />
         </motion.div>
       )}
+      {activeTab === "fulfillment" && (
+        <motion.div
+          key="fulfillment"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <CreatorRewardFulfillment projectId={id} isDark={isDark} />
+        </motion.div>
+      )}
+
 
 
       <style>{`

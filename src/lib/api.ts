@@ -1,3 +1,8 @@
+// Feature #26 — API Versioning
+// All /api/* routes are now /api/v1/*
+// All /admin/* routes are now /api/v1/admin/*
+// /auth/* routes remain unchanged (auth is version-stable)
+
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/crowdspark";
 
@@ -262,10 +267,10 @@ export const authApi = {
 
 export const creatorApi = {
   sendOtp: () =>
-    request<string>("/api/creator/send-otp", { method: "POST" }),
+    request<string>("/api/v1/creator/send-otp", { method: "POST" }),
 
   verifyOtp: (otp: string) =>
-    request<string>("/api/creator/verify-otp", {
+    request<string>("/api/v1/creator/verify-otp", {
       method: "POST",
       body: JSON.stringify({ otp }),
     }),
@@ -274,22 +279,22 @@ export const creatorApi = {
     const form = new FormData();
     form.append("file", file);
     return request<{ secure_url: string; public_id: string }>(
-      "/api/creator/upload-kyc-doc",
+      "/api/v1/creator/upload-kyc-doc",
       { method: "POST", body: form }
     );
   },
 
   submitKyc: (data: KycSubmitRequest) =>
-    request<KycStatusResponse>("/api/creator/submit-kyc", {
+    request<KycStatusResponse>("/api/v1/creator/submit-kyc", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
   getKycStatus: () =>
-    request<KycStatusResponse>("/api/creator/kyc-status"),
+    request<KycStatusResponse>("/api/v1/creator/kyc-status"),
 
   kycStatus: () =>
-    request<KycStatusResponse>("/api/creator/kyc-status"),
+    request<KycStatusResponse>("/api/v1/creator/kyc-status"),
 };
 
 export const isLoggedIn = () => !!tokenStorage.getAccess();
@@ -368,14 +373,14 @@ export interface CreateProjectRequest {
 }
 
 export const projectApi = {
-  feed: () => request<ProjectFeedResponse[]>("/api/projects/feed"),
+  feed: () => request<ProjectFeedResponse[]>("/api/v1/projects/feed"),
 
-  getById: (id: number) => request<ProjectFeedResponse>(`/api/projects/${id}`),
+  getById: (id: number) => request<ProjectFeedResponse>(`/api/v1/projects/${id}`),
 
-  myProjects: () => request<CreatorProjectResponse[]>("/api/projects/creator/projects"),
+  myProjects: () => request<CreatorProjectResponse[]>("/api/v1/projects/creator/projects"),
 
   create: (body: CreateProjectRequest) =>
-    request<{ id: number }>("/api/projects/create", {
+    request<{ id: number }>("/api/v1/projects/create", {
       method: "POST",
       body: JSON.stringify(body),
     }),
@@ -384,7 +389,7 @@ export const projectApi = {
     const form = new FormData();
     form.append("file", file);
     return request<{ secure_url: string; public_id: string; resource_type: string }>(
-      "/api/projects/upload-media",
+      "/api/v1/projects/upload-media",
       { method: "POST", body: form }
     );
   },
@@ -414,19 +419,19 @@ export interface Page<T> {
 export const notificationApi = {
   getAll: (page = 0, size = 20) =>
     request<Page<NotificationResponse>>(
-      `/api/notifications?page=${page}&size=${size}`
+      `/api/v1/notifications?page=${page}&size=${size}`
     ),
 
   unreadCount: () =>
-    request<{ unreadCount: number }>("/api/notifications/unread-count"),
+    request<{ unreadCount: number }>("/api/v1/notifications/unread-count"),
 
   markRead: (id: number) =>
-    request<NotificationResponse>(`/api/notifications/${id}/read`, {
+    request<NotificationResponse>(`/api/v1/notifications/${id}/read`, {
       method: "PUT",
     }),
 
   markAllRead: () =>
-    request<number>("/api/notifications/read-all", { method: "PUT" }),
+    request<number>("/api/v1/notifications/read-all", { method: "PUT" }),
 };
 
 export interface ExploreParams {
@@ -478,14 +483,14 @@ export const exploreApi = {
     if (params.sort)                     q.set("sort", params.sort);
     q.set("page", String(params.page ?? 0));
     q.set("size", String(params.size ?? 12));
-    return request<Page<ProjectFeedResponse>>(`/api/projects/explore?${q.toString()}`);
+    return request<Page<ProjectFeedResponse>>(`/api/v1/projects/explore?${q.toString()}`);
   },
 
   getFullDetails: (id: number) =>
-    request<ProjectFullDetailsResponse>(`/api/projects/${id}`),
+    request<ProjectFullDetailsResponse>(`/api/v1/projects/${id}`),
 
   getRewards: (projectId: number) =>
-    request<RewardTierResponse[]>(`/api/projects/${projectId}/rewards`),
+    request<RewardTierResponse[]>(`/api/v1/projects/${projectId}/rewards`),
 };
 
 export interface Category {
@@ -494,7 +499,7 @@ export interface Category {
 }
 
 export const categoryApi = {
-  getAll: () => request<Category[]>("/api/categories"),
+  getAll: () => request<Category[]>("/api/v1/categories"),
 };
 
 export interface BackedProjectResponse {
@@ -518,9 +523,9 @@ export interface BackerStatsResponse {
 
 export const backerApi = {
   backedProjects: () =>
-    request<BackedProjectResponse[]>("/api/backer/backed-projects"),
+    request<BackedProjectResponse[]>("/api/v1/backer/backed-projects"),
   stats: () =>
-    request<BackerStatsResponse>("/api/backer/stats"),
+    request<BackerStatsResponse>("/api/v1/backer/stats"),
 };
 
 export type ContactMessageStatus = "NEW" | "READ" | "REPLIED";
@@ -549,7 +554,7 @@ export interface ContactMessageResponse {
 
 export const contactApi = {
   submit: (data: ContactMessageRequest) =>
-    request<ContactMessageResponse>("/api/contact/messages", {
+    request<ContactMessageResponse>("/api/v1/contact/messages", {
       method: "POST",
       body: JSON.stringify(data),
     }),
@@ -579,57 +584,57 @@ export interface AdminProjectResponse {
 
 export const adminApi = {
   pendingProjects: () =>
-    request<AdminProjectResponse[]>("/admin/projects/pending"),
+    request<AdminProjectResponse[]>("/api/v1/admin/projects/pending"),
 
   allProjects: () =>
-    request<AdminProjectResponse[]>("/admin/projects/all"),
+    request<AdminProjectResponse[]>("/api/v1/admin/projects/all"),
 
   getProjectDetail: (id: number) =>
-    request<ProjectFullDetailsResponse>(`/admin/projects/${id}`),
+    request<ProjectFullDetailsResponse>(`/api/v1/admin/projects/${id}`),
 
   approveProject: (id: number) =>
-    request<void>(`/admin/projects/${id}/approve`, { method: "PUT" }),
+    request<void>(`/api/v1/admin/projects/${id}/approve`, { method: "PUT" }),
 
   rejectProject: (id: number, reason: string) =>
-    request<void>(`/admin/projects/${id}/reject`, {
+    request<void>(`/api/v1/admin/projects/${id}/reject`, {
       method: "PUT",
       body: JSON.stringify({ reason }),
     }),
 
   pendingKyc: () =>
-    request<KycStatusResponse[]>("/admin/kyc/pending"),
+    request<KycStatusResponse[]>("/api/v1/admin/kyc/pending"),
 
   getUserKyc: (userId: number) =>
-    request<KycStatusResponse>(`/admin/kyc/${userId}`),
+    request<KycStatusResponse>(`/api/v1/admin/kyc/${userId}`),
 
   approveKyc: (userId: number) =>
-    request<KycStatusResponse>(`/admin/kyc/${userId}/approve`, { method: "PUT" }),
+    request<KycStatusResponse>(`/api/v1/admin/kyc/${userId}/approve`, { method: "PUT" }),
 
   rejectKyc: (userId: number, rejectionReason: string) =>
-    request<KycStatusResponse>(`/admin/kyc/${userId}/reject`, {
+    request<KycStatusResponse>(`/api/v1/admin/kyc/${userId}/reject`, {
       method: "PUT",
       body: JSON.stringify({ rejectionReason }),
     }),
 
   allUsers: () =>
-    request<UserResponse[]>("/admin/users"),
+    request<UserResponse[]>("/api/v1/admin/users"),
 
   suspendUser: (id: number) =>
-    request<void>(`/admin/users/${id}/suspend`, { method: "PUT" }),
+    request<void>(`/api/v1/admin/users/${id}/suspend`, { method: "PUT" }),
 
   activateUser: (id: number) =>
-    request<void>(`/admin/users/${id}/activate`, { method: "PUT" }),
+    request<void>(`/api/v1/admin/users/${id}/activate`, { method: "PUT" }),
 
   contactMessages: () =>
-    request<ContactMessageResponse[]>("/admin/contact-messages"),
+    request<ContactMessageResponse[]>("/api/v1/admin/contact-messages"),
 
   markContactMessageRead: (id: number) =>
-    request<ContactMessageResponse>(`/admin/contact-messages/${id}/read`, {
+    request<ContactMessageResponse>(`/api/v1/admin/contact-messages/${id}/read`, {
       method: "PUT",
     }),
 
   replyContactMessage: (id: number, subject: string, message: string) =>
-    request<ContactMessageResponse>(`/admin/contact-messages/${id}/reply`, {
+    request<ContactMessageResponse>(`/api/v1/admin/contact-messages/${id}/reply`, {
       method: "PUT",
       body: JSON.stringify({ subject, message }),
     }),
@@ -660,13 +665,13 @@ export interface PaymentVerifyRequest {
 
 export const paymentApi = {
   createOrder: (data: PaymentOrderRequest) =>
-    request<PaymentOrderResponse>("/api/payment/create-order", {
+    request<PaymentOrderResponse>("/api/v1/payment/create-order", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
   verify: (data: PaymentVerifyRequest) =>
-    request<DonationResponse>("/api/payment/verify", {
+    request<DonationResponse>("/api/v1/payment/verify", {
       method: "POST",
       body: JSON.stringify(data),
     }),
@@ -711,22 +716,22 @@ export interface CampaignUpdateRequest {
 
 export const campaignUpdateApi = {
   getUpdates: (projectId: number) =>
-    request<CampaignUpdateResponse[]>(`/api/projects/${projectId}/updates`),
+    request<CampaignUpdateResponse[]>(`/api/v1/projects/${projectId}/updates`),
 
   createUpdate: (projectId: number, data: CampaignUpdateRequest) =>
-    request<CampaignUpdateResponse>(`/api/projects/${projectId}/updates`, {
+    request<CampaignUpdateResponse>(`/api/v1/projects/${projectId}/updates`, {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
   editUpdate: (projectId: number, updateId: number, data: CampaignUpdateRequest) =>
-    request<CampaignUpdateResponse>(`/api/projects/${projectId}/updates/${updateId}`, {
+    request<CampaignUpdateResponse>(`/api/v1/projects/${projectId}/updates/${updateId}`, {
       method: "PUT",
       body: JSON.stringify(data),
     }),
 
   deleteUpdate: (projectId: number, updateId: number) =>
-    request<void>(`/api/projects/${projectId}/updates/${updateId}`, {
+    request<void>(`/api/v1/projects/${projectId}/updates/${updateId}`, {
       method: "DELETE",
     }),
 };
@@ -753,15 +758,15 @@ export interface PayoutResponse {
 
 export const payoutApi = {
   initiate: (projectId: number) =>
-    request<PayoutResponse>(`/admin/projects/${projectId}/payout`, {
+    request<PayoutResponse>(`/api/v1/admin/projects/${projectId}/payout`, {
       method: "POST",
     }),
 
   getAll: () =>
-    request<PayoutResponse[]>("/admin/payouts"),
+    request<PayoutResponse[]>("/api/v1/admin/payouts"),
 
   getByProject: (projectId: number) =>
-    request<PayoutResponse>(`/admin/projects/${projectId}/payout`),
+    request<PayoutResponse>(`/api/v1/admin/projects/${projectId}/payout`),
 };
 
 export interface RefundResponse {
@@ -781,15 +786,15 @@ export interface RefundResponse {
 
 export const refundApi = {
   getByProject: (projectId: number) =>
-    request<RefundResponse[]>(`/admin/projects/${projectId}/refunds`),
+    request<RefundResponse[]>(`/api/v1/admin/projects/${projectId}/refunds`),
 
   retry: (projectId: number) =>
-    request<void>(`/admin/projects/${projectId}/refunds/retry`, {
+    request<void>(`/api/v1/admin/projects/${projectId}/refunds/retry`, {
       method: "POST",
     }),
 
   getMyRefunds: () =>
-    request<RefundResponse[]>("/api/backer/refunds"),
+    request<RefundResponse[]>("/api/v1/backer/refunds"),
 };
 
 export interface ProjectCommentResponse {
@@ -825,36 +830,36 @@ export interface PageResponse<T> {
 export const commentApi = {
   getComments: (projectId: number, page = 0, size = 20) =>
     request<PageResponse<ProjectCommentResponse>>(
-      `/api/projects/${projectId}/comments?page=${page}&size=${size}`
+      `/api/v1/projects/${projectId}/comments?page=${page}&size=${size}`
     ),
 
   postComment: (projectId: number, data: ProjectCommentRequest) =>
-    request<ProjectCommentResponse>(`/api/projects/${projectId}/comments`, {
+    request<ProjectCommentResponse>(`/api/v1/projects/${projectId}/comments`, {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
   deleteComment: (projectId: number, commentId: number) =>
-    request<void>(`/api/projects/${projectId}/comments/${commentId}`, {
+    request<void>(`/api/v1/projects/${projectId}/comments/${commentId}`, {
       method: "DELETE",
     }),
 };
 
 export const savedApi = {
   getSaved: () =>
-    request<ProjectFeedResponse[]>("/api/users/saved"),
+    request<ProjectFeedResponse[]>("/api/v1/users/saved"),
 
   checkSaved: (projectId: number) =>
-    request<{ saved: boolean }>(`/api/users/saved/${projectId}/check`),
+    request<{ saved: boolean }>(`/api/v1/users/saved/${projectId}/check`),
 
   save: (projectId: number) =>
-    request<void>(`/api/users/saved/${projectId}`, { method: "POST" }),
+    request<void>(`/api/v1/users/saved/${projectId}`, { method: "POST" }),
 
   unsave: (projectId: number) =>
-    request<void>(`/api/users/saved/${projectId}`, { method: "DELETE" }),
+    request<void>(`/api/v1/users/saved/${projectId}`, { method: "DELETE" }),
 
   toggle: (projectId: number) =>
-    request<{ saved: boolean }>(`/api/users/saved/${projectId}/toggle`, {
+    request<{ saved: boolean }>(`/api/v1/users/saved/${projectId}/toggle`, {
       method: "PUT",
     }),
 };
@@ -899,11 +904,11 @@ export interface ProjectAnalyticsResponse {
 
 export const analyticsApi = {
   trackView: (projectId: number) =>
-    fetch(`${BASE_URL}/api/projects/${projectId}/view`, { method: "POST" })
+    fetch(`${BASE_URL}/api/v1/projects/${projectId}/view`, { method: "POST" })
       .catch(() => {}),
 
   getAnalytics: (projectId: number) =>
-    request<ProjectAnalyticsResponse>(`/api/projects/${projectId}/analytics`),
+    request<ProjectAnalyticsResponse>(`/api/v1/projects/${projectId}/analytics`),
 };
 
 // ─── Follow types ─────────────────────────────────────────────────────────────
@@ -931,27 +936,27 @@ export interface FollowResponse {
 export const followApi = {
   /** Toggle follow/unfollow. Returns new state. */
   toggle: (targetUserId: number) =>
-    request<FollowStatusResponse>(`/api/users/${targetUserId}/follow`, {
+    request<FollowStatusResponse>(`/api/v1/users/${targetUserId}/follow`, {
       method: "PUT",
     }),
 
   /** Check if you follow a user */
   checkStatus: (targetUserId: number) =>
-    request<FollowStatusResponse>(`/api/users/${targetUserId}/follow/status`),
+    request<FollowStatusResponse>(`/api/v1/users/${targetUserId}/follow/status`),
 
   /** Get who a user follows */
   getFollowing: (userId: number, page = 0, size = 20) =>
     request<PageResponse<FollowResponse>>(
-      `/api/users/${userId}/following?page=${page}&size=${size}`),
+      `/api/v1/users/${userId}/following?page=${page}&size=${size}`),
 
   /** Get a user's followers */
   getFollowers: (userId: number, page = 0, size = 20) =>
     request<PageResponse<FollowResponse>>(
-      `/api/users/${userId}/followers?page=${page}&size=${size}`),
+      `/api/v1/users/${userId}/followers?page=${page}&size=${size}`),
 
   /** Feed of projects from creators you follow */
   getFollowedFeed: () =>
-    request<ProjectFeedResponse[]>("/api/feed/followed"),
+    request<ProjectFeedResponse[]>("/api/v1/feed/followed"),
 };
 
 // ─── Review types ─────────────────────────────────────────────────────────────
@@ -991,31 +996,31 @@ export interface ProjectReviewRequest {
 export const reviewApi = {
   /** Average + distribution + current user's review */
   getSummary: (projectId: number) =>
-    request<ReviewSummaryResponse>(`/api/projects/${projectId}/reviews/summary`),
+    request<ReviewSummaryResponse>(`/api/v1/projects/${projectId}/reviews/summary`),
 
   /** Paginated list, newest first */
   getReviews: (projectId: number, page = 0, size = 10) =>
     request<PageResponse<ProjectReviewResponse>>(
-      `/api/projects/${projectId}/reviews?page=${page}&size=${size}`
+      `/api/v1/projects/${projectId}/reviews?page=${page}&size=${size}`
     ),
 
   /** Submit new review — backer only */
   submitReview: (projectId: number, data: ProjectReviewRequest) =>
-    request<ProjectReviewResponse>(`/api/projects/${projectId}/reviews`, {
+    request<ProjectReviewResponse>(`/api/v1/projects/${projectId}/reviews`, {
       method: "POST",
       body:   JSON.stringify(data),
     }),
 
   /** Update own review */
   updateReview: (projectId: number, reviewId: number, data: ProjectReviewRequest) =>
-    request<ProjectReviewResponse>(`/api/projects/${projectId}/reviews/${reviewId}`, {
+    request<ProjectReviewResponse>(`/api/v1/projects/${projectId}/reviews/${reviewId}`, {
       method: "PUT",
       body:   JSON.stringify(data),
     }),
 
   /** Delete own review */
   deleteReview: (projectId: number, reviewId: number) =>
-    request<void>(`/api/projects/${projectId}/reviews/${reviewId}`, {
+    request<void>(`/api/v1/projects/${projectId}/reviews/${reviewId}`, {
       method: "DELETE",
     }),
 };
@@ -1047,50 +1052,50 @@ export interface MilestoneRequest {
 export const milestoneApi = {
   /** Public — get all milestones ordered by sort_order */
   getAll: (projectId: number) =>
-    request<MilestoneResponse[]>(`/api/projects/${projectId}/milestones`),
+    request<MilestoneResponse[]>(`/api/v1/projects/${projectId}/milestones`),
 
   /** Creator — create a new milestone */
   create: (projectId: number, data: MilestoneRequest) =>
-    request<MilestoneResponse>(`/api/projects/${projectId}/milestones`, {
+    request<MilestoneResponse>(`/api/v1/projects/${projectId}/milestones`, {
       method: "POST",
       body:   JSON.stringify(data),
     }),
 
   /** Creator — update existing milestone */
   update: (projectId: number, milestoneId: number, data: MilestoneRequest) =>
-    request<MilestoneResponse>(`/api/projects/${projectId}/milestones/${milestoneId}`, {
+    request<MilestoneResponse>(`/api/v1/projects/${projectId}/milestones/${milestoneId}`, {
       method: "PUT",
       body:   JSON.stringify(data),
     }),
 
   /** Creator — delete a milestone */
   delete: (projectId: number, milestoneId: number) =>
-    request<void>(`/api/projects/${projectId}/milestones/${milestoneId}`, {
+    request<void>(`/api/v1/projects/${projectId}/milestones/${milestoneId}`, {
       method: "DELETE",
     }),
 
   /** Creator — mark milestone complete, triggers backer notifications */
   complete: (projectId: number, milestoneId: number) =>
-    request<MilestoneResponse>(`/api/projects/${projectId}/milestones/${milestoneId}/complete`, {
+    request<MilestoneResponse>(`/api/v1/projects/${projectId}/milestones/${milestoneId}/complete`, {
       method: "POST",
     }),
 
   /** Creator — revert milestone back to PENDING */
   reopen: (projectId: number, milestoneId: number) =>
-    request<MilestoneResponse>(`/api/projects/${projectId}/milestones/${milestoneId}/reopen`, {
+    request<MilestoneResponse>(`/api/v1/projects/${projectId}/milestones/${milestoneId}/reopen`, {
       method: "POST",
     }),
 };
 
 export const pushApi = {
   subscribe: (token: string, deviceHint?: string) =>
-    request<void>("/api/notifications/subscribe", {
+    request<void>("/api/v1/notifications/subscribe", {
       method: "POST",
       body: JSON.stringify({ token, deviceHint }),
     }),
 
   unsubscribe: (token: string) =>
-    request<void>("/api/notifications/unsubscribe", {
+    request<void>("/api/v1/notifications/unsubscribe", {
       method: "DELETE",
       body: JSON.stringify({ token }),
     }),
@@ -1192,27 +1197,27 @@ export const rewardClaimApi = {
     const qs = new URLSearchParams({ page: String(page), size: String(size) });
     if (status) qs.set("status", status);
     return request<PageResponse<RewardClaimResponse>>(
-      `/api/projects/${projectId}/reward-claims?${qs}`
+      `/api/v1/projects/${projectId}/reward-claims?${qs}`
     );
   },
 
   getClaimSummary: (projectId: number) =>
     request<Record<RewardClaimStatus, number>>(
-      `/api/projects/${projectId}/reward-claims/summary`
+      `/api/v1/projects/${projectId}/reward-claims/summary`
     ),
 
   updateStatus: (claimId: number, data: RewardClaimStatusRequest) =>
-    request<RewardClaimResponse>(`/api/reward-claims/${claimId}/status`, {
+    request<RewardClaimResponse>(`/api/v1/reward-claims/${claimId}/status`, {
       method: "PUT",
       body:   JSON.stringify(data),
     }),
 
   // Backer
   myBackerClaims: () =>
-    request<RewardClaimResponse[]>("/api/backer/reward-claims"),
+    request<RewardClaimResponse[]>("/api/v1/backer/reward-claims"),
 
   updateShipping: (claimId: number, data: RewardClaimShippingRequest) =>
-    request<RewardClaimResponse>(`/api/reward-claims/${claimId}/shipping`, {
+    request<RewardClaimResponse>(`/api/v1/reward-claims/${claimId}/shipping`, {
       method: "PUT",
       body:   JSON.stringify(data),
     }),

@@ -3,49 +3,88 @@ import { useState, useCallback, useEffect, useRef, type FormEvent } from "react"
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { authApi } from "@/lib/api";
+import { checkPasswordStrength } from "@/lib/passwordStrength";
 import { useTheme } from "@/contexts/ThemeContext";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const STEPS = ["Identity", "Contact", "Security"];
 
-// ── Password Strength ─────────────────────────────────────────────────────────
+// ── Password Strength Bar (Feature #27 — entropy-based) ──────────────────────
+// Replaces the old 4-rule bar with a proper entropy + blacklist check that
+// mirrors PasswordStrengthValidator.java exactly.
 function StrengthBar({ pw }: { pw: string }) {
-  const checks = [
-    { label: "8+ chars", ok: pw.length >= 8 },
-    { label: "Uppercase", ok: /[A-Z]/.test(pw) },
-    { label: "Number", ok: /\d/.test(pw) },
-    { label: "Symbol", ok: /[^A-Za-z0-9]/.test(pw) },
-  ];
-  const score = checks.filter(c => c.ok).length;
-  const colors = ["#ef4444", "#f59e0b", "#f59e0b", "#34d399", "#22c55e"];
-  const labels = ["", "Weak", "Fair", "Good", "Strong"];
   if (!pw.length) return null;
+  const result = checkPasswordStrength(pw);
+  const { score, label, color, checks, feedback, isCommon } = result;
+
+  const barColors: string[] = ["#ef4444","#f97316","#eab308","#22c55e","#10b981"];
+  const activeColor = isCommon ? "#ef4444" : barColors[score];
+
+  const checkItems = [
+    { label: "8+ chars",  ok: checks.minLength },
+    { label: "Uppercase", ok: checks.hasUpper  },
+    { label: "Number",    ok: checks.hasDigit  },
+    { label: "Symbol",    ok: checks.hasSymbol },
+    { label: "Unique",    ok: checks.noCommon  },
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: "auto" }}
       style={{ marginTop: -8, marginBottom: 20 }}
     >
+      {/* Strength segments — 5 for the 5-level scale */}
       <div style={{ display: "flex", gap: 4, marginBottom: 7 }}>
-        {[0, 1, 2, 3].map(i => (
+        {[0,1,2,3,4].map(i => (
           <motion.div
             key={i}
-            animate={{ background: i < score ? colors[score] : "rgba(128,128,128,0.18)" }}
-            transition={{ duration: 0.35 }}
-            style={{ flex: 1, height: 3.5, borderRadius: 2, boxShadow: i < score ? `0 0 6px ${colors[score]}88` : "none" }}
+            animate={{
+              background: i <= score ? activeColor : "rgba(128,128,128,0.18)",
+              boxShadow:  i <= score ? `0 0 6px ${activeColor}88` : "none",
+            }}
+            transition={{ duration: 0.3 }}
+            style={{ flex: 1, height: 3.5, borderRadius: 2 }}
           />
         ))}
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontFamily: "Syne, sans-serif", fontSize: 11, fontWeight: 700, color: score > 0 ? colors[score] : "var(--text-muted)" }}>{labels[score]}</span>
-        <div style={{ display: "flex", gap: 10 }}>
-          {checks.map(c => (
-            <span key={c.label} style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10.5, color: c.ok ? "#34d399" : "var(--text-muted)", display: "flex", alignItems: "center", gap: 3 }}>
-              <motion.span animate={{ scale: c.ok ? [1.4, 1] : 1 }} transition={{ duration: 0.2 }} style={{ fontSize: 9 }}>{c.ok ? "✓" : "○"}</motion.span>
-              {c.label}
-            </span>
-          ))}
-        </div>
+
+      {/* Label row */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+        <span style={{ fontFamily: "Syne, sans-serif", fontSize: 11, fontWeight: 700, color: activeColor }}>
+          {isCommon ? "Common password" : label}
+        </span>
+        <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, color: "var(--text-muted)" }}>
+          ~{result.entropyBits} bits
+        </span>
+      </div>
+
+      {/* Feedback message */}
+      {!result.acceptable && (
+        <motion.p
+          initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+          style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11.5, color: activeColor,
+                   margin: "0 0 8px 2px", lineHeight: 1.4 }}
+        >
+          {feedback}
+        </motion.p>
+      )}
+
+      {/* Check-mark chips */}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {checkItems.map(c => (
+          <span key={c.label} style={{
+            fontFamily: "DM Sans, sans-serif", fontSize: 10.5,
+            color: c.ok ? "#34d399" : "var(--text-muted)",
+            display: "flex", alignItems: "center", gap: 3,
+          }}>
+            <motion.span animate={{ scale: c.ok ? [1.4, 1] : 1 }} transition={{ duration: 0.2 }}
+              style={{ fontSize: 9 }}>
+              {c.ok ? "✓" : "○"}
+            </motion.span>
+            {c.label}
+          </span>
+        ))}
       </div>
     </motion.div>
   );
@@ -315,7 +354,9 @@ export default function RegisterPage() {
 
   const canNext0 = form.name.trim().length >= 1 && form.username.trim().length >= 3;
   const canNext1 = form.email.trim().length > 4;
-  const canSubmit = form.password.length >= 8 && form.password === form.confirmPassword;
+  // Feature #27: require entropy-acceptable password, not just length >= 8
+  const pwResult  = checkPasswordStrength(form.password);
+  const canSubmit = pwResult.acceptable && form.password === form.confirmPassword;
 
   const nextStep = useCallback(() => {
     if (step === 0 && !canNext0) { setError("Fill name and username (min 3 chars)"); return; }
@@ -326,7 +367,7 @@ export default function RegisterPage() {
 
   const handleSubmit = useCallback(async (e: FormEvent) => {
     e.preventDefault();
-    if (!canSubmit) { setError(form.password !== form.confirmPassword ? "Passwords don't match" : "Password must be at least 8 characters"); return; }
+    if (!canSubmit) { setError(form.password !== form.confirmPassword ? "Passwords don't match" : pwResult.feedback || "Password does not meet strength requirements"); return; }
     setError(null); setLoading(true);
     try {
       await authApi.register({

@@ -4,7 +4,68 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
+import { checkPasswordStrength } from "@/lib/passwordStrength";
 import ThemeToggle from "@/components/ThemeToggle";
+
+// ── Password Strength Bar (Feature #27 — entropy-based) ─────────────────────
+function StrengthBar({ pw, isDark }: { pw: string; isDark: boolean }) {
+  if (!pw.length) return null;
+  const result = checkPasswordStrength(pw);
+  const { score, label, color, checks, feedback, isCommon, entropyBits } = result;
+  const barColors = ["#ef4444","#f97316","#eab308","#22c55e","#10b981"];
+  const activeColor = isCommon ? "#ef4444" : barColors[score];
+  const checkItems = [
+    { label: "8+ chars",  ok: checks.minLength },
+    { label: "Uppercase", ok: checks.hasUpper  },
+    { label: "Number",    ok: checks.hasDigit  },
+    { label: "Symbol",    ok: checks.hasSymbol },
+    { label: "Unique",    ok: checks.noCommon  },
+  ];
+  return (
+    <div style={{ marginTop: 6, marginBottom: 4 }}>
+      <div style={{ display: "flex", gap: 4, marginBottom: 7 }}>
+        {[0,1,2,3,4].map(i => (
+          <div key={i} style={{
+            flex: 1, height: 3.5, borderRadius: 2,
+            background: i <= score ? activeColor : (isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"),
+            boxShadow: i <= score ? `0 0 6px ${activeColor}66` : "none",
+            transition: "background 0.3s, box-shadow 0.3s",
+          }}/>
+        ))}
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+        <span style={{ fontFamily: "Syne, sans-serif", fontSize: 11, fontWeight: 700, color: activeColor }}>
+          {isCommon ? "Common password" : label}
+        </span>
+        <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, color: isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.38)" }}>
+          ~{entropyBits} bits entropy
+        </span>
+      </div>
+      {!result.acceptable && (
+        <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11.5, color: activeColor,
+                    margin: "0 0 7px 1px", lineHeight: 1.4 }}>
+          {feedback}
+        </p>
+      )}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {checkItems.map(c => (
+          <span key={c.label} style={{
+            fontFamily: "DM Sans, sans-serif", fontSize: 10.5,
+            color: c.ok ? "#34d399" : (isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.35)"),
+            display: "flex", alignItems: "center", gap: 3,
+          }}>
+            <span style={{ fontSize: 9, display: "inline-block",
+                           transform: c.ok ? "scale(1)" : "scale(1)",
+                           transition: "transform 0.2s" }}>
+              {c.ok ? "✓" : "○"}
+            </span>
+            {c.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 // ── Shared ambient canvas ────────────────────────────────────────────────────
 function AmbientCanvas({ isDark }: { isDark: boolean }) {
@@ -242,13 +303,15 @@ function ResetPasswordInner() {
   const isInvalid = !token || !email;
 
   const passwordsMatch = password === confirm;
-  const canSubmit = !loading && password.length >= 8 && confirm.length > 0 && passwordsMatch;
+  // Feature #27: require entropy-acceptable password
+  const pwResult  = checkPasswordStrength(password);
+  const canSubmit = !loading && pwResult.acceptable && confirm.length > 0 && passwordsMatch;
 
   const handleSubmit = useCallback(async (e: FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
     if (!passwordsMatch) { setError("Passwords do not match"); return; }
-    if (password.length < 8) { setError("Password must be at least 8 characters"); return; }
+    if (!pwResult.acceptable) { setError(pwResult.feedback || "Password does not meet strength requirements"); return; }
 
     setError(null); setLoading(true);
     try {
@@ -483,24 +546,8 @@ function ResetPasswordInner() {
                   />
                 </motion.div>
 
-                {/* Password strength hint */}
-                {password.length > 0 && (
-                  <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} style={{ display:"flex", gap:4 }}>
-                    {[...Array(4)].map((_, i) => {
-                      const score = password.length >= 12 && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password) ? 4
-                        : password.length >= 10 && /[A-Z]/.test(password) && /[0-9]/.test(password) ? 3
-                        : password.length >= 8 ? 2 : 1;
-                      const colors = ["#ef4444","#f97316","#eab308","#22c55e"];
-                      return (
-                        <div key={i} style={{
-                          flex:1, height:3, borderRadius:2,
-                          background: i < score ? colors[score-1] : (isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)"),
-                          transition:"background 0.3s",
-                        }}/>
-                      );
-                    })}
-                  </motion.div>
-                )}
+                {/* Feature #27: entropy-based strength bar */}
+                <StrengthBar pw={password} isDark={isDark} />
 
                 <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.4, duration:0.4 }}>
                   <motion.button

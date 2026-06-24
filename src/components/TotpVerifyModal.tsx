@@ -5,7 +5,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ShieldCheck, Loader2, AlertCircle, KeyRound } from "lucide-react";
-import { totpApi } from "@/lib/api";
+import { totpApi, tokenStorage } from "@/lib/api";
 
 interface Props {
   pendingToken: string;
@@ -35,9 +35,9 @@ export default function TotpVerifyModal({
     setLoading(true); setError(null);
     try {
       const data = await totpApi.verifyLogin(pendingToken, code);
-      // Store tokens exactly as the normal login flow does
-      if (data.accessToken)  localStorage.setItem("accessToken",  data.accessToken);
-      if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
+      // ✅ FIX: use tokenStorage (keys "cs_access" / "cs_refresh") — NOT raw
+      // localStorage.setItem("accessToken") which api.ts never reads.
+      tokenStorage.set(data.accessToken, data.refreshToken);
       onSuccess();
     } catch (e: any) {
       setError(e?.message ?? "Invalid code — try again");

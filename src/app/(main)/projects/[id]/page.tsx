@@ -875,32 +875,34 @@ export default function ProjectDetailPage() {
             <div style={{ padding: "20px 22px", borderRadius: 20, background: card, border: `1px solid ${bdr}` }}>
               <p style={{ fontFamily: "DM Mono, monospace", fontSize: 10.5, color: muted, letterSpacing: "0.12em", margin: "0 0 14px", textTransform: "uppercase" }}>About the Creator</p>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: project.creator?.about ? 12 : 0 }}>
+                {/* Avatar: show profile photo if available, otherwise letter avatar */}
                 {project.creator?.profileImage ? (
-                  <>
-                    <img
-                      src={project.creator.profileImage}
-                      alt={project.creator.username}
-                      style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover" }}
-                    />
-                    {/* Follow button — only show if not the creator themselves */}
-                    {myUsername !== project.creator.username && (
-                      <FollowButton
-                        targetUserId={project.creator.id}
-                        isDark={isDark}
-                        isLoggedIn={!!myUsername}
-                        size="sm"
-                      />
-                    )}
-                  </>
+                  <img
+                    src={project.creator.profileImage}
+                    alt={project.creator.username}
+                    style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+                  />
                 ) : (
                   <div style={{ width: 44, height: 44, borderRadius: "50%", background: `conic-gradient(from 120deg,${accent},#facc15,${accent})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 18, color: "#fff" }}>{project.creator?.username?.charAt(0)?.toUpperCase()}</span>
                   </div>
                 )}
-                <div>
+                <div style={{ flex: 1 }}>
                   <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 15, color: txt, margin: "0 0 2px" }}>@{project.creator?.username}</p>
                   <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11.5, color: muted, margin: 0 }}>Campaign Creator</p>
                 </div>
+
+                {/* Follow button — always visible, outside the avatar conditional */}
+                {myUsername !== project.creator?.username && project.creator?.id && (
+                  <div style={{ marginLeft: "auto" }}>
+                    <FollowButton
+                      targetUserId={project.creator.id}
+                      isDark={isDark}
+                      isLoggedIn={!!myUsername}
+                      size="sm"
+                    />
+                  </div>
+                )}
               </div>
               {project.creator?.about && (
                 <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: muted, margin: 0, lineHeight: 1.65 }}>{project.creator.about}</p>
@@ -918,8 +920,6 @@ export default function ProjectDetailPage() {
         rewards={rewards} isDark={isDark}
         goalAmount={project.goalAmount} currentAmount={project.currentAmount}
         onSuccess={() => {
-          // SSE already pushed the funding update live.
-          // Re-fetch full project to refresh creator stats, status badges, etc.
           exploreApi.getFullDetails(id).then(setProject).catch(() => {});
         }}
       />

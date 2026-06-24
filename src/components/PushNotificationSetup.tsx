@@ -1,7 +1,3 @@
-// src/components/PushNotificationSetup.tsx
-// Mount once in the root layout (client-side only).
-// Quietly requests notification permission after the user logs in.
-// Shows a soft prompt banner if permission is "default" (not yet decided).
 "use client";
 
 import { useEffect, useState } from "react";
@@ -11,189 +7,147 @@ import { requestPushPermission, onForegroundMessage } from "@/lib/firebase";
 import { isLoggedIn } from "@/lib/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/crowdspark";
-const STORAGE_KEY = "cs_push_token";
+const STORAGE_KEY   = "cs_push_token";
 const DISMISSED_KEY = "cs_push_dismissed";
 
 async function registerToken(token: string) {
-  const accessToken = typeof window !== "undefined"
-    ? localStorage.getItem("accessToken") : null;
+  // ✅ FIX 1: was localStorage.getItem("accessToken")
+  //    api.ts stores it under "cs_access" (see tokenStorage.getAccess())
+  const accessToken =
+    typeof window !== "undefined" ? localStorage.getItem("cs_access") : null;
   if (!accessToken) return;
 
   const ua = navigator.userAgent.substring(0, 100);
 
-  await fetch(`${API_BASE}/api/notifications/subscribe`, {
+  // ✅ FIX 2: was /api/notifications/subscribe
+  //    NotificationController @RequestMapping("/api/v1/notifications")
+  await fetch(`${API_BASE}/api/v1/notifications/subscribe`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${accessToken}`,
+      Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify({ token, deviceHint: ua }),
   });
 }
 
 async function unregisterToken(token: string) {
-  const accessToken = typeof window !== "undefined"
-    ? localStorage.getItem("accessToken") : null;
+  // ✅ FIX 1: same key fix
+  const accessToken =
+    typeof window !== "undefined" ? localStorage.getItem("cs_access") : null;
   if (!accessToken) return;
 
-  await fetch(`${API_BASE}/api/notifications/unsubscribe`, {
+  // ✅ FIX 2: was /api/notifications/unsubscribe
+  await fetch(`${API_BASE}/api/v1/notifications/unsubscribe`, {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${accessToken}`,
+      Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify({ token }),
   });
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 export default function PushNotificationSetup() {
-  const [showBanner,  setShowBanner]  = useState(false);
-  const [permission,  setPermission]  = useState<NotificationPermission | null>(null);
+  const [showBanner, setShowBanner] = useState(false);
+  const [granted,    setGranted   ] = useState(false);
 
-  // On mount: check state and wire foreground listener
   useEffect(() => {
-    if (typeof window === "undefined" || !("Notification" in window)) return;
+    if (typeof window === "undefined") return;
     if (!isLoggedIn()) return;
+    if (localStorage.getItem(DISMISSED_KEY)) return;
 
-    const current = Notification.permission as NotificationPermission;
-    setPermission(current);
-
-    // Already granted — silently re-register token (may have rotated)
-    if (current === "granted") {
-      silentlyRegister();
-    } else if (current === "default") {
-      // Show soft prompt unless user already dismissed
-      const dismissed = localStorage.getItem(DISMISSED_KEY);
-      if (!dismissed) setShowBanner(true);
+    const perm = Notification.permission;
+    if (perm === "granted") {
+      // Already granted — silently register if we have no saved token yet
+      if (!localStorage.getItem(STORAGE_KEY)) {
+        requestPushPermission().then(token => {
+          if (token) {
+            localStorage.setItem(STORAGE_KEY, token);
+            registerToken(token);
+          }
+        });
+      }
+      setGranted(true);
+      return;
     }
 
-    // Listen for foreground messages and show a toast via the app's toast system
-    const unsubscribe = onForegroundMessage((title, body, link) => {
-      // Dispatch a custom event; the ToastProvider can listen for this
-      window.dispatchEvent(new CustomEvent("cs:push", { detail: { title, body, link } }));
-    });
-
-    return () => unsubscribe();
+    // Show soft-prompt banner for "default" (not yet decided)
+    if (perm === "default") {
+      setShowBanner(true);
+    }
   }, []);
 
-  async function silentlyRegister() {
-    try {
-      const cached = localStorage.getItem(STORAGE_KEY);
-      const token  = await requestPushPermission();
-      if (!token) return;
-      if (token !== cached) {
-        await registerToken(token);
-        localStorage.setItem(STORAGE_KEY, token);
-      }
-    } catch {
-      // Non-fatal — ignore
-    }
-  }
+  useEffect(() => {
+    // Listen for foreground messages (app is open) and show a toast / update UI
+    const unsub = onForegroundMessage((payload) => {
+      // Optional: show an in-app toast here
+      console.log("[FCM] Foreground message:", payload);
+    });
+    return unsub;
+  }, []);
 
-  async function handleAllow() {
+  const handleAllow = async () => {
     setShowBanner(false);
     const token = await requestPushPermission();
     if (token) {
-      await registerToken(token);
       localStorage.setItem(STORAGE_KEY, token);
-      setPermission("granted");
-    } else {
-      setPermission(Notification.permission as NotificationPermission);
+      registerToken(token);
+      setGranted(true);
     }
-  }
+  };
 
-  function handleDismiss() {
+  const handleDismiss = () => {
     setShowBanner(false);
     localStorage.setItem(DISMISSED_KEY, "1");
-  }
+  };
 
-  // ── Render ──────────────────────────────────────────────────────────────
-  // The banner is a floating bottom-right pill — non-intrusive.
   return (
     <AnimatePresence>
-      {showBanner && permission === "default" && (
+      {showBanner && (
         <motion.div
-          initial={{ opacity: 0, y: 24, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0,  scale: 1    }}
-          exit={{   opacity: 0, y: 16, scale: 0.97 }}
-          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          initial={{ y: 80, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 80, opacity: 0 }}
           style={{
-            position:   "fixed",
-            bottom:     24,
-            right:      24,
-            zIndex:     9999,
-            background: "linear-gradient(135deg, #1a1a1a 0%, #111 100%)",
-            border:     "1px solid rgba(255,255,255,0.09)",
-            borderRadius: 18,
-            padding:    "16px 18px",
-            width:      300,
-            boxShadow:  "0 20px 60px rgba(0,0,0,0.55)",
-            color:      "#f0f0f0",
+            position:     "fixed",
+            bottom:       24,
+            left:         "50%",
+            transform:    "translateX(-50%)",
+            zIndex:       9999,
+            background:   "#0e0e0e",
+            border:       "1px solid rgba(255,255,255,0.1)",
+            borderRadius: 16,
+            padding:      "16px 20px",
+            display:      "flex",
+            alignItems:   "center",
+            gap:          14,
+            boxShadow:    "0 8px 32px rgba(0,0,0,0.4)",
+            maxWidth:     420,
+            width:        "calc(100vw - 32px)",
           }}
         >
-          {/* Close */}
+          <Bell size={22} color="#ff5c00" style={{ flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <p style={{ margin: 0, fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 14, color: "#f0f0f0" }}>
+              Stay in the loop
+            </p>
+            <p style={{ margin: "2px 0 0", fontFamily: "DM Sans, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
+              Get notified when campaigns you back hit milestones.
+            </p>
+          </div>
+          <button
+            onClick={handleAllow}
+            style={{ padding: "8px 16px", borderRadius: 10, background: "#ff5c00", color: "#fff", border: "none", fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 13, cursor: "pointer", flexShrink: 0 }}
+          >
+            Allow
+          </button>
           <button
             onClick={handleDismiss}
-            aria-label="Dismiss"
-            style={{
-              position: "absolute", top: 10, right: 10,
-              background: "none", border: "none", cursor: "pointer",
-              color: "rgba(255,255,255,0.38)", padding: 4, lineHeight: 0,
-            }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.4)", padding: 4, flexShrink: 0 }}
           >
-            <X size={13} />
+            <X size={16} />
           </button>
-
-          {/* Icon + heading */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-              background: "linear-gradient(135deg,#ff5c00,#ff9000)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <Bell size={16} color="#fff" />
-            </div>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 13 }}>Stay in the loop</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", marginTop: 1 }}>
-                Get notified when campaigns update
-              </div>
-            </div>
-          </div>
-
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)",
-                      lineHeight: 1.55, margin: "0 0 14px" }}>
-            Enable push notifications to hear about project milestones,
-            backer updates, and payout confirmations — even when the tab is closed.
-          </p>
-
-          {/* Buttons */}
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              onClick={handleAllow}
-              style={{
-                flex: 1, background: "#ff5c00", color: "#fff",
-                border: "none", borderRadius: 10, padding: "9px 0",
-                cursor: "pointer", fontSize: 12, fontWeight: 700,
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-              }}
-            >
-              <Bell size={12} /> Enable
-            </button>
-            <button
-              onClick={handleDismiss}
-              style={{
-                flex: 1, background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.55)",
-                border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "9px 0",
-                cursor: "pointer", fontSize: 12, fontWeight: 600,
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-              }}
-            >
-              <BellOff size={12} /> Not now
-            </button>
-          </div>
         </motion.div>
       )}
     </AnimatePresence>

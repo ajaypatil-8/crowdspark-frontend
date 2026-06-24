@@ -1,7 +1,5 @@
 // src/hooks/useFundingStream.ts
-// NEW FILE — React hook that subscribes to the SSE funding stream.
-// Drop this file into src/hooks/ (create the folder if it doesn't exist).
-
+// FIX: Changed URL from /api/projects/ → /api/v1/projects/ (API versioning #26)
 "use client";
 import { useState, useEffect, useRef } from "react";
 
@@ -15,27 +13,6 @@ export interface FundingUpdate {
   timestamp: number;
 }
 
-/**
- * Connects to GET /api/projects/{projectId}/funding-stream (SSE).
- * Returns the latest funding data, updating live whenever a donation is confirmed.
- *
- * @param projectId  — project to watch
- * @param initial    — initial data from the server-side page fetch (shown instantly)
- * @param enabled    — set false to skip connecting (e.g. project is FAILED/CLOSED)
- *
- * Usage:
- *   const funding = useFundingStream(project.id, {
- *     projectId:        project.id,
- *     currentAmount:    project.currentAmount,
- *     goalAmount:       project.goalAmount,
- *     fundedPercentage: project.fundedPercentage,
- *     backersCount:     project.backersCount ?? 0,
- *     status:           project.status ?? "APPROVED",
- *     timestamp:        Date.now(),
- *   });
- *
- *   // Then use funding.currentAmount, funding.fundedPercentage, etc.
- */
 export function useFundingStream(
   projectId: number,
   initial: FundingUpdate,
@@ -45,7 +22,6 @@ export function useFundingStream(
   const esRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
-    // Sync if parent re-fetches (e.g. onSuccess after payment)
     setData(initial);
   }, [initial.currentAmount, initial.fundedPercentage]);
 
@@ -53,7 +29,8 @@ export function useFundingStream(
     if (!enabled || typeof window === "undefined") return;
 
     const BACKEND = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/crowdspark";
-    const url = `${BACKEND}/api/projects/${projectId}/funding-stream`;
+    // ✅ FIX: was /api/projects/ — must be /api/v1/projects/ to match the versioned backend
+    const url = `${BACKEND}/api/v1/projects/${projectId}/funding-stream`;
 
     const connect = () => {
       const es = new EventSource(url);
@@ -63,7 +40,6 @@ export function useFundingStream(
         try {
           const update: FundingUpdate = JSON.parse(e.data);
           setData(prev => {
-            // Only apply if the incoming update is newer
             if (update.timestamp >= (prev.timestamp ?? 0)) return update;
             return prev;
           });
@@ -75,8 +51,6 @@ export function useFundingStream(
       es.onerror = () => {
         es.close();
         esRef.current = null;
-        // Auto-reconnect after 5 seconds (SSE spec says browser does this,
-        // but being explicit is safer across all browsers)
         setTimeout(connect, 5_000);
       };
     };

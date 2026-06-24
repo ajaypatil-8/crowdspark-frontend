@@ -26,6 +26,7 @@ const IcMail   = ({ s = 14 }: { s?: number }) => (<svg width={s} height={s} view
 const IcRocket = ({ s = 14 }: { s?: number }) => (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/></svg>);
 const IcCard   = ({ s = 14 }: { s?: number }) => (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>);
 const IcWarn   = ({ s = 14 }: { s?: number }) => (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>);
+
 const IcCheck  = ({ s = 14 }: { s?: number }) => (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>);
 const IcZap    = ({ s = 24 }: { s?: number }) => (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>);
 const IcClock  = ({ s = 24 }: { s?: number }) => (<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>);
@@ -716,9 +717,15 @@ function DangerZone() {
 
 // ─── Settings Page ────────────────────────────────────────────────────────────
 export default function SettingsPage() {
-  const { user, loading } = useProfile();
+  const { user, loading, refetch } = useProfile();
   const { isDark } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const [mounted,      setMounted     ] = useState(false);
+  const [totpEnabled,  setTotpEnabled ] = useState(false);
+
+  // Sync totpEnabled from the user profile whenever it loads / refreshes
+  useEffect(() => {
+    if (user) setTotpEnabled(user.totpEnabled ?? false);
+  }, [user?.totpEnabled]);
   useEffect(() => {
     const timer = window.setTimeout(() => setMounted(true), 0);
     return () => window.clearTimeout(timer);
@@ -783,6 +790,14 @@ export default function SettingsPage() {
 
         <Section title="Account Information" icon={<IcCard s={14} />} subtitle="Your account details and status">
           <AccountInfo />
+        </Section>
+
+        <Section title="Security" icon={<IcShield s={14} />} subtitle="Two-factor authentication and login security" accentColor="#22c55e">
+          <TotpSetupSection
+            isDark={isDark}
+            totpEnabled={totpEnabled}
+            onChanged={() => { setTotpEnabled(prev => !prev); refetch(); }}
+          />
         </Section>
 
         <Section title="Danger Zone" icon={<IcWarn s={14} />} subtitle="Data export and irreversible account actions" accentColor="#ef4444">

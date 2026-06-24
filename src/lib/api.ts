@@ -129,6 +129,7 @@ export interface UserResponse {
   totalAmountBacked: number;
   totalProjectsCreated: number;
   totalFundsRaised: number;
+  totpEnabled: boolean;
 }
 
 export interface LoginResponse {

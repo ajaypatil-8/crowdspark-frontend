@@ -87,12 +87,6 @@ function IcAlert({ size = 15 }: { size?: number }) {
 function IcFile({ size = 20 }: { size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>;
 }
-function IcX({ size = 14 }: { size?: number }) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
-}
-function IcStar({ size = 18 }: { size?: number }) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
-}
 function IcArrow({ size = 16 }: { size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>;
 }
@@ -417,6 +411,144 @@ function CheckChip({ label, done }: { label: string; done: boolean }) {
   );
 }
 
+function CreatorShell({
+  children,
+  user,
+  kycStatus,
+  rail = true,
+}: {
+  children: React.ReactNode;
+  user?: UserResponse | null;
+  kycStatus?: KycStatus;
+  rail?: boolean;
+}) {
+  const { isDark } = useTheme();
+  const bdr = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
+  const panelBg = isDark ? "rgba(11,10,15,0.82)" : "rgba(255,255,255,0.86)";
+  const rowBg = isDark ? "rgba(255,255,255,0.035)" : "rgba(0,0,0,0.025)";
+  const verified = !!user?.emailVerified;
+  const statusLabel =
+    kycStatus === "REJECTED" ? "Needs changes" :
+    kycStatus === "PENDING_APPROVAL" ? "Under review" :
+    kycStatus === "APPROVED" ? "Approved" :
+    "Not submitted";
+  const railItems = [
+    { label: "Email check", value: verified ? "Verified" : "OTP pending", done: verified, icon: <IcMail size={15} /> },
+    { label: "Identity documents", value: kycStatus === "APPROVED" ? "Approved" : "PAN and Aadhaar", done: kycStatus === "APPROVED", icon: <IcFile size={15} /> },
+    { label: "Payout setup", value: "Bank and UPI", done: kycStatus === "APPROVED", icon: <IcShield size={15} /> },
+  ];
+
+  return (
+    <div
+      className="bc-page-shell"
+      style={{
+        minHeight: "calc(100vh - 62px)",
+        padding: rail ? "44px 24px 84px" : "54px 24px 84px",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-start",
+        position: "relative",
+        overflow: "hidden",
+        background: isDark
+          ? "linear-gradient(180deg,#08070c 0%,#070707 100%)"
+          : "linear-gradient(180deg,#f7f4ed 0%,#f3f3f1 100%)",
+      }}
+    >
+      <KycCanvas isDark={isDark} />
+
+      <div
+        className={rail ? "bc-shell-grid" : "bc-shell-grid bc-shell-grid-centered"}
+        style={{
+          width: "100%",
+          maxWidth: rail ? 1120 : 720,
+          display: "grid",
+          gridTemplateColumns: rail ? "minmax(270px,360px) minmax(0,660px)" : "minmax(0,680px)",
+          gap: 32,
+          alignItems: "start",
+          justifyContent: "center",
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
+        {rail && (
+          <motion.aside
+            className="bc-side-panel"
+            initial={{ opacity: 0, y: 18, x: -12 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+            style={{
+              position: "sticky",
+              top: 86,
+              borderRadius: 24,
+              padding: 28,
+              background: panelBg,
+              backdropFilter: "blur(24px)",
+              WebkitBackdropFilter: "blur(24px)",
+              border: `1px solid ${bdr}`,
+              boxShadow: isDark ? "0 26px 70px rgba(0,0,0,0.45)" : "0 18px 46px rgba(40,28,12,0.08)",
+              overflow: "hidden",
+            }}
+          >
+            <div style={{ position: "absolute", top: 0, left: 28, right: 28, height: 1.5, background: "linear-gradient(90deg,transparent,#ff8800,transparent)" }} />
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 999, background: "rgba(255,136,0,0.1)", border: "1px solid rgba(255,136,0,0.22)", color: "#ff8800", marginBottom: 18 }}>
+              <IcZap size={13} />
+              <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11.5, fontWeight: 700 }}>Creator access</span>
+            </div>
+
+            <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 28, lineHeight: 1.08, color: "var(--text)", margin: "0 0 12px", letterSpacing: "-0.03em" }}>
+              Launch with verified payouts
+            </h2>
+            <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14.5, lineHeight: 1.75, color: "var(--text-muted)", margin: "0 0 24px" }}>
+              Complete verification once, then create campaigns with secure identity and payout details already in place.
+            </p>
+
+            <div style={{ height: 1, background: bdr, marginBottom: 18 }} />
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {railItems.map((item, index) => (
+                <motion.div
+                  key={item.label}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.16 + index * 0.08 }}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0" }}
+                >
+                  <div style={{ width: 34, height: 34, borderRadius: 12, background: item.done ? "rgba(52,211,153,0.12)" : rowBg, border: `1px solid ${item.done ? "rgba(52,211,153,0.28)" : bdr}`, color: item.done ? "#34d399" : "#ff8800", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {item.done ? <IcCheck size={15} /> : item.icon}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 13.5, color: "var(--text)", margin: "0 0 2px" }}>{item.label}</p>
+                    <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12.5, color: "var(--text-muted)", margin: 0 }}>{item.value}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            <div style={{ marginTop: 20, padding: "14px 16px", borderRadius: 16, background: rowBg, border: `1px solid ${bdr}` }}>
+              <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", margin: "0 0 4px" }}>Current status</p>
+              <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 16, color: kycStatus === "REJECTED" ? "#ef4444" : kycStatus === "PENDING_APPROVAL" ? "#a78bfa" : "#ff8800", margin: 0 }}>{statusLabel}</p>
+            </div>
+          </motion.aside>
+        )}
+
+        <div className="bc-wizard-column" style={{ minWidth: 0, width: "100%" }}>
+          {children}
+        </div>
+      </div>
+
+      <style>{`
+        @media (max-width: 980px) {
+          .bc-shell-grid { grid-template-columns: 1fr !important; max-width: 720px !important; }
+          .bc-side-panel { position: relative !important; top: 0 !important; }
+        }
+        @media (max-width: 640px) {
+          .bc-page-shell { padding: 28px 16px 64px !important; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 // ─── Field validation hooks ───────────────────────────────────────────────────
 const validators = {
   pan:    (v: string) => /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(v),
@@ -435,7 +567,6 @@ export default function BecomeCreatorPage() {
 
   const pageRef = useRef<HTMLDivElement>(null);
   const [step,       setStep]       = useState<WizardStep>("start");
-  const [otp,        setOtp]        = useState("");
   const [busy,       setBusy]       = useState(false);
   const [error,      setError]      = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -585,64 +716,62 @@ export default function BecomeCreatorPage() {
     </div>
   );
 
-  const bg    = isDark ? "#06050a" : "#f5f4f0";
   const isRej = kycStatus === "REJECTED";
   const rejReason = userWithKycDetails?.kycRejectionReason ?? undefined;
 
   // ─── APPROVED ────────────────────────────────────────────────────────────────
   if (kycStatus === "APPROVED") return (
-    <div ref={pageRef} style={{ padding: "0 4px", maxWidth: 620, position: "relative", minHeight: 300 }}>
-      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", borderRadius: 22 }}>
-        <KycCanvas isDark={isDark} />
+    <CreatorShell rail={false} user={user} kycStatus={kycStatus}>
+      <div ref={pageRef} style={{ width: "100%", position: "relative", minHeight: 300 }}>
+        <GlassCard accentColor="#34d399">
+          <div style={{ textAlign: "center", paddingTop: 28, paddingBottom: 28 }}>
+            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 200, damping: 18 }}
+              style={{ width: 80, height: 80, borderRadius: 24, margin: "0 auto 22px", background: "rgba(52,211,153,0.12)", border: "1.5px solid rgba(52,211,153,0.35)", display: "flex", alignItems: "center", justifyContent: "center", color: "#34d399", boxShadow: "0 0 40px rgba(52,211,153,0.2)" }}>
+              <IcZap size={32} />
+            </motion.div>
+            {[1, 2].map(i => (
+              <motion.div key={i} initial={{ scale: 1, opacity: 0.5 }} animate={{ scale: 2.5, opacity: 0 }} transition={{ duration: 1.8, delay: i * 0.4, repeat: Infinity, ease: "easeOut" }}
+                style={{ position: "absolute", width: 80, height: 80, borderRadius: 24, border: "1.5px solid rgba(52,211,153,0.3)", left: "50%", top: 28, transform: "translateX(-50%)" }} />
+            ))}
+            <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 24, color: "var(--text)", margin: "0 0 10px", letterSpacing: "-0.025em" }}>You&apos;re a Verified Creator</h2>
+            <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 15, color: "var(--text-muted)", margin: "0 auto 28px", maxWidth: 360, lineHeight: 1.75 }}>
+              Your KYC has been approved. Launch your first campaign and start raising funds.
+            </p>
+            <PrimaryBtn label="Go to My Campaigns" onClick={() => router.push("/dashboard/my-campaigns")} icon={<IcArrow size={15} />} />
+          </div>
+        </GlassCard>
       </div>
-      <GlassCard accentColor="#34d399">
-        <div style={{ textAlign: "center", paddingTop: 28, paddingBottom: 28 }}>
-          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 200, damping: 18 }}
-            style={{ width: 80, height: 80, borderRadius: 24, margin: "0 auto 22px", background: "rgba(52,211,153,0.12)", border: "1.5px solid rgba(52,211,153,0.35)", display: "flex", alignItems: "center", justifyContent: "center", color: "#34d399", boxShadow: "0 0 40px rgba(52,211,153,0.2)" }}>
-            <IcZap size={32} />
-          </motion.div>
-          {[1, 2].map(i => (
-            <motion.div key={i} initial={{ scale: 1, opacity: 0.5 }} animate={{ scale: 2.5, opacity: 0 }} transition={{ duration: 1.8, delay: i * 0.4, repeat: Infinity, ease: "easeOut" }}
-              style={{ position: "absolute", width: 80, height: 80, borderRadius: 24, border: "1.5px solid rgba(52,211,153,0.3)", left: "50%", top: 28, transform: "translateX(-50%)" }} />
-          ))}
-          <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 24, color: "var(--text)", margin: "0 0 10px", letterSpacing: "-0.025em" }}>You&apos;re a Verified Creator! ⚡</h2>
-          <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 15, color: "var(--text-muted)", margin: "0 auto 28px", maxWidth: 360, lineHeight: 1.75 }}>
-            Your KYC has been approved. Launch your first campaign and start raising funds.
-          </p>
-          <PrimaryBtn label="Go to My Campaigns" onClick={() => router.push("/dashboard/my-campaigns")} icon={<IcArrow size={15} />} />
-        </div>
-      </GlassCard>
-    </div>
+    </CreatorShell>
   );
 
   // ─── PENDING APPROVAL ─────────────────────────────────────────────────────────
   if (kycStatus === "PENDING_APPROVAL") return (
-    <div ref={pageRef} style={{ padding: "0 4px", maxWidth: 620 }}>
-      <GlassCard accentColor="#a78bfa">
-        <div style={{ textAlign: "center", paddingTop: 24, paddingBottom: 24 }}>
-          <motion.div animate={{ rotate: [0, 360] }} transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-            style={{ width: 72, height: 72, borderRadius: 22, margin: "0 auto 20px", background: "rgba(167,139,250,0.12)", border: "1.5px solid rgba(167,139,250,0.35)", display: "flex", alignItems: "center", justifyContent: "center", color: "#a78bfa" }}>
-            <IcClock size={30} />
-          </motion.div>
-          <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 22, color: "var(--text)", margin: "0 0 12px", letterSpacing: "-0.025em" }}>KYC Under Review 🕐</h2>
-          <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14.5, color: "var(--text-muted)", margin: "0 auto", lineHeight: 1.8, maxWidth: 380 }}>
-            Documents submitted successfully. Our team reviews within <strong style={{ color: "#a78bfa" }}>1–2 business days</strong>.
-            <br />We&apos;ll email you at <strong style={{ color: "var(--text)" }}>{user?.email}</strong>.
-          </p>
-          <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 24, flexWrap: "wrap" }}>
-            <PrimaryBtn label="Back to Dashboard" onClick={() => router.push("/dashboard")} />
+    <CreatorShell rail={false} user={user} kycStatus={kycStatus}>
+      <div ref={pageRef} style={{ width: "100%" }}>
+        <GlassCard accentColor="#a78bfa">
+          <div style={{ textAlign: "center", paddingTop: 24, paddingBottom: 24 }}>
+            <motion.div animate={{ rotate: [0, 360] }} transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+              style={{ width: 72, height: 72, borderRadius: 22, margin: "0 auto 20px", background: "rgba(167,139,250,0.12)", border: "1.5px solid rgba(167,139,250,0.35)", display: "flex", alignItems: "center", justifyContent: "center", color: "#a78bfa" }}>
+              <IcClock size={30} />
+            </motion.div>
+            <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 22, color: "var(--text)", margin: "0 0 12px", letterSpacing: "-0.025em" }}>KYC Under Review</h2>
+            <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14.5, color: "var(--text-muted)", margin: "0 auto", lineHeight: 1.8, maxWidth: 380 }}>
+              Documents submitted successfully. Our team reviews within <strong style={{ color: "#a78bfa" }}>1–2 business days</strong>.
+              <br />We&apos;ll email you at <strong style={{ color: "var(--text)" }}>{user?.email}</strong>.
+            </p>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 24, flexWrap: "wrap" }}>
+              <PrimaryBtn label="Back to Dashboard" onClick={() => router.push("/dashboard")} />
+            </div>
           </div>
-        </div>
-      </GlassCard>
-    </div>
+        </GlassCard>
+      </div>
+    </CreatorShell>
   );
 
   // ─── WIZARD ───────────────────────────────────────────────────────────────────
   return (
-    <div ref={pageRef} style={{ maxWidth: 660, position: "relative" }}>
-
-      {/* Ambient glow behind page */}
-      <div style={{ position: "fixed", pointerEvents: "none", zIndex: 0, width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle,rgba(255,107,0,0.07) 0%,transparent 65%)", filter: "blur(60px)", top: "20%", left: "30%", transform: "translateX(-50%)" }} />
+    <CreatorShell user={user} kycStatus={kycStatus}>
+      <div ref={pageRef} style={{ width: "100%", position: "relative" }}>
 
       {/* Page header */}
       <div style={{ marginBottom: 32, position: "relative", zIndex: 1 }}>
@@ -929,7 +1058,7 @@ export default function BecomeCreatorPage() {
 
                 <motion.h2 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
                   style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 24, color: "var(--text)", margin: "0 0 12px", letterSpacing: "-0.025em" }}>
-                  KYC Submitted! 🎉
+                  KYC Submitted
                 </motion.h2>
                 <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
                   style={{ fontFamily: "DM Sans, sans-serif", fontSize: 15, color: "var(--text-muted)", margin: "0 auto 28px", lineHeight: 1.8, maxWidth: 400 }}>
@@ -973,6 +1102,7 @@ export default function BecomeCreatorPage() {
           .otp-row input { width: 40px !important; height: 48px !important; font-size: 20px !important; }
         }
       `}</style>
-    </div>
+      </div>
+    </CreatorShell>
   );
 }

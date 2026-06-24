@@ -7,7 +7,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import FollowButton from "@/components/FollowButton";
 import { analyticsApi } from "@/lib/api";
 import {
-  campaignUpdateApi, exploreApi, isLoggedIn, savedApi, reviewApi , milestoneApi , 
+  campaignUpdateApi, exploreApi, isLoggedIn, savedApi,
   type CampaignUpdateResponse, type ProjectFullDetailsResponse, type RewardTierResponse,
 } from "@/lib/api";
 import ProjectGallery from "@/components/ProjectGallery";
@@ -27,7 +27,10 @@ import { useFundingStream } from "@/hooks/useFundingStream";
 if (typeof window !== "undefined") gsap.registerPlugin(ScrollTrigger);
 
 type ProjectTab = "story" | "rewards" | "updates" | "comments" | "reviews";
-type ProjectDetails = ProjectFullDetailsResponse & { backersCount?: number };
+type ProjectDetails = ProjectFullDetailsResponse & {
+  backersCount?: number;
+  status?: string;
+};
 
 const fmt = (n: number) =>
   n >= 100000 ? `₹${(n / 100000).toFixed(1)}L`
@@ -196,24 +199,23 @@ export default function ProjectDetailPage() {
     (async () => {
       try {
         const { authApi: auth, isLoggedIn: loggedIn } = await import("@/lib/api");
+        const logged = loggedIn();
         const [proj] = await Promise.all([
           exploreApi.getFullDetails(id),
-          loggedIn()
-  ? auth.me().then(u => {
-      setMyUsername(u.username);
-      setMyUserId (u.id);
-    }).catch(() => {})
-  : Promise.resolve(),
+          logged
+            ? auth.me().then(u => {
+                setMyUsername(u.username);
+                setMyUserId(u.id);
+              }).catch(() => {})
+            : Promise.resolve(),
+          logged
+            ? savedApi.checkSaved(Number(id))
+                .then(data => setSaved(data.saved))
+                .catch(() => {})
+            : Promise.resolve(),
         ]);
         setProject(proj);
         analyticsApi.trackView(Number(id)); 
-        try {
-          if (myUsername) {
-  savedApi.checkSaved(Number(id))
-    .then(data => setSaved(data.saved))
-    .catch(() => {});
-}
-        } catch { /* ignore */ }
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : "Project not found");
       } finally { setLoading(false); }
@@ -271,12 +273,12 @@ export default function ProjectDetailPage() {
       currentAmount:    project?.currentAmount    ?? 0,
       goalAmount:       project?.goalAmount       ?? 0,
       fundedPercentage: project?.fundedPercentage ?? 0,
-      backersCount:     (project as any)?.backersCount ?? 0,
-      status:           (project as any)?.status  ?? "APPROVED",
+      backersCount:     project?.backersCount ?? 0,
+      status:           project?.status ?? "APPROVED",
       timestamp:        Date.now(),
     },
     // Only stream for active campaigns — no point opening SSE for FAILED/CLOSED
-    !!project && ["APPROVED"].includes((project as any)?.status ?? "APPROVED")
+    !!project && ["APPROVED"].includes(project.status ?? "APPROVED")
   );
 
   if (loading) return <PageSkeleton isDark={isDark} />;
@@ -344,7 +346,7 @@ export default function ProjectDetailPage() {
       <div style={{ position: "relative", zIndex: 1 }}>
 
         {/* ── HERO AREA ──────────────────────────────────────────────────── */}
-        <div style={{ maxWidth: 1220, margin: "0 auto", padding: "32px 24px 0" }}>
+        <div className="pd-hero-wrap" style={{ maxWidth: 1180, margin: "0 auto", padding: "30px 24px 0" }}>
 
           {/* Breadcrumb */}
           <nav className="hero-text" style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: "DM Mono, monospace", fontSize: 10.5, color: muted, letterSpacing: "0.1em", marginBottom: 26 }}>
@@ -388,7 +390,7 @@ export default function ProjectDetailPage() {
           </div>
 
           {/* Creator strip */}
-          <div className="hero-text" style={{ display: "inline-flex", alignItems: "center", gap: 12, marginTop: 24, padding: "12px 18px", borderRadius: 16, background: card2, border: `1px solid ${bdr}` }}>
+          <div className="hero-text pd-creator-strip" style={{ display: "inline-flex", alignItems: "center", gap: 12, marginTop: 24, padding: "12px 18px", borderRadius: 16, background: card2, border: `1px solid ${bdr}` }}>
             {project.creator?.profileImage ? (
               <img src={project.creator.profileImage} alt={project.creator.username} style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", border: `2px solid ${accent}30` }} />
             ) : (
@@ -411,18 +413,18 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* ── MAIN GRID ────────────────────────────────────────────────── */}
-        <div style={{
-          maxWidth: 1220, margin: "0 auto",
-          padding: "36px 24px 100px",
+        <div className="pd-detail-grid" style={{
+          maxWidth: 1180, margin: "0 auto",
+          padding: "32px 24px 96px",
           display: "grid",
-          gridTemplateColumns: "1fr clamp(300px,31%,380px)",
-          gap: 44, alignItems: "start",
+          gridTemplateColumns: "minmax(0,1fr) 340px",
+          gap: 32, alignItems: "start",
         }}>
 
           {/* ═══ LEFT COLUMN ═══ */}
-          <div>
+          <div className="pd-main-column" style={{ minWidth: 0 }}>
             {/* Gallery */}
-            <div className="reveal" style={{ marginBottom: 36, borderRadius: 20, overflow: "hidden", border: `1px solid ${bdr}` }}>
+            <div className="reveal" style={{ marginBottom: 28, borderRadius: 20, overflow: "hidden", border: `1px solid ${bdr}`, boxShadow: isDark ? "0 24px 64px rgba(0,0,0,0.34)" : "0 16px 44px rgba(0,0,0,0.08)" }}>
               <ProjectGallery
                 images={[...(project.thumbnailUrl ? [project.thumbnailUrl] : []), ...(project.galleryImages ?? [])]}
                 videos={project.previewVideos ?? []}
@@ -432,7 +434,7 @@ export default function ProjectDetailPage() {
             </div>
 
             {/* Quick stats strip */}
-            <div className="reveal" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 32 }}>
+            <div className="reveal pd-stat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 26 }}>
               {[
                 { icon: <TrendingUp size={15} color={accent} />, label: "Funded", value: `${pct}%` },
                 // ── CHANGE 3: backers count from live SSE data ────────────────
@@ -449,7 +451,7 @@ export default function ProjectDetailPage() {
             </div>
 
             {/* Tab bar */}
-            <div className="reveal" style={{ display: "flex", gap: 4, marginBottom: 26, background: card2, borderRadius: 16, padding: 5, border: `1px solid ${bdr}` }}>
+            <div className="reveal pd-tab-bar" style={{ display: "flex", gap: 4, marginBottom: 20, background: card2, borderRadius: 16, padding: 5, border: `1px solid ${bdr}` }}>
               <TabBtn id="story"   active={activeTab === "story"}   label="Story"   icon={<BookOpen size={14}/>}  onClick={setActiveTab} {...{txt,muted,card}} />
               <TabBtn id="rewards" active={activeTab === "rewards"} label="Rewards" icon={<Gift size={14}/>}      onClick={setActiveTab} {...{txt,muted,card}} />
               <TabBtn id="updates" active={activeTab === "updates"} label="Updates" icon={<Bell size={14}/>}      onClick={setActiveTab} {...{txt,muted,card}} />
@@ -466,7 +468,7 @@ export default function ProjectDetailPage() {
               >
                 {/* ── Story ── */}
                 {activeTab === "story" && (
-                  <div style={{ padding: "32px", borderRadius: 22, background: card, border: `1px solid ${bdr}` }}>
+                  <div style={{ padding: "28px", borderRadius: 20, background: card, border: `1px solid ${bdr}`, boxShadow: isDark ? "0 18px 54px rgba(0,0,0,0.28)" : "0 10px 34px rgba(0,0,0,0.06)" }}>
                     <h2 style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 22, color: txt, margin: "0 0 22px", display: "flex", alignItems: "center", gap: 10 }}>
                       <span style={{ display: "inline-block", width: 4, height: 22, borderRadius: 2, background: `linear-gradient(to bottom,${accent},#ffb300)` }} />
                       About this campaign
@@ -489,7 +491,7 @@ export default function ProjectDetailPage() {
                     )}
 
                                   {/* ── Milestones ── */}
-                        <div style={{ marginTop: 40 }}>
+                        <div style={{ marginTop: 34 }}>
                           <div style={{
                             display: "flex", alignItems: "center", gap: 10, marginBottom: 16,
                           }}>
@@ -698,39 +700,39 @@ export default function ProjectDetailPage() {
                   </div>
                 )}
 
+                {activeTab === "comments" && (
+                  <CommentsTab
+                    projectId={project.id}
+                    creatorId={project.creator.id}
+                    isDark={isDark}
+                    myUserId={myUserId}
+                  />
+                )}
+
+                {activeTab === "reviews" && (
+                  <ReviewsTab
+                    projectId={project.id}
+                    isDark={isDark}
+                    myUserId={myUserId}
+                  />
+                )}
+
               </motion.div>
             </AnimatePresence>
           </div>
 
-          {activeTab === "comments" && (
-            <CommentsTab
-              projectId={project.id}
-              creatorId={project.creator.id}
-              isDark={isDark}
-              myUserId={myUserId}
-            />
-          )}
-
-          {activeTab === "reviews" && (
-            <ReviewsTab
-              projectId={project.id}
-              isDark={isDark}
-              myUserId={myUserId}
-            />
-          )}
-
           {/* ═══ RIGHT SIDEBAR ═══ */}
-          <div className="sidebar-card" style={{ position: "sticky", top: 96, display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="sidebar-card pd-sidebar" style={{ position: "sticky", top: 88, display: "flex", flexDirection: "column", gap: 12, maxHeight: "calc(100vh - 104px)", overflowY: "auto", paddingRight: 2 }}>
 
             {/* Funding card */}
             <div style={{
-              padding: "28px 24px", borderRadius: 24,
+              padding: "24px 22px", borderRadius: 22,
               background: card, border: `1px solid ${bdr}`,
-              boxShadow: isDark ? "0 28px 72px rgba(0,0,0,0.55)" : "0 10px 48px rgba(0,0,0,0.10)",
+              boxShadow: isDark ? "0 24px 62px rgba(0,0,0,0.45)" : "0 10px 38px rgba(0,0,0,0.08)",
             }}>
               {/* Raised amount */}
               <div style={{ marginBottom: 4 }}>
-                <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 40, color: txt, letterSpacing: "-0.04em" }}>{raised}</span>
+                <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: "clamp(30px,3vw,38px)", color: txt, letterSpacing: "-0.035em" }}>{raised}</span>
               </div>
               <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13.5, color: muted, margin: "0 0 20px" }}>
                 raised of <strong style={{ color: txt }}>{goal}</strong> goal
@@ -751,7 +753,7 @@ export default function ProjectDetailPage() {
                           color: accent, letterSpacing: "0.1em", margin: "0 0 22px",
                           display: "flex", alignItems: "center", gap: 6 }}>
                 {pct}% FUNDED
-                {["APPROVED"].includes((project as any).status ?? "") && (
+                {["APPROVED"].includes(project.status ?? "") && (
                   <span
                     title="Live funding updates active"
                     style={{
@@ -765,7 +767,7 @@ export default function ProjectDetailPage() {
               </p>
 
               {/* Stats grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 22 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9, marginBottom: 18 }}>
                 {[
                   { label: "DAYS LEFT", value: project.daysLeft ?? 0, color: daysColor(project.daysLeft) },
                   { label: "% FUNDED",  value: `${pct}%`, color: txt },
@@ -798,7 +800,7 @@ export default function ProjectDetailPage() {
                   transition: "background 0.2s",
                 }}
               >
-                {isOwner ? "🚫 Your own campaign" : "❤️ Back this project"}
+                {isOwner ? "Your own campaign" : "Back this project"}
               </motion.button>
 
               <p style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: muted, textAlign: "center", letterSpacing: "0.1em", margin: 0 }}>
@@ -808,7 +810,7 @@ export default function ProjectDetailPage() {
 
             {/* Rewards quick list */}
             {rewards.length > 0 && (
-              <div style={{ padding: "20px 22px", borderRadius: 20, background: card, border: `1px solid ${bdr}` }}>
+              <div style={{ padding: "18px", borderRadius: 18, background: card, border: `1px solid ${bdr}` }}>
                 <p style={{ fontFamily: "DM Mono, monospace", fontSize: 10.5, color: muted, letterSpacing: "0.12em", margin: "0 0 14px", textTransform: "uppercase" }}>Popular Tiers</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                   {rewards.slice(0, 3).map(r => (
@@ -872,7 +874,7 @@ export default function ProjectDetailPage() {
 
 
             {/* Creator card */}
-            <div style={{ padding: "20px 22px", borderRadius: 20, background: card, border: `1px solid ${bdr}` }}>
+            <div style={{ padding: "18px", borderRadius: 18, background: card, border: `1px solid ${bdr}` }}>
               <p style={{ fontFamily: "DM Mono, monospace", fontSize: 10.5, color: muted, letterSpacing: "0.12em", margin: "0 0 14px", textTransform: "uppercase" }}>About the Creator</p>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: project.creator?.about ? 12 : 0 }}>
                 {/* Avatar: show profile photo if available, otherwise letter avatar */}

@@ -1,8 +1,51 @@
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap');
+@import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+
+@theme {
+  --color-background: var(--bg);
+  --color-background-2: var(--bg-2);
+  --color-background-3: var(--bg-3);
+  --color-bg-input: var(--bg-input);
+  --color-bg-input-focus: var(--bg-input-f);
+  --color-bg-ghost: var(--bg-ghost);
+  --color-bg-hover: var(--bg-hover);
+
+  --color-border: var(--border);
+  --color-border-2: var(--border-2);
+  --color-border-focus: var(--border-focus);
+
+  --color-foreground: var(--text);
+  --color-text-sub: var(--text-sub);
+  --color-text-muted: var(--text-muted);
+  --color-text-ph: var(--text-ph);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-h);
+  --color-accent-dim: var(--accent-dim);
+  
+  --color-cta: var(--cta);
+  --color-cta-2: var(--cta-2);
+
+  --color-card: var(--card-bg);
+  --color-card-2: var(--card-bg-2);
+  --color-card-border: var(--card-border);
+  --color-card-border-hover: var(--card-border-h);
+
+  --color-danger: var(--danger);
+  --color-danger-dim: var(--danger-dim);
+  --color-success: var(--success);
+  --color-success-dim: var(--success-dim);
+  --color-warning: var(--warning);
+  --color-warning-dim: var(--warning-dim);
+  --color-info: var(--info);
+  --color-info-dim: var(--info-dim);
+
+  --font-syne: 'Syne', sans-serif;
+  --font-sans: 'DM Sans', sans-serif;
+  
+  --animate-spin-slow: spin 1s linear infinite;
+}
 
 /* ════════════════════════════════════════════════════════════
    DARK THEME (default)

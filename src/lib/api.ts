@@ -514,6 +514,9 @@ export interface BackedProjectResponse {
   status: string;
   amountBacked: number;
   backedAt: string;
+  // FIX #10: backend already returns this — needed so we only offer a
+  // receipt download for donations that actually succeeded.
+  paymentStatus?: "PENDING" | "SUCCESS" | "FAILED";
 }
 
 export interface BackerStatsResponse {
@@ -676,6 +679,35 @@ export const paymentApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+
+  // FIX #10: triggers a browser download of the receipt PDF. Doesn't reuse
+  // request<T>() above — that helper always calls res.json(), which would
+  // throw on a binary PDF response body.
+  downloadReceipt: async (donationId: number): Promise<void> => {
+    const token = tokenStorage.getAccess();
+    const res = await fetch(`${BASE_URL}/api/v1/payment/receipt/${donationId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(err.message || "Failed to download receipt");
+    }
+
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition") || "";
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    const filename = match?.[1] || `CrowdSpark_Receipt_${donationId}.pdf`;
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
 };
 
 export interface DonationResponse {

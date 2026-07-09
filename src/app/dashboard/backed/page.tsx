@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useProfile } from "@/contexts/ProfileContext";
-import { backerApi, type BackedProjectResponse } from "@/lib/api";
+import { backerApi, paymentApi, type BackedProjectResponse } from "@/lib/api";
 import MyRewardClaims from "@/components/dashboard/MyRewardClaims";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -41,6 +41,12 @@ const IcRefresh = ({ s = 13 }: { s?: number }) => (
     <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>
   </svg>
 );
+const IcReceipt = ({ s = 15 }: { s?: number }) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 00-2 2v16l3-2 3 2 3-2 3 2V4a2 2 0 00-2-2z"/>
+    <path d="M8 7h8M8 11h8M8 15h5"/>
+  </svg>
+);
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string }> = {
   APPROVED: { color: "#34d399", bg: "rgba(52,211,153,0.12)", label: "Active" },
@@ -54,7 +60,7 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string }
 function SkeletonRow({ isDark }: { isDark: boolean }) {
   const b = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.06)";
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 130px 110px 100px", gap: 12, padding: "18px 28px", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}`, alignItems: "center" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 130px 110px 100px 44px", gap: 12, padding: "18px 28px", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}`, alignItems: "center" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <div style={{ width: 60, height: 46, borderRadius: 12, background: b, flexShrink: 0, animation: "bkpulse 1.6s ease-in-out infinite" }} />
         <div>
@@ -65,6 +71,7 @@ function SkeletonRow({ isDark }: { isDark: boolean }) {
       <div style={{ width: 70, height: 14, borderRadius: 6, background: b, animation: "bkpulse 1.6s ease-in-out infinite" }} />
       <div style={{ width: 80, height: 8, borderRadius: 4, background: b, animation: "bkpulse 1.6s ease-in-out infinite" }} />
       <div style={{ width: 60, height: 24, borderRadius: 20, background: b, animation: "bkpulse 1.6s ease-in-out infinite" }} />
+      <div style={{ width: 28, height: 28, borderRadius: 8, background: b, animation: "bkpulse 1.6s ease-in-out infinite" }} />
     </div>
   );
 }
@@ -99,6 +106,20 @@ export default function BackedPage() {
   const [mounted, setMounted]   = useState(false);
   const [hoveredRow, setHoveredRow] = useState<string | number | null>(null);
   const [activeTab, setActiveTab] = useState<"backed" | "rewards">("backed");
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+
+  const handleDownloadReceipt = useCallback(async (donationId: number) => {
+    setDownloadingId(donationId);
+    try {
+      await paymentApi.downloadReceipt(donationId);
+    } catch (e: unknown) {
+      setToast({ msg: e instanceof Error ? e.message : "Failed to download receipt", type: "error" });
+      setTimeout(() => setToast(null), 4000);
+    } finally {
+      setDownloadingId(null);
+    }
+  }, []);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -208,6 +229,18 @@ export default function BackedPage() {
         )}
       </AnimatePresence>
 
+      {/* ── Receipt download toast ── */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            style={{ padding: "11px 16px", borderRadius: 12, marginBottom: 20, background: toast.type === "error" ? "rgba(239,68,68,0.07)" : "rgba(52,211,153,0.07)", border: `1px solid ${toast.type === "error" ? "rgba(239,68,68,0.2)" : "rgba(52,211,153,0.2)"}`, color: toast.type === "error" ? "#ef4444" : "#34d399", fontFamily: "DM Sans, sans-serif", fontSize: 13 }}
+          >
+            {toast.msg}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
               <div style={{ display: "flex", gap: 4, marginBottom: 20 }}>
           {(["backed", "rewards"] as const).map(t => (
             <button
@@ -226,14 +259,12 @@ export default function BackedPage() {
           ))}
         </div>
 
-        {activeTab === "backed" && (
-          <></>
-        )}
-
         {activeTab === "rewards" && (
           <MyRewardClaims isDark={isDark} />
         )}
 
+        {activeTab === "backed" && (
+        <>
       {/* ── Content Card ── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -251,8 +282,8 @@ export default function BackedPage() {
         {/* Skeleton */}
         {loading && (
           <>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 130px 110px 100px", gap: 12, padding: "14px 28px", borderBottom: `1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)" }}>
-              {["Campaign", "Your pledge", "Progress", "Status"].map(h => (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 130px 110px 100px 44px", gap: 12, padding: "14px 28px", borderBottom: `1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)" }}>
+              {["Campaign", "Your pledge", "Progress", "Status", ""].map(h => (
                 <span key={h} style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10.5, fontWeight: 700, color: muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>{h}</span>
               ))}
             </div>
@@ -287,8 +318,8 @@ export default function BackedPage() {
         {!loading && !error && projects.length > 0 && (
           <div>
             {/* Table head */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 130px 110px 100px", gap: 12, padding: "14px 28px", borderBottom: `1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)" }}>
-              {["Campaign", "Your pledge", "Progress", "Status"].map(h => (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 130px 110px 100px 44px", gap: 12, padding: "14px 28px", borderBottom: `1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)" }}>
+              {["Campaign", "Your pledge", "Progress", "Status", ""].map(h => (
                 <span key={h} style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10.5, fontWeight: 700, color: muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>{h}</span>
               ))}
             </div>
@@ -309,7 +340,7 @@ export default function BackedPage() {
                     onMouseEnter={() => setHoveredRow(rowKey)}
                     onMouseLeave={() => setHoveredRow(null)}
                     style={{
-                      display: "grid", gridTemplateColumns: "1fr 130px 110px 100px",
+                      display: "grid", gridTemplateColumns: "1fr 130px 110px 100px 44px",
                       gap: 12, padding: "18px 28px",
                       borderBottom: i < projects.length - 1 ? `1px solid ${bdr}` : "none",
                       alignItems: "center",
@@ -366,6 +397,29 @@ export default function BackedPage() {
                         {sc.label}
                       </span>
                     </div>
+
+                    {/* Receipt (FIX #10) */}
+                    <div style={{ display: "flex", justifyContent: "center" }}>
+                      {p.paymentStatus === "SUCCESS" && p.donationId != null && (
+                        <button
+                          onClick={() => handleDownloadReceipt(p.donationId!)}
+                          disabled={downloadingId === p.donationId}
+                          title="Download receipt"
+                          style={{
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            width: 30, height: 30, borderRadius: 9,
+                            border: `1px solid ${bdr}`,
+                            background: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)",
+                            color: downloadingId === p.donationId ? muted : txt,
+                            cursor: downloadingId === p.donationId ? "wait" : "pointer",
+                            opacity: downloadingId === p.donationId ? 0.5 : 1,
+                            transition: "all 0.15s",
+                          }}
+                        >
+                          <IcReceipt s={14} />
+                        </button>
+                      )}
+                    </div>
                   </motion.div>
                 );
               })}
@@ -383,6 +437,8 @@ export default function BackedPage() {
           </div>
         )}
       </motion.div>
+        </>
+        )}
 
       <style>{`
         @keyframes bkpulse { 0%,100%{opacity:.35} 50%{opacity:.85} }

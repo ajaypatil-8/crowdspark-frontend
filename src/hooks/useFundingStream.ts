@@ -1,5 +1,10 @@
 // src/hooks/useFundingStream.ts
 // FIX: Changed URL from /api/projects/ → /api/v1/projects/ (API versioning #26)
+// FIX (Feature #15): the reconnect setTimeout scheduled in onerror was never
+// cancelled on cleanup. If the component unmounted (or projectId/enabled
+// changed) while a reconnect was pending, the timer still fired afterward and
+// opened a brand-new EventSource nobody would ever close — a zombie SSE
+// connection per dropped reconnect. Now tracked and cleared on cleanup.
 "use client";
 import { useState, useEffect, useRef } from "react";
 
@@ -29,8 +34,11 @@ export function useFundingStream(
     if (!enabled || typeof window === "undefined") return;
 
     const BACKEND = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/crowdspark";
-    // ✅ FIX: was /api/projects/ — must be /api/v1/projects/ to match the versioned backend
+    // was /api/projects/ — must be /api/v1/projects/ to match the versioned backend
     const url = `${BACKEND}/api/v1/projects/${projectId}/funding-stream`;
+
+    // Scoped to this effect run so the cleanup below always cancels the right timer.
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
     const connect = () => {
       const es = new EventSource(url);
@@ -51,13 +59,19 @@ export function useFundingStream(
       es.onerror = () => {
         es.close();
         esRef.current = null;
-        setTimeout(connect, 5_000);
+        reconnectTimer = setTimeout(connect, 5_000);
       };
     };
 
     connect();
 
     return () => {
+      // FIX: cancel any pending reconnect before tearing down — otherwise it
+      // fires after unmount and opens a connection nothing will ever close.
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
       esRef.current?.close();
       esRef.current = null;
     };

@@ -42,7 +42,8 @@ export async function generateMetadata({
 
   if (!project) {
     return {
-      title: "Campaign | CrowdSpark",
+
+      title: { absolute: "Campaign | CrowdSpark" },
       description: "Discover and back visionary projects on CrowdSpark.",
     };
   }
@@ -53,7 +54,8 @@ export async function generateMetadata({
   const url         = `${SITE_URL}/projects/${project.id}`;
 
   return {
-    title,
+
+    title: { absolute: title },
     description,
     openGraph: {
       type:        "website",

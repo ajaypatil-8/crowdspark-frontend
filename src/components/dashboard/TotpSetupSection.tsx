@@ -7,15 +7,52 @@ import {
   ShieldCheck, ShieldOff, QrCode, KeyRound,
   Loader2, AlertCircle, CheckCircle2, Copy, Check, Eye, EyeOff,
 } from "lucide-react";
+import QRCode from "qrcode";
 import { totpApi } from "@/lib/api";
 
-// Lightweight QR-code renderer using the free ZXing API
-// (no npm install needed — uses a public endpoint)
+
 function QrImage({ uri, size = 200 }: { uri: string; size?: number }) {
-  const src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(uri)}`;
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const [failed,  setFailed]  = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setDataUrl(null);
+    setFailed(false);
+
+    QRCode.toDataURL(uri, { width: size, margin: 1 })
+      .then(url => { if (!cancelled) setDataUrl(url); })
+      .catch(() => { if (!cancelled) setFailed(true); });
+
+    return () => { cancelled = true; };
+  }, [uri, size]);
+
+  if (failed) {
+    return (
+      <div style={{
+        width: size, height: size, display: "flex", alignItems: "center",
+        justifyContent: "center", color: "#ef4444", fontSize: 12, textAlign: "center",
+        padding: 12,
+      }}>
+        Couldn&apos;t generate QR code. Use the manual entry code instead.
+      </div>
+    );
+  }
+
+  if (!dataUrl) {
+    return (
+      <div style={{
+        width: size, height: size, display: "flex", alignItems: "center",
+        justifyContent: "center",
+      }}>
+        <Loader2 size={24} className="animate-spin" color="#999" />
+      </div>
+    );
+  }
+
   return (
     <img
-      src={src}
+      src={dataUrl}
       alt="Scan with your authenticator app"
       width={size}
       height={size}

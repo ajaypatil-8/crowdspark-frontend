@@ -215,7 +215,17 @@ export const authApi = {
       method: "POST",
       body: JSON.stringify({ identifier, password }),
     });
-    tokenStorage.set(data.accessToken, data.refreshToken);
+    // BUG FIX (Feature #23): when totpRequired is true, the backend returns
+    // { totpRequired, pendingToken } with no accessToken/refreshToken at all.
+    // Calling tokenStorage.set() unconditionally passed `undefined` for both,
+    // and localStorage.setItem() coerces that to the literal string
+    // "undefined" -- so every single 2FA login attempt was overwriting
+    // cs_access/cs_refresh with that string the moment the password check
+    // succeeded, before the user even entered their code. Real tokens are
+    // stored later by TotpVerifyModal once verify-login actually succeeds.
+    if (data.accessToken && data.refreshToken) {
+      tokenStorage.set(data.accessToken, data.refreshToken);
+    }
     return data;
   },
 

@@ -1,22 +1,14 @@
-// public/firebase-messaging-sw.js
-// Service worker registered automatically by Firebase JS SDK.
-// Handles push messages when the browser tab is in the background or closed.
-// This file MUST be at the root of /public so it's served from the domain root.
 
 importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js");
 
-// ─── Firebase config (public values — safe to commit) ─────────────────────
-// These mirror NEXT_PUBLIC_FIREBASE_* env vars; hard-code them here because
-// service workers cannot read Next.js env substitutions at runtime.
-// Replace with your actual project values from Firebase Console > Project Settings.
 const firebaseConfig = {
-  apiKey:            self.__FIREBASE_API_KEY__            || "YOUR_API_KEY",
-  authDomain:        self.__FIREBASE_AUTH_DOMAIN__        || "YOUR_PROJECT.firebaseapp.com",
-  projectId:         self.__FIREBASE_PROJECT_ID__         || "YOUR_PROJECT_ID",
-  storageBucket:     self.__FIREBASE_STORAGE_BUCKET__     || "YOUR_PROJECT.appspot.com",
-  messagingSenderId: self.__FIREBASE_MESSAGING_SENDER_ID__ || "YOUR_SENDER_ID",
-  appId:             self.__FIREBASE_APP_ID__             || "YOUR_APP_ID",
+  apiKey:            "AIzaSyCCsgeC7Glf82DqISupHo3dB31mxFpYGsg",
+  authDomain:        "crowdspark-68d80.firebaseapp.com",
+  projectId:         "crowdspark-68d80",
+  storageBucket:     "crowdspark-68d80.firebasestorage.app",
+  messagingSenderId: "1060676595589",
+  appId:             "1:1060676595589:web:cfc5dd5da9775f75fadeec",
 };
 
 firebase.initializeApp(firebaseConfig);

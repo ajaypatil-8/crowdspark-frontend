@@ -1,30 +1,16 @@
-// src/lib/firebase.ts
-// Firebase JS SDK — foreground push + token retrieval.
-// Only imported on the client side (no "use server" code here).
 
 import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
-// Provide a minimal ambient module declaration to avoid TS errors when
-// the firebase/messaging types aren't available in the environment.
+
 declare module "firebase/messaging";
 import { getMessaging, getToken, onMessage, type Messaging } from "firebase/messaging";
 
-// ─── Config from env vars ─────────────────────────────────────────────────
-// Add these to .env.local:
-//   NEXT_PUBLIC_FIREBASE_API_KEY=...
-//   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
-//   NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
-//   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
-//   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
-//   NEXT_PUBLIC_FIREBASE_APP_ID=...
-//   NEXT_PUBLIC_FIREBASE_VAPID_KEY=...  ← from Firebase Console > Cloud Messaging > Web Push certs
-
 const firebaseConfig = {
-  apiKey:            "AIzaSyCCsgeC7Glf82DqISupHo3dB31mxFpYGsg",
-authDomain:        "crowdspark-68d80.firebaseapp.com",
-projectId:         "crowdspark-68d80",
-storageBucket:     "crowdspark-68d80.firebasestorage.app",
-messagingSenderId: "1060676595589",
-appId:             "1:1060676595589:web:cfc5dd5da9775f75fadeec",
+  apiKey:            process.env.NEXT_PUBLIC_FIREBASE_API_KEY             ?? "AIzaSyCCsgeC7Glf82DqISupHo3dB31mxFpYGsg",
+  authDomain:        process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN         ?? "crowdspark-68d80.firebaseapp.com",
+  projectId:         process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID          ?? "crowdspark-68d80",
+  storageBucket:     process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET      ?? "crowdspark-68d80.firebasestorage.app",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? "1060676595589",
+  appId:             process.env.NEXT_PUBLIC_FIREBASE_APP_ID              ?? "1:1060676595589:web:cfc5dd5da9775f75fadeec",
 };
 
 // ─── Singleton init ───────────────────────────────────────────────────────
@@ -47,12 +33,6 @@ function getFirebaseMessaging(): Messaging | null {
   return messaging;
 }
 
-// ─── Public helpers ───────────────────────────────────────────────────────
-
-/**
- * Request notification permission and return the FCM registration token.
- * Returns null if permission was denied or the browser doesn't support push.
- */
 export async function requestPushPermission(): Promise<string | null> {
   if (typeof window === "undefined" || !("Notification" in window)) return null;
 
@@ -80,10 +60,6 @@ export async function requestPushPermission(): Promise<string | null> {
   }
 }
 
-/**
- * Register the service worker (must be at domain root).
- * Returns the existing registration if already registered.
- */
 async function registerServiceWorker(): Promise<ServiceWorkerRegistration> {
   if ("serviceWorker" in navigator) {
     return navigator.serviceWorker.register("/firebase-messaging-sw.js", {
@@ -93,10 +69,7 @@ async function registerServiceWorker(): Promise<ServiceWorkerRegistration> {
   throw new Error("Service workers not supported");
 }
 
-/**
- * Listen for foreground push messages (tab is visible).
- * Pass a callback to show your own toast/notification UI.
- */
+
 export function onForegroundMessage(
   callback: (title: string, body: string, link: string) => void
 ): () => void {

@@ -9,8 +9,6 @@ import {
 } from "lucide-react";
 import QRCode from "qrcode";
 import { totpApi } from "@/lib/api";
-
-
 function QrImage({ uri, size = 200 }: { uri: string; size?: number }) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [failed,  setFailed]  = useState(false);

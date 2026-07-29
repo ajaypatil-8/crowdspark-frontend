@@ -1,5 +1,3 @@
-// src/components/dashboard/CreatorRewardFulfillment.tsx
-// Creator view: manage reward claim fulfillment per campaign.
 "use client";
 
 import { useEffect, useState } from "react";
@@ -192,7 +190,11 @@ function ClaimRow({
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          {claim.shippingProvided && <MapPin size={12} color={muted} title="Address provided" />}
+          {claim.shippingProvided && (
+            <span title="Address provided" style={{ display: "inline-flex" }}>
+              <MapPin size={12} color={muted} aria-label="Address provided" />
+            </span>
+          )}
           <span style={{
             fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
             background: color + "18", color,

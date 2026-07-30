@@ -302,18 +302,39 @@ export default function BackProjectModal({
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {rewards.map(r => {
                         const sel = selectedReward === r.id;
+                        // BUG FIX (Feature #24): soldOut/limitedQuantity/
+                        // quantityAvailable/estimatedDelivery are new fields
+                        // the backend didn't use to return at all. Backend
+                        // already rejects a sold-out tier at order creation,
+                        // but disabling it here avoids sending someone
+                        // through the whole pledge flow just to hit that.
+                        const disabled = r.soldOut;
                         return (
-                          <motion.button key={r.id} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+                          <motion.button key={r.id}
+                            whileHover={disabled ? {} : { scale: 1.01 }}
+                            whileTap={disabled ? {} : { scale: 0.99 }}
                             onClick={() => {
+                              if (disabled) return;
                               setSelectedReward(sel ? null : r.id);
                               if (!sel) setAmount(String(Math.min(r.minimumAmount, Math.floor(remaining))));
                             }}
-                            style={{ textAlign: "left", padding: "14px 16px", borderRadius: 14, border: `1.5px solid ${sel ? accent : bdr}`, background: sel ? `${accent}0e` : inputBg, cursor: "pointer", transition: "all 0.18s", boxShadow: sel ? `0 0 0 3px ${accent}18` : "none" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: r.description ? 6 : 0 }}>
+                            disabled={disabled}
+                            style={{ textAlign: "left", padding: "14px 16px", borderRadius: 14, border: `1.5px solid ${sel ? accent : bdr}`, background: sel ? `${accent}0e` : inputBg, cursor: disabled ? "not-allowed" : "pointer", transition: "all 0.18s", boxShadow: sel ? `0 0 0 3px ${accent}18` : "none", opacity: disabled ? 0.5 : 1 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: (r.description || r.estimatedDelivery || r.limitedQuantity) ? 6 : 0 }}>
                               <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 14, color: txt }}>{r.title}</span>
-                              <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 14, color: accent, background: `${accent}14`, padding: "3px 10px", borderRadius: 8 }}>₹{r.minimumAmount}+</span>
+                              <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 14, color: accent, background: `${accent}14`, padding: "3px 10px", borderRadius: 8 }}>
+                                {disabled ? "Sold out" : `₹${r.minimumAmount}+`}
+                              </span>
                             </div>
                             {r.description && <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12.5, color: muted, margin: 0, lineHeight: 1.55 }}>{r.description}</p>}
+                            {(r.estimatedDelivery || (r.limitedQuantity != null && !disabled)) && (
+                              <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: muted, margin: "6px 0 0", display: "flex", gap: 10 }}>
+                                {r.estimatedDelivery && <span>📦 Est. delivery: {r.estimatedDelivery}</span>}
+                                {r.limitedQuantity != null && r.quantityAvailable != null && (
+                                  <span>{r.quantityAvailable} of {r.limitedQuantity} left</span>
+                                )}
+                              </p>
+                            )}
                           </motion.button>
                         );
                       })}

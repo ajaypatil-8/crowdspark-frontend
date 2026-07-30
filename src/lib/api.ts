@@ -369,6 +369,10 @@ export interface RewardTierRequest {
   title: string;
   description?: string;
   minimumAmount: number;
+  // BUG FIX (Feature #24): backend already validated and (now) persists
+  // these; the frontend type just never exposed them.
+  estimatedDelivery?: string;
+  limitedQuantity?: number;
 }
 
 export interface CreateProjectRequest {
@@ -460,6 +464,11 @@ export interface RewardTierResponse {
   title: string;
   description: string | null;
   minimumAmount: number;
+  // BUG FIX (Feature #24): now actually returned by the backend.
+  estimatedDelivery: string | null;
+  limitedQuantity: number | null;
+  quantityAvailable: number | null;
+  soldOut: boolean;
 }
 
 export interface ProjectFullDetailsResponse {

@@ -18,7 +18,7 @@ const TIER_COLORS = ["#60a5fa", "#a78bfa", "#f59e0b", "#ff8800", "#34d399", "#f4
 
 function TierCard({ reward, index, total, onUpdate, onRemove, isDark }: {
   reward: RewardTierRequest; index: number; total: number;
-  onUpdate: (k: keyof RewardTierRequest, v: string | number) => void;
+  onUpdate: (k: keyof RewardTierRequest, v: string | number | undefined) => void;
   onRemove: () => void; isDark: boolean;
 }) {
   const [expanded, setExpanded] = useState(true);
@@ -110,6 +110,36 @@ function TierCard({ reward, index, total, onUpdate, onRemove, isDark }: {
                   onBlur={handleBlur}
                 />
               </div>
+              {/* BUG FIX (Feature #24): estimatedDelivery and limitedQuantity
+                  were already validated by the backend but had no inputs
+                  here at all, so they could never actually be set during
+                  initial campaign creation. */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }} className="s4grid2">
+                <div>
+                  <label style={lbl}>Estimated delivery</label>
+                  <input
+                    style={inp}
+                    placeholder="e.g. March 2026"
+                    value={reward.estimatedDelivery ?? ""}
+                    onChange={e => onUpdate("estimatedDelivery", e.target.value)}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
+                  />
+                </div>
+                <div>
+                  <label style={lbl}>Limit quantity (optional)</label>
+                  <input
+                    style={inp}
+                    type="number"
+                    min={1}
+                    placeholder="Unlimited"
+                    value={reward.limitedQuantity ?? ""}
+                    onChange={e => onUpdate("limitedQuantity", e.target.value === "" ? undefined : Number(e.target.value))}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
+                  />
+                </div>
+              </div>
             </div>
           </motion.div>
         )}
@@ -124,7 +154,7 @@ export default function Step4Rewards({ data, onChange }: Props) {
 
   const add       = () => { if (data.rewards.length < 8) set([...data.rewards, { title: "", description: "", minimumAmount: 0 }]); };
   const remove    = (i: number) => set(data.rewards.filter((_, idx) => idx !== i));
-  const update    = (i: number, k: keyof RewardTierRequest, v: string | number) => set(data.rewards.map((r, idx) => idx === i ? { ...r, [k]: v } : r));
+  const update    = (i: number, k: keyof RewardTierRequest, v: string | number | undefined) => set(data.rewards.map((r, idx) => idx === i ? { ...r, [k]: v } : r));
   const addPreset = (p: typeof PRESETS[0]) => { if (data.rewards.length < 8) set([...data.rewards, { title: p.title, description: p.description, minimumAmount: p.minimumAmount }]); };
 
   const bdr   = isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.09)";

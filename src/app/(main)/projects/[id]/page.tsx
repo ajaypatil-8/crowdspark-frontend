@@ -51,7 +51,7 @@ function AmbientCanvas({ isDark }: { isDark: boolean }) {
     const resize = () => {
       canvas.width  = canvas.offsetWidth  * dpr;
       canvas.height = canvas.offsetHeight * dpr;
-      ctx.scale(dpr, dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize(); window.addEventListener("resize", resize);
     type Orb = { x:number; y:number; r:number; vx:number; vy:number; hue:number; a:number };
@@ -307,15 +307,21 @@ export default function ProjectDetailPage() {
   const goal    = fmt(funding.goalAmount);
   const rewards: RewardTierResponse[] = project.rewards ?? [];
   const isOwner = !!(myUsername && project.creator?.username === myUsername);
+  const handleBackProject = () => {
+    if (!isLoggedIn()) { router.push("/login"); return; }
+    if (isOwner) return;
+    setModal(true);
+  };
 
   return (
     <div ref={mainRef} style={{ minHeight: "100vh", background: bg, paddingTop: 80 }}>
-      {/* ── CHANGE 5 (CSS): keyframe for the live-pulse dot ── */}
       <style>{`
         @keyframes livePulse {
           0%, 100% { opacity: 1; transform: scale(1); }
           50%       { opacity: 0.5; transform: scale(0.85); }
         }
+        @keyframes pdShimmer { 0%{transform:translateX(-120%)} 60%,100%{transform:translateX(220%)} }
+        @keyframes pdFadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
       `}</style>
 
       <AmbientCanvas isDark={isDark} />
@@ -346,66 +352,79 @@ export default function ProjectDetailPage() {
       <div style={{ position: "relative", zIndex: 1 }}>
 
         {/* ── HERO AREA ──────────────────────────────────────────────────── */}
-        <div className="pd-hero-wrap" style={{ maxWidth: 1180, margin: "0 auto", padding: "30px 24px 0" }}>
+        <div className="pd-hero-wrap" style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 24px 0" }}>
 
           {/* Breadcrumb */}
-          <nav className="hero-text" style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: "DM Mono, monospace", fontSize: 10.5, color: muted, letterSpacing: "0.1em", marginBottom: 26 }}>
-            <Link href="/" style={{ color: muted, textDecoration: "none", transition: "color 0.15s" }} onMouseEnter={e => (e.currentTarget.style.color = txt)} onMouseLeave={e => (e.currentTarget.style.color = muted)}>HOME</Link>
-            <ChevronRight size={12} style={{ opacity: 0.4 }} />
-            <Link href="/explore" style={{ color: muted, textDecoration: "none", transition: "color 0.15s" }} onMouseEnter={e => (e.currentTarget.style.color = txt)} onMouseLeave={e => (e.currentTarget.style.color = muted)}>EXPLORE</Link>
-            <ChevronRight size={12} style={{ opacity: 0.4 }} />
-            <span style={{ color: accent }}>{project.title.slice(0, 28).toUpperCase()}{project.title.length > 28 ? "…" : ""}</span>
+          <nav className="hero-text" style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "DM Sans, sans-serif", fontSize: 12, color: muted, marginBottom: 28 }}>
+            <Link href="/" style={{ color: muted, textDecoration: "none", transition: "color 0.15s" }} onMouseEnter={e => (e.currentTarget.style.color = txt)} onMouseLeave={e => (e.currentTarget.style.color = muted)}>Home</Link>
+            <ChevronRight size={13} style={{ opacity: 0.35 }} />
+            <Link href="/explore" style={{ color: muted, textDecoration: "none", transition: "color 0.15s" }} onMouseEnter={e => (e.currentTarget.style.color = txt)} onMouseLeave={e => (e.currentTarget.style.color = muted)}>Explore</Link>
+            <ChevronRight size={13} style={{ opacity: 0.35 }} />
+            <span style={{ color: "var(--text)", fontWeight: 500 }}>{project.title.slice(0, 32)}{project.title.length > 32 ? "…" : ""}</span>
           </nav>
 
           {/* Title block */}
           <div className="hero-text">
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
               {project.category && (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 999, background: accentSoft, border: `1px solid ${accent}28`, fontFamily: "DM Mono, monospace", fontSize: 11, fontWeight: 600, color: accent, letterSpacing: "0.1em" }}>
-                  ◆ {project.category.toUpperCase()}
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 13px", borderRadius: 999, background: accentSoft, border: `1px solid ${accent}28`, fontFamily: "DM Sans, sans-serif", fontSize: 11.5, fontWeight: 700, color: accent, letterSpacing: "0.06em" }}>
+                  {project.category}
                 </span>
               )}
               {(project.daysLeft ?? 0) <= 7 && (project.daysLeft ?? 0) > 0 && (
                 <motion.span
-                  animate={{ opacity: [1, 0.6, 1] }} transition={{ duration: 1.5, repeat: Infinity }}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 12px", borderRadius: 999, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.28)", fontFamily: "DM Mono, monospace", fontSize: 11, color: "#ef4444", letterSpacing: "0.08em" }}
+                  animate={{ opacity: [1, 0.65, 1] }} transition={{ duration: 1.8, repeat: Infinity }}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 13px", borderRadius: 999, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.28)", fontFamily: "DM Sans, sans-serif", fontSize: 11.5, fontWeight: 700, color: "#ef4444" }}
                 >
-                  <Clock size={11} /> ENDING SOON
+                  <Clock size={11} /> Ending Soon
                 </motion.span>
               )}
               {pct >= 100 && (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 999, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)", fontFamily: "DM Mono, monospace", fontSize: 11, color: "#22c55e", letterSpacing: "0.08em" }}>
-                  🏆 FULLY FUNDED
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 13px", borderRadius: 999, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)", fontFamily: "DM Sans, sans-serif", fontSize: 11.5, fontWeight: 700, color: "#22c55e" }}>
+                  🏆 Fully Funded
+                </span>
+              )}
+              {project.status === "APPROVED" && (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 13px", borderRadius: 999, background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.22)", fontFamily: "DM Sans, sans-serif", fontSize: 11.5, fontWeight: 700, color: "#34d399" }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#34d399", animation: "livePulse 1.8s ease-in-out infinite" }} />
+                  Live
                 </span>
               )}
             </div>
 
-            <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: "clamp(28px,4.5vw,58px)", lineHeight: 1.06, letterSpacing: "-0.033em", color: txt, margin: "0 0 18px", maxWidth: 860 }}>
+            <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: "clamp(28px,4.5vw,56px)", lineHeight: 1.08, letterSpacing: "-0.04em", color: txt, margin: "0 0 18px", maxWidth: 880 }}>
               {project.title}
             </h1>
 
-            <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: "clamp(15px,1.6vw,18px)", color: muted, lineHeight: 1.8, maxWidth: 700, margin: 0 }}>
+            <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: "clamp(15px,1.6vw,17.5px)", color: muted, lineHeight: 1.85, maxWidth: 680, margin: 0 }}>
               {project.shortDescription}
             </p>
           </div>
 
           {/* Creator strip */}
-          <div className="hero-text pd-creator-strip" style={{ display: "inline-flex", alignItems: "center", gap: 12, marginTop: 24, padding: "12px 18px", borderRadius: 16, background: card2, border: `1px solid ${bdr}` }}>
+          <div className="hero-text pd-creator-strip" style={{
+            display: "inline-flex", alignItems: "center", gap: 14, marginTop: 26,
+            padding: "13px 20px", borderRadius: 18,
+            background: isDark ? "rgba(255,255,255,0.04)" : "#fff",
+            border: `1px solid ${bdr}`,
+            boxShadow: isDark ? "none" : "0 2px 16px rgba(0,0,0,0.05)",
+            backdropFilter: "blur(8px)",
+          }}>
             {project.creator?.profileImage ? (
-              <img src={project.creator.profileImage} alt={project.creator.username} style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", border: `2px solid ${accent}30` }} />
+              <img src={project.creator.profileImage} alt={project.creator.username} style={{ width: 42, height: 42, borderRadius: "50%", objectFit: "cover", border: `2px solid ${accent}30`, flexShrink: 0 }} />
             ) : (
-              <div style={{ width: 40, height: 40, borderRadius: "50%", background: `conic-gradient(from 120deg,${accent},#facc15,${accent})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: `0 0 0 3px ${accentSoft}` }}>
-                <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 16, color: "#fff" }}>
+              <div style={{ width: 42, height: 42, borderRadius: "50%", background: `linear-gradient(135deg,${accent},#facc15)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: `0 0 0 3px ${accentSoft}` }}>
+                <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 900, fontSize: 17, color: "#fff" }}>
                   {project.creator?.username?.charAt(0)?.toUpperCase() ?? "?"}
                 </span>
               </div>
             )}
             <div>
-              <p style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: muted, margin: "0 0 2px", letterSpacing: "0.12em" }}>CAMPAIGN BY</p>
-              <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 14, color: txt, margin: 0 }}>@{project.creator?.username}</p>
+              <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10.5, color: muted, margin: "0 0 1px", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600 }}>Campaign by</p>
+              <p style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 14.5, color: txt, margin: 0 }}>@{project.creator?.username}</p>
             </div>
             {project.creator?.about && (
-              <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12.5, color: muted, margin: 0, maxWidth: 220, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden", borderLeft: `1px solid ${bdr}`, paddingLeft: 12 }}>
+              <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: muted, margin: 0, maxWidth: 240, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden", borderLeft: `1px solid ${bdr}`, paddingLeft: 14 }}>
                 {project.creator.about}
               </p>
             )}
@@ -414,11 +433,11 @@ export default function ProjectDetailPage() {
 
         {/* ── MAIN GRID ────────────────────────────────────────────────── */}
         <div className="pd-detail-grid" style={{
-          maxWidth: 1180, margin: "0 auto",
-          padding: "32px 24px 96px",
+          maxWidth: 1200, margin: "0 auto",
+          padding: "32px 24px 100px",
           display: "grid",
-          gridTemplateColumns: "minmax(0,1fr) 340px",
-          gap: 32, alignItems: "start",
+          gridTemplateColumns: "minmax(0,1fr) 350px",
+          gap: 36, alignItems: "start",
         }}>
 
           {/* ═══ LEFT COLUMN ═══ */}
@@ -783,11 +802,7 @@ export default function ProjectDetailPage() {
               <motion.button
                 whileHover={!isOwner ? { scale: 1.02, boxShadow: `0 10px 36px ${accent}55` } : {}}
                 whileTap={!isOwner ? { scale: 0.97 } : {}}
-                onClick={() => {
-                  if (!isLoggedIn()) { router.push("/login"); return; }
-                  if (isOwner) return;
-                  setModal(true);
-                }}
+                onClick={handleBackProject}
                 style={{
                   width: "100%", padding: "17px", borderRadius: 16, border: "none",
                   background: isOwner
@@ -913,6 +928,26 @@ export default function ProjectDetailPage() {
           </div>
         </div>
       </div>
+
+      <motion.div
+        className="pd-mobile-cta"
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.4 }}
+      >
+        <div>
+          <strong>{raised}</strong>
+          <span>{pct}% funded</span>
+        </div>
+        <button
+          type="button"
+          disabled={isOwner}
+          onClick={handleBackProject}
+          aria-label={isOwner ? "This is your own campaign" : "Back this project"}
+        >
+          {isOwner ? "Your campaign" : "Back project"}
+        </button>
+      </motion.div>
 
       {/* Back modal */}
       {/* ── CHANGE 4: onSuccess keeps full re-fetch (SSE handles the bar live) ── */}

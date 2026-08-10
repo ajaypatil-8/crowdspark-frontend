@@ -447,6 +447,17 @@ export const notificationApi = {
 
   markAllRead: () =>
     request<number>("/api/v1/notifications/read-all", { method: "PUT" }),
+
+  // AUDIT FIX: the backend has had DELETE /api/v1/notifications/{id} and
+  // DELETE /api/v1/notifications/clear-all all along (NotificationController)
+  // but nothing in api.ts ever exposed them, so there was no way for any
+  // component to call them. Adding these so a delete/clear-all UI can use
+  // them going forward.
+  deleteOne: (id: number) =>
+    request<void>(`/api/v1/notifications/${id}`, { method: "DELETE" }),
+
+  clearAll: () =>
+    request<void>("/api/v1/notifications/clear-all", { method: "DELETE" }),
 };
 
 export interface ExploreParams {

@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/crowdspark";
+import { API_BASE_URL as API_BASE } from "@/lib/api";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://crowdspark.in";

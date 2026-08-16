@@ -2,6 +2,7 @@
 // FIX: Changed URL from /api/projects/ → /api/v1/projects/ (API versioning #26)
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { API_BASE_URL } from "@/lib/api";
 
 export interface FundingUpdate {
   projectId: number;
@@ -28,9 +29,8 @@ export function useFundingStream(
   useEffect(() => {
     if (!enabled || typeof window === "undefined") return;
 
-    const BACKEND = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/crowdspark";
     // ✅ FIX: was /api/projects/ — must be /api/v1/projects/ to match the versioned backend
-    const url = `${BACKEND}/api/v1/projects/${projectId}/funding-stream`;
+    const url = `${API_BASE_URL}/api/v1/projects/${projectId}/funding-stream`;
 
     // FIX #15: the backend's SseEmitter times out every 5 minutes (by design —
     // see FundingStreamServiceImpl), which closes the connection and lands

@@ -3,7 +3,7 @@ import { useState, useRef, useCallback, useEffect, useMemo, type CSSProperties }
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import gsap from "gsap";
-import { creatorApi, type KycSubmitRequest, type UserResponse } from "@/lib/api";
+import { creatorApi, API_BASE_URL as BASE, type KycSubmitRequest, type UserResponse } from "@/lib/api";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -12,7 +12,6 @@ import { useTheme } from "@/contexts/ThemeContext";
 // request<T>() has a side-effect: window.location.href="/login" on 401 fires
 // BEFORE the surrounding try/catch, causing the redirect to login bug.
 // ─────────────────────────────────────────────────────────────────────────────
-const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/crowdspark";
 
 async function safeRefreshToken(): Promise<void> {
   if (typeof window === "undefined") return;

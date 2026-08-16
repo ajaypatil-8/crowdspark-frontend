@@ -3,8 +3,31 @@
 // All /admin/* routes are now /api/v1/admin/*
 // /auth/* routes remain unchanged (auth is version-stable)
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/crowdspark";
+// PRODUCTION FIX: this is now the ONLY place in the codebase that reads
+// NEXT_PUBLIC_API_URL. It was previously re-declared independently in 8
+// other files (Step3Media, PushNotificationSetup, useFundingStream,
+// forgot-password, reset-password, projects/[id]/layout, login,
+// become-creator) — all with the same fallback, but as 8 separate copies
+// that could silently drift out of sync with each other.
+//
+// The .replace(/\/+$/, "") strips any trailing slash(es) from the env var
+// value. This matters because every call site builds URLs as
+// `${API_BASE_URL}${path}` where `path` always starts with "/" — if the
+// configured env var ever has a trailing slash (e.g.
+// "https://host.example.com/" instead of "https://host.example.com"),
+// naive concatenation produces a double slash
+// ("https://host.example.com//api/v1/..."). Spring's servlet context path
+// ("/crowdspark") only matches paths that start with exactly "/crowdspark",
+// so a malformed/missing-prefix URL like that 404s at the Tomcat level —
+// before it ever reaches Spring Security's CORS filter — which the browser
+// then reports as an opaque "Failed to fetch" instead of a readable 404.
+// Normalizing here means a trailing-slash env var typo can't reproduce
+// that failure again.
+export const API_BASE_URL = (
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/crowdspark"
+).replace(/\/+$/, "");
+
+const BASE_URL = API_BASE_URL;
 
 export const tokenStorage = {
   getAccess: (): string | null => {

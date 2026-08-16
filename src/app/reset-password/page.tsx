@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
 import { checkPasswordStrength } from "@/lib/passwordStrength";
 import ThemeToggle from "@/components/ThemeToggle";
+import { API_BASE_URL } from "@/lib/api";
 
 // ── Password Strength Bar (Feature #27 — entropy-based) ─────────────────────
 function StrengthBar({ pw, isDark }: { pw: string; isDark: boolean }) {
@@ -315,7 +316,7 @@ function ResetPasswordInner() {
 
     setError(null); setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/crowdspark"}/auth/reset-password`, {
+      const res = await fetch(`${API_BASE_URL}/auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, token, password }),

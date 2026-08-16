@@ -2,12 +2,10 @@
 import { useState, useEffect, useRef, useCallback, FormEvent } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { authApi } from "@/lib/api";
+import { authApi, API_BASE_URL as OAUTH_BASE } from "@/lib/api";
 import { useTheme } from "@/contexts/ThemeContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import TotpVerifyModal from "@/components/TotpVerifyModal";
-
-const OAUTH_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/crowdspark";
 
 const φ = (1 + Math.sqrt(5)) / 2;
 const ICO_VERTS: [number, number, number][] = [

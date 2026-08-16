@@ -2,19 +2,17 @@
 import { useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
-import { tokenStorage } from "@/lib/api";
+import { tokenStorage, API_BASE_URL } from "@/lib/api";
 import type { ProjectMediaRequest, MediaType, MediaUsage } from "@/lib/api";
 
 interface MediaData { media: ProjectMediaRequest[]; }
 interface Props { data: MediaData; onChange: (d: MediaData) => void; isDark: boolean; }
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/crowdspark";
-
 async function uploadToCloudinary(file: File): Promise<{ secure_url: string; resource_type: string }> {
   const form = new FormData();
   form.append("file", file);
   const token = tokenStorage.getAccess();
-  const res = await fetch(`${BASE_URL}/api/projects/upload-media`, {
+  const res = await fetch(`${API_BASE_URL}/api/projects/upload-media`, {
     method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: form,

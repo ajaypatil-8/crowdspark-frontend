@@ -4,9 +4,8 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, BellOff, X } from "lucide-react";
 import { requestPushPermission, onForegroundMessage } from "@/lib/firebase";
-import { isLoggedIn } from "@/lib/api";
+import { isLoggedIn, API_BASE_URL as API_BASE } from "@/lib/api";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/crowdspark";
 const STORAGE_KEY   = "cs_push_token";
 const DISMISSED_KEY = "cs_push_dismissed";
 

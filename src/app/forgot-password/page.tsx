@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
 import ThemeToggle from "@/components/ThemeToggle";
+import { API_BASE_URL } from "@/lib/api";
 
 function AmbientCanvas({ isDark }: { isDark: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -197,7 +198,7 @@ export default function ForgotPasswordPage() {
     if (!canSubmit) return;
     setError(null); setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/crowdspark"}/auth/forgot-password`, {
+      const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim() }),

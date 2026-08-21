@@ -4,13 +4,14 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useProfile } from "@/contexts/ProfileContext";
-import { projectApi, categoryApi, type Category } from "@/lib/api";
+import { projectApi, categoryApi, type Category, type GenerateDescriptionResponse } from "@/lib/api";
 
 import Step1BasicInfo, { type BasicInfo } from "@/components/campaign/Step1BasicInfo";
 import Step2Story,    { type StoryData }  from "@/components/campaign/Step2Story";
 import Step3Media,    { type MediaData }  from "@/components/campaign/Step3Media";
 import Step4Rewards,  { type RewardsData } from "@/components/campaign/Step4Rewards";
 import Step5Review    from "@/components/campaign/Step5Review";
+import AiDescriptionGenerator from "@/components/campaign/AiDescriptionGenerator";
 
 // ─── Step config ──────────────────────────────────────────────────────────────
 const STEPS = [
@@ -306,6 +307,23 @@ export default function CreateCampaignPage() {
     }
   };
 
+  const applyAiDraft = (result: GenerateDescriptionResponse) => {
+    if (
+      story.fullDescription.trim().length > 0 &&
+      !window.confirm("This will replace your current campaign story and short description. Continue?")
+    ) {
+      return;
+    }
+    setBasic(b => ({
+      ...b,
+      shortDescription: result.shortPitch,
+      // Only fills the goal if the creator hasn't already typed one —
+      // never overwrites a deliberate choice.
+      goalAmount: b.goalAmount || String(Math.round(result.suggestedGoalAmount)),
+    }));
+    setStory({ fullDescription: result.fullDescription });
+  };
+
   // ─── Theme shortcuts ──────────────────────────────────────────────────────
   const card   = isDark ? "rgba(13,13,13,0.9)" : "rgba(255,255,255,0.95)";
   const bdr    = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
@@ -503,7 +521,12 @@ export default function CreateCampaignPage() {
                 exit="exit"
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               >
-                {step === 0 && <Step1BasicInfo data={basic} onChange={setBasic} isDark={isDark} />}
+                {step === 0 && (
+                  <>
+                    <AiDescriptionGenerator title={basic.title} isDark={isDark} onApply={applyAiDraft} />
+                    <Step1BasicInfo data={basic} onChange={setBasic} isDark={isDark} />
+                  </>
+                )}
                 {step === 1 && <Step2Story    data={story} onChange={setStory} isDark={isDark} />}
                 {step === 2 && <Step3Media    data={media} onChange={setMedia} isDark={isDark} />}
                 {step === 3 && <Step4Rewards  data={rewards} onChange={setRewards} isDark={isDark} />}

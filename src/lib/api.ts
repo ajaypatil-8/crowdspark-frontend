@@ -1308,3 +1308,30 @@ export const rewardClaimApi = {
       body:   JSON.stringify(data),
     }),
 };
+
+// ─── AI Tools (Feature #39+) ────────────────────────────────────────────────
+// Home for every Claude-powered creator tool; #40-#48 will add sibling
+// methods to this same object as they land.
+
+export interface GenerateDescriptionRequest {
+  title: string;
+  bulletPoints: string[];
+  category?: string;
+  location?: string;
+}
+
+export interface GenerateDescriptionResponse {
+  shortPitch: string;
+  fullDescription: string;
+  suggestedGoalAmount: number;
+  goalReasoning: string;
+  model: string;
+}
+
+export const aiApi = {
+  generateDescription: (payload: GenerateDescriptionRequest) =>
+    request<GenerateDescriptionResponse>("/api/v1/ai/campaign-description", {
+      method: "POST",
+      body:   JSON.stringify(payload),
+    }),
+};

@@ -1334,4 +1334,25 @@ export const aiApi = {
       method: "POST",
       body:   JSON.stringify(payload),
     }),
+
+  // Feature #40 — AI-Powered Project Recommendations
+  getRecommendations: () =>
+    request<RecommendationsResponse>("/api/v1/ai/recommendations"),
+
+  // Fire-and-forget — called on project detail page load when logged in.
+  // Swallow errors at the call site (page load shouldn't hinge on this).
+  trackRecentlyViewed: (projectId: number) =>
+    request<void>(`/api/v1/ai/recently-viewed/${projectId}`, { method: "POST" }),
 };
+
+// Reuses the existing ProjectFeedResponse shape (see the projectApi/followApi
+// section above) — a recommendation is just that card plus a reason.
+export interface RecommendedProjectResponse {
+  project: ProjectFeedResponse;
+  reason: string;
+}
+
+export interface RecommendationsResponse {
+  recommendations: RecommendedProjectResponse[];
+  personalized: boolean;
+}

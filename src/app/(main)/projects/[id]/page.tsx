@@ -7,7 +7,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import FollowButton from "@/components/FollowButton";
 import { analyticsApi } from "@/lib/api";
 import {
-  campaignUpdateApi, exploreApi, isLoggedIn, savedApi,
+  aiApi, campaignUpdateApi, exploreApi, isLoggedIn, savedApi,
   type CampaignUpdateResponse, type ProjectFullDetailsResponse, type RewardTierResponse,
 } from "@/lib/api";
 import ProjectGallery from "@/components/ProjectGallery";
@@ -215,7 +215,10 @@ export default function ProjectDetailPage() {
             : Promise.resolve(),
         ]);
         setProject(proj);
-        analyticsApi.trackView(Number(id)); 
+        analyticsApi.trackView(Number(id));
+        // Feature #40 — separate, personalization-only signal; only recorded
+        // when logged in, unlike the anonymous call above.
+        if (logged) aiApi.trackRecentlyViewed(Number(id)).catch(() => {});
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : "Project not found");
       } finally { setLoading(false); }

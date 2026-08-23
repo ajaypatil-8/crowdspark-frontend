@@ -17,6 +17,7 @@ import {
 } from "recharts";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useProfile } from "@/contexts/ProfileContext";
+import RecommendedForYou from "@/components/dashboard/RecommendedForYou";
 import {
   backerApi, projectApi,
   type BackedProjectResponse, type BackerStatsResponse,
@@ -833,6 +834,9 @@ export default function DashboardOverviewPage() {
           )}
         </div>
       </div>
+
+      {/* Feature #40 — AI-picked recommendations, full-width below the main layout */}
+      <RecommendedForYou isDark={isDark} />
 
       <style>{`
         .dash-overview-stats {

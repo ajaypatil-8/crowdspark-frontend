@@ -5,6 +5,7 @@ import type { BasicInfo }   from "./Step1BasicInfo";
 import type { StoryData }   from "./Step2Story";
 import type { MediaData }   from "./Step3Media";
 import type { RewardsData } from "./Step4Rewards";
+import SuccessScorePanel from "./SuccessScorePanel";
 import type { Category }    from "@/lib/api";
 
 interface Props {
@@ -69,6 +70,12 @@ export default function Step5Review(props: Props) {
   const deadline  = basic.deadline ? new Date(basic.deadline).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "—";
   const wordCount = story.fullDescription.trim() ? story.fullDescription.trim().split(/\s+/).length : 0;
 
+  // Feature #41 — derived inputs for the AI success predictor
+  const durationDays = basic.deadline
+    ? Math.max(1, Math.ceil((new Date(basic.deadline).getTime() - Date.now()) / 86_400_000))
+    : 30;
+  const hasVideo = media.media.some(m => m.mediaType === "VIDEO");
+
   return (
     <div>
       {/* ── Readiness score ── */}
@@ -127,6 +134,21 @@ export default function Step5Review(props: Props) {
           </div>
         )}
       </motion.div>
+
+      {/* ── AI Success Prediction (Feature #41) ── */}
+      <SuccessScorePanel
+        title={basic.title}
+        shortDescription={basic.shortDescription}
+        fullDescription={story.fullDescription}
+        category={catNames}
+        goalAmount={Number(basic.goalAmount) || 0}
+        durationDays={durationDays}
+        mediaCount={media.media.length}
+        hasVideo={hasVideo}
+        hasThumbnail={!!thumbnail}
+        rewardTierCount={rewards.rewards.length}
+        isDark={isDark}
+      />
 
       {/* ── Sections ── */}
       <ReviewSection title="Basic Info" icon="✦">

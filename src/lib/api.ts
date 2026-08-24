@@ -1343,6 +1343,13 @@ export const aiApi = {
   // Swallow errors at the call site (page load shouldn't hinge on this).
   trackRecentlyViewed: (projectId: number) =>
     request<void>(`/api/v1/ai/recently-viewed/${projectId}`, { method: "POST" }),
+
+  // Feature #41 — AI Campaign Success Predictor
+  predictSuccess: (payload: CampaignScoreRequest) =>
+    request<CampaignScoreResponse>("/api/v1/ai/success-score", {
+      method: "POST",
+      body:   JSON.stringify(payload),
+    }),
 };
 
 // Reuses the existing ProjectFeedResponse shape (see the projectApi/followApi
@@ -1355,4 +1362,26 @@ export interface RecommendedProjectResponse {
 export interface RecommendationsResponse {
   recommendations: RecommendedProjectResponse[];
   personalized: boolean;
+}
+
+// Feature #41 — AI Campaign Success Predictor
+export interface CampaignScoreRequest {
+  title: string;
+  shortDescription: string;
+  fullDescription: string;
+  category?: string;
+  goalAmount: number;
+  durationDays: number;
+  mediaCount: number;
+  hasVideo: boolean;
+  hasThumbnail: boolean;
+  rewardTierCount: number;
+}
+
+export interface CampaignScoreResponse {
+  score: number;
+  verdict: string;
+  explanation: string;
+  tips: string[];
+  model: string;
 }

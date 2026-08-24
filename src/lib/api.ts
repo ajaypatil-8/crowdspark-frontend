@@ -1350,6 +1350,15 @@ export const aiApi = {
       method: "POST",
       body:   JSON.stringify(payload),
     }),
+
+  // Feature #42 — AI Support Chatbot (public — request() omits the auth
+  // header automatically when the visitor isn't logged in, no special
+  // handling needed here)
+  sendChatMessage: (payload: SupportChatRequest) =>
+    request<SupportChatResponse>("/api/v1/ai/support-chat", {
+      method: "POST",
+      body:   JSON.stringify(payload),
+    }),
 };
 
 // Reuses the existing ProjectFeedResponse shape (see the projectApi/followApi
@@ -1384,4 +1393,19 @@ export interface CampaignScoreResponse {
   explanation: string;
   tips: string[];
   model: string;
+}
+
+// Feature #42 — AI Support Chatbot
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface SupportChatRequest {
+  messages: ChatMessage[];
+}
+
+export interface SupportChatResponse {
+  reply: string;
+  escalate: boolean;
 }

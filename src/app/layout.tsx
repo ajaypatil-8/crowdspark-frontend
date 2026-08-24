@@ -9,6 +9,7 @@ import { RouteLoader }          from "@/components/ui/PageLoader";
 import { SkipToMain }       from "@/components/ui/Accessibility";
 import CustomCursor from "@/components/CustomCursor";
 import PushNotificationSetup from "@/components/PushNotificationSetup";
+import SupportChatWidget from "@/components/SupportChatWidget";
 
 // ─── Fonts ────────────────────────────────────────────────────────────────────
 const syne = Syne({
@@ -107,6 +108,8 @@ export default function RootLayout({
               <CustomCursor />
               {/* Web push — silently registers token after login */}
               <PushNotificationSetup />
+              {/* Feature #42 — site-wide AI support chat, every page, logged in or not */}
+              <SupportChatWidget />
               <main id="main-content" style={{ display: "contents" }}>
                 {children}
               </main>

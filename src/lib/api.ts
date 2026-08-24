@@ -637,6 +637,12 @@ export interface AdminProjectResponse {
   deadline: string | null;
   createdAt: string;
   status: string;
+  // Feature #43 — null when never scanned; "PENDING" while the async scan
+  // hasn't completed yet
+  fraudCheckStatus?: string | null;
+  fraudRiskScore?: number | null;
+  fraudRiskLevel?: string | null;
+  fraudReasoning?: string | null;
 }
 
 export const adminApi = {

@@ -138,6 +138,41 @@ function KycDetailPanel({ kyc, onApprove, onReject, busy }: {
           )}
         </div>
 
+        {/* AI Document Check — Feature #44, admin-only (kyc-status endpoint
+            never returns these fields, so this simply won't render there) */}
+        {kyc.aiCheckStatus && (
+          <div style={{
+            padding: "12px 14px", borderRadius: 12, marginBottom: 20,
+            background: kyc.aiTamperingSuspected ? "rgba(239,68,68,0.06)" : (isDark ? "rgba(139,92,246,0.06)" : "rgba(139,92,246,0.04)"),
+            border: `1px solid ${kyc.aiTamperingSuspected ? "rgba(239,68,68,0.25)" : "rgba(139,92,246,0.2)"}`,
+          }}>
+            <p style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "DM Sans, sans-serif", fontSize: 10.5, fontWeight: 700, color: kyc.aiTamperingSuspected ? "#ef4444" : "#8b5cf6", margin: "0 0 6px", textTransform: "uppercase", letterSpacing: "0.07em" }}>
+              🤖 AI Document Check
+            </p>
+            {kyc.aiCheckStatus === "PENDING" && (
+              <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12.5, color: "var(--text-muted)", margin: 0 }}>Scan in progress…</p>
+            )}
+            {kyc.aiCheckStatus === "FAILED" && (
+              <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12.5, color: "var(--text-muted)", margin: 0 }}>Scan unavailable — review documents manually.</p>
+            )}
+            {kyc.aiCheckStatus === "COMPLETED" && (
+              <>
+                <div style={{ display: "flex", gap: 8, marginBottom: kyc.aiSummary ? 6 : 0, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: kyc.aiReadable === false ? "rgba(239,68,68,0.15)" : "rgba(52,211,153,0.15)", color: kyc.aiReadable === false ? "#ef4444" : "#34d399" }}>
+                    {kyc.aiReadable === false ? "⚠ Not clearly readable" : "✓ Readable"}
+                  </span>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: kyc.aiTamperingSuspected ? "rgba(239,68,68,0.15)" : "rgba(52,211,153,0.15)", color: kyc.aiTamperingSuspected ? "#ef4444" : "#34d399" }}>
+                    {kyc.aiTamperingSuspected ? "⚠ Tampering suspected" : "✓ No tampering signs"}
+                  </span>
+                </div>
+                {kyc.aiSummary && (
+                  <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12.5, color: "var(--text)", margin: 0, lineHeight: 1.5 }}>{kyc.aiSummary}</p>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
         {/* Documents */}
         <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", margin: "0 0 12px", textTransform: "uppercase", letterSpacing: "0.09em" }}>KYC Documents</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>

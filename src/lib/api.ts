@@ -179,6 +179,13 @@ export interface KycStatusResponse {
   upiId: string | null;
   submittedAt: string | null;
   reviewedAt: string | null;
+  // Feature #44 — populated only in the admin pending-KYC queue response,
+  // never on the creator-facing kyc-status endpoint
+  aiCheckStatus?: string | null;
+  aiReadable?: boolean | null;
+  aiTamperingSuspected?: boolean | null;
+  aiConcerns?: string | null;
+  aiSummary?: string | null;
 }
 
 export interface UpdateProfileRequest {

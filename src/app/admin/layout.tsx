@@ -33,6 +33,7 @@ const NAV = [
   { href: "/admin/payouts",  label: "Payouts",    icon: <Ic.Banknote />, exact: false, color: "#06b6d4" },
   { href: "/admin/kyc",      label: "KYC Queue",  icon: <Ic.File />,     exact: false, color: "#34d399" },
   { href: "/admin/messages", label: "Messages",   icon: <Ic.Message />, exact: false, color: "#ec4899" },
+  { href: "/admin/moderation", label: "Moderation", icon: <Ic.Shield />, exact: false, color: "#8b5cf6" },
   { href: "/admin/users",    label: "Users",      icon: <Ic.Users />,  exact: false, color: "#60a5fa" },
 ];
 

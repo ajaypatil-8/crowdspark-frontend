@@ -650,6 +650,10 @@ export interface AdminProjectResponse {
   fraudRiskScore?: number | null;
   fraudRiskLevel?: string | null;
   fraudReasoning?: string | null;
+  // Feature #45
+  moderationStatus?: string | null;
+  moderationCategory?: string | null;
+  moderationReasoning?: string | null;
 }
 
 export const adminApi = {
@@ -708,7 +712,30 @@ export const adminApi = {
       method: "PUT",
       body: JSON.stringify({ subject, message }),
     }),
+
+  // Feature #45 — AI Content Moderation (comments only; flagged projects
+  // already appear in pendingProjects()/allProjects() above)
+  flaggedComments: () =>
+    request<AdminFlaggedCommentResponse[]>("/api/v1/admin/moderation/flagged-comments"),
+
+  resolveFlaggedComment: (checkId: number, restore: boolean) =>
+    request<void>(`/api/v1/admin/moderation/flagged-comments/${checkId}/resolve?restore=${restore}`, {
+      method: "PUT",
+    }),
 };
+
+export interface AdminFlaggedCommentResponse {
+  checkId: number;
+  commentId: number;
+  commentContent: string;
+  commentAuthorUsername: string;
+  deleted: boolean;
+  projectId: number;
+  projectTitle: string;
+  category: string | null;
+  reasoning: string | null;
+  flaggedAt: string | null;
+}
 
 export interface PaymentOrderRequest {
   projectId: number;

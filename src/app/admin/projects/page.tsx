@@ -488,22 +488,38 @@ export default function AdminProjectsPage() {
                       <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: "var(--text-muted)", margin: 0 }}>
                         {new Date(p.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                       </p>
-                      {/* Feature #43 — AI fraud/risk flag; only shown for MEDIUM/HIGH so it doesn't add noise to every low-risk row */}
-                      {(p.fraudRiskLevel === "HIGH" || p.fraudRiskLevel === "MEDIUM") && (
-                        <span
-                          title={p.fraudReasoning ?? undefined}
-                          style={{
-                            display: "inline-flex", alignItems: "center", gap: 4, marginTop: 4,
-                            padding: "2px 8px", borderRadius: 999, cursor: "help",
-                            background: p.fraudRiskLevel === "HIGH" ? "rgba(239,68,68,0.12)" : "rgba(245,158,11,0.12)",
-                            border: `1px solid ${p.fraudRiskLevel === "HIGH" ? "rgba(239,68,68,0.3)" : "rgba(245,158,11,0.3)"}`,
-                            fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700,
-                            color: p.fraudRiskLevel === "HIGH" ? "#ef4444" : "#f59e0b",
-                          }}
-                        >
-                          ⚠ {p.fraudRiskLevel === "HIGH" ? "High" : "Medium"} risk · {p.fraudRiskScore}
-                        </span>
-                      )}
+                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
+                        {/* Feature #43 — AI fraud/risk flag; only shown for MEDIUM/HIGH so it doesn't add noise to every low-risk row */}
+                        {(p.fraudRiskLevel === "HIGH" || p.fraudRiskLevel === "MEDIUM") && (
+                          <span
+                            title={p.fraudReasoning ?? undefined}
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: 4,
+                              padding: "2px 8px", borderRadius: 999, cursor: "help",
+                              background: p.fraudRiskLevel === "HIGH" ? "rgba(239,68,68,0.12)" : "rgba(245,158,11,0.12)",
+                              border: `1px solid ${p.fraudRiskLevel === "HIGH" ? "rgba(239,68,68,0.3)" : "rgba(245,158,11,0.3)"}`,
+                              fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700,
+                              color: p.fraudRiskLevel === "HIGH" ? "#ef4444" : "#f59e0b",
+                            }}
+                          >
+                            ⚠ {p.fraudRiskLevel === "HIGH" ? "High" : "Medium"} risk · {p.fraudRiskScore}
+                          </span>
+                        )}
+                        {/* Feature #45 — content moderation flag, separate from fraud risk above */}
+                        {p.moderationStatus === "FLAGGED" && (
+                          <span
+                            title={p.moderationReasoning ?? undefined}
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: 4,
+                              padding: "2px 8px", borderRadius: 999, cursor: "help",
+                              background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.3)",
+                              fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: "#8b5cf6",
+                            }}
+                          >
+                            🚩 {p.moderationCategory ? p.moderationCategory.replace("_", " ") : "flagged"}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 

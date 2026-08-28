@@ -6,6 +6,7 @@ import type { StoryData }   from "./Step2Story";
 import type { MediaData }   from "./Step3Media";
 import type { RewardsData } from "./Step4Rewards";
 import SuccessScorePanel from "./SuccessScorePanel";
+import CampaignSuggestionsPanel from "./CampaignSuggestionsPanel";
 import type { Category }    from "@/lib/api";
 
 interface Props {
@@ -147,6 +148,24 @@ export default function Step5Review(props: Props) {
         hasVideo={hasVideo}
         hasThumbnail={!!thumbnail}
         rewardTierCount={rewards.rewards.length}
+        isDark={isDark}
+      />
+
+      {/* ── AI Improvement Suggestions (Feature #46) ── */}
+      <CampaignSuggestionsPanel
+        title={basic.title}
+        shortDescription={basic.shortDescription}
+        fullDescription={story.fullDescription}
+        category={catNames}
+        goalAmount={Number(basic.goalAmount) || 0}
+        mediaCount={media.media.length}
+        hasVideo={hasVideo}
+        hasThumbnail={!!thumbnail}
+        rewardTiers={rewards.rewards.map(r => ({
+          title: r.title,
+          minimumAmount: r.minimumAmount,
+          description: r.description,
+        }))}
         isDark={isDark}
       />
 

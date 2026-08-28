@@ -1399,6 +1399,13 @@ export const aiApi = {
       method: "POST",
       body:   JSON.stringify(payload),
     }),
+
+  // Feature #46 — AI Campaign Improvement Suggestions
+  getSuggestions: (payload: CampaignSuggestionsRequest) =>
+    request<CampaignSuggestionsResponse>("/api/v1/ai/suggestions", {
+      method: "POST",
+      body:   JSON.stringify(payload),
+    }),
 };
 
 // Reuses the existing ProjectFeedResponse shape (see the projectApi/followApi
@@ -1448,4 +1455,31 @@ export interface SupportChatRequest {
 export interface SupportChatResponse {
   reply: string;
   escalate: boolean;
+}
+
+// Feature #46 — AI Campaign Improvement Suggestions
+export interface CampaignSuggestionsRewardTier {
+  title: string;
+  minimumAmount: number;
+  description?: string;
+}
+
+export interface CampaignSuggestionsRequest {
+  title: string;
+  shortDescription: string;
+  fullDescription: string;
+  category?: string;
+  goalAmount: number;
+  hasVideo: boolean;
+  hasThumbnail: boolean;
+  mediaCount: number;
+  rewardTiers: CampaignSuggestionsRewardTier[];
+}
+
+export interface CampaignSuggestionsResponse {
+  titleSuggestions: string[];
+  rewardSuggestions: string[];
+  mediaSuggestions: string[];
+  overallNote: string;
+  model: string;
 }

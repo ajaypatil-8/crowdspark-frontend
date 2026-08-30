@@ -1406,6 +1406,13 @@ export const aiApi = {
       method: "POST",
       body:   JSON.stringify(payload),
     }),
+
+  // Feature #47 — AI Auto-Tagging & Category Detection
+  suggestCategories: (payload: CategorySuggestionRequest) =>
+    request<CategorySuggestionResponse>("/api/v1/ai/suggest-categories", {
+      method: "POST",
+      body:   JSON.stringify(payload),
+    }),
 };
 
 // Reuses the existing ProjectFeedResponse shape (see the projectApi/followApi
@@ -1482,4 +1489,15 @@ export interface CampaignSuggestionsResponse {
   mediaSuggestions: string[];
   overallNote: string;
   model: string;
+}
+
+// Feature #47 — AI Auto-Tagging & Category Detection
+export interface CategorySuggestionRequest {
+  title: string;
+  shortDescription: string;
+}
+
+export interface CategorySuggestionResponse {
+  categoryIds: number[];
+  reasoning: string;
 }

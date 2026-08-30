@@ -3,6 +3,7 @@ import { useState, useEffect, useId } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { categoryApi, type Category } from "@/lib/api";
 import { useTheme } from "@/contexts/ThemeContext";
+import AiCategorySuggest from "./AiCategorySuggest";
 
 interface BasicInfo {
   title: string;
@@ -107,6 +108,14 @@ export default function Step1BasicInfo({ data, onChange }: Props) {
     touch("cats");
   };
 
+  // Feature #47 — merges with whatever's already selected rather than
+  // replacing it, so a manual pick the creator already made is never lost.
+  const applySuggestedCategories = (ids: number[]) => {
+    const merged = Array.from(new Set([...data.categoryIds, ...ids]));
+    set("categoryIds", merged);
+    touch("cats");
+  };
+
   const goalNum = Number(data.goalAmount);
   const goalErr = touched.goalAmount && data.goalAmount && goalNum < 1000 ? "Minimum goal is ₹1,000" : undefined;
   const bdr   = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
@@ -164,6 +173,13 @@ export default function Step1BasicInfo({ data, onChange }: Props) {
 
       {/* Categories */}
       <Field label="Categories" required hint="Select at least one">
+        <AiCategorySuggest
+          title={data.title}
+          shortDescription={data.shortDescription}
+          categories={categories}
+          onApply={applySuggestedCategories}
+          isDark={isDark}
+        />
         {catLoading && (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {[1, 2, 3, 4, 5, 6].map(i => (

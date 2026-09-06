@@ -18,6 +18,7 @@ import {
 import { useTheme } from "@/contexts/ThemeContext";
 import { useProfile } from "@/contexts/ProfileContext";
 import RecommendedForYou from "@/components/dashboard/RecommendedForYou";
+import WeeklyInsightsWidget from "@/components/dashboard/WeeklyInsightsWidget";
 import {
   backerApi, projectApi,
   type BackedProjectResponse, type BackerStatsResponse,
@@ -837,6 +838,7 @@ export default function DashboardOverviewPage() {
 
       {/* Feature #40 — AI-picked recommendations, full-width below the main layout */}
       <RecommendedForYou isDark={isDark} />
+      {isCreator && <WeeklyInsightsWidget isDark={isDark} />}
 
       <style>{`
         .dash-overview-stats {

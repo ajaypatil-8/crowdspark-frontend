@@ -336,6 +336,10 @@ export const creatorApi = {
 
   kycStatus: () =>
     request<KycStatusResponse>("/api/v1/creator/kyc-status"),
+
+  // Feature #48 — AI Creator Analytics Insights
+  weeklyInsights: () =>
+    request<CreatorWeeklyInsightResponse[]>("/api/v1/creator/weekly-insights"),
 };
 
 export const isLoggedIn = () => !!tokenStorage.getAccess();
@@ -1500,4 +1504,15 @@ export interface CategorySuggestionRequest {
 export interface CategorySuggestionResponse {
   categoryIds: number[];
   reasoning: string;
+}
+
+// Feature #48 — AI Creator Analytics Insights
+export interface CreatorWeeklyInsightResponse {
+  projectId: number;
+  projectTitle: string;
+  summary: string;
+  fundedPercent: number;
+  newBackersThisWeek: number;
+  viewsThisWeek: number;
+  weekStart: string | null;
 }
